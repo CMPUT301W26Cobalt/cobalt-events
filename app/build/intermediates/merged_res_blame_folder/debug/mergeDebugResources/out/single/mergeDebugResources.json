@@ -1,0 +1,58 @@
+[
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_event_detail.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_event_detail.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_item_admin.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/item_admin.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_entrant_map.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_entrant_map.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_event_create.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_event_create.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_admin_list.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_admin_list.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_main.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_organizer.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_organizer.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_entrant.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_entrant.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_admin.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_admin.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_entrant_edit.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_entrant_edit.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_event_list.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_event_list.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_qr_scan.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_qr_scan.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_event_manage.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_event_manage.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_item_event.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/item_event.xml"
+    }
+]
