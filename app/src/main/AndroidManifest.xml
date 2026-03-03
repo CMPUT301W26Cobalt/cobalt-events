@@ -5,7 +5,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- TODO: Add other permissions as needed -->
+    <!-- US 01.04.01: Notification permission for Android 13+ (API 33) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
@@ -20,7 +21,6 @@
             </intent-filter>
         </activity>
 
-        <!-- TODO: Register all activities -->
         <activity android:name=".ui.EntrantActivity" />
         <activity android:name=".ui.EntrantEditActivity" />
         <activity android:name=".ui.EventListActivity" />
@@ -29,12 +29,12 @@
         <activity android:name=".ui.OrganizerActivity" />
         <activity android:name=".ui.EventManageActivity" />
         <activity android:name=".ui.QRScanActivity" />
+        <!-- US 01.04.01/02: Notification list activity -->
+        <activity android:name=".ui.NotificationListActivity" />
         <activity android:name=".ui.admin.AdminActivity" />
         <activity android:name=".ui.admin.AdminEventListActivity" />
         <activity android:name=".ui.admin.AdminProfileListActivity" />
         <activity android:name=".ui.admin.AdminImageListActivity" />
-
-        <!-- TODO: Add Google Maps API key meta-data if using maps -->
 
     </application>
 </manifest>

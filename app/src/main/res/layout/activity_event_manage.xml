@@ -1,16 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- TODO: Implement activity_event_manage layout -->
+<!-- EventManageActivity layout: Organizer event management.
+     US 01.04.01: "Draw Lottery" triggers selected notifications.
+     US 01.04.02: "Draw Lottery" triggers not-selected notifications. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center">
+    android:padding="24dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="activity_event_manage"
+        android:text="Manage Event"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/colorPrimary"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:id="@+id/tv_manage_event_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tv_manage_event_description"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="14sp"
+        android:textColor="#666666"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/tv_waiting_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:textSize="16sp"
-        android:textColor="#888888" />
+        android:layout_marginBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tv_max_entrants"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:id="@+id/tv_lottery_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:textStyle="italic"
+        android:textColor="#888888"
+        android:layout_marginBottom="24dp"
+        android:visibility="gone" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_draw_lottery"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/btn_draw_lottery" />
 
 </LinearLayout>

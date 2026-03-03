@@ -1,5 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Cobalt Events</string>
-    <!-- TODO: Add more strings -->
+
+    <!-- Navigation -->
+    <string name="btn_events">Events</string>
+    <string name="btn_profile">My Profile</string>
+    <string name="btn_notifications">Notifications</string>
+    <string name="btn_manage_event">Manage Event</string>
+
+    <!-- Notification messages (US 01.04.01, US 01.04.02) -->
+    <string name="notif_channel_name">Lottery Results</string>
+    <string name="notif_selected_title">You\'ve been selected!</string>
+    <string name="notif_selected_message">Congratulations! You\'ve been selected for %s!</string>
+    <string name="notif_not_selected_title">Lottery Result</string>
+    <string name="notif_not_selected_message">Unfortunately, you were not selected for %s.</string>
+
+    <!-- Entrant profile (US 01.04.03) -->
+    <string name="enable_notifications">Enable Notifications</string>
+    <string name="btn_edit_profile">Edit Profile</string>
+
+    <!-- Event detail -->
+    <string name="btn_join_waiting_list">Join Waiting List</string>
+    <string name="event_detail_title">Event Details</string>
+
+    <!-- Event manage -->
+    <string name="btn_draw_lottery">Draw Lottery</string>
+    <string name="lottery_confirm_title">Confirm Lottery Draw</string>
+    <string name="lottery_confirm_message">Are you sure you want to draw the lottery? This cannot be undone.</string>
+
+    <!-- Notification list -->
+    <string name="notifications_title">Notifications</string>
+    <string name="no_notifications">No notifications yet</string>
+
+    <!-- General -->
+    <string name="loading">Loading…</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
 </resources>
