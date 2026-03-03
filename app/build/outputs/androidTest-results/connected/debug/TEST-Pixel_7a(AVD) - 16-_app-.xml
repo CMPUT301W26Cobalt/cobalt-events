@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="com.example.cobaltevents.ui.EntrantActivityTest" tests="5" failures="1" errors="0" skipped="0" time="81.345" timestamp="2026-03-03T18:53:48" hostname="localhost">
+  <properties>
+    <property name="device" value="Pixel_7a(AVD) - 16" />
+    <property name="flavor" value="" />
+    <property name="project" value=":app" />
+  </properties>
+  <testcase name="save_withValidNameAndEmail_andBlankPhone_hasNoErrors" classname="com.example.cobaltevents.ui.EntrantActivityTest" time="45.69">
+    <failure>androidx.test.espresso.NoActivityResumedException: No activities in stage RESUMED. Did you forget to launch the activity. (test.getActivity() or similar)?
+at dalvik.system.VMStack.getThreadStackTrace(Native Method)
+at java.lang.Thread.getStackTrace(Thread.java:1960)
+at androidx.test.espresso.base.EspressoExceptionHandler.handleSafely(EspressoExceptionHandler.java:34)
+at androidx.test.espresso.base.EspressoExceptionHandler.handleSafely(EspressoExceptionHandler.java:26)
+at androidx.test.espresso.base.DefaultFailureHandler$TypedFailureHandler.handle(DefaultFailureHandler.java:158)
+at androidx.test.espresso.base.DefaultFailureHandler.handle(DefaultFailureHandler.java:120)
+at androidx.test.espresso.ViewInteraction.waitForAndHandleInteractionResults(ViewInteraction.java:385)
+at androidx.test.espresso.ViewInteraction.check(ViewInteraction.java:366)
+at com.example.cobaltevents.ui.EntrantActivityTest.save_withValidNameAndEmail_andBlankPhone_hasNoErrors(EntrantActivityTest.java:91)
+</failure>
+  </testcase>
+  <testcase name="save_withEmptyEmail_showsEmailRequiredError" classname="com.example.cobaltevents.ui.EntrantActivityTest" time="5.536" />
+  <testcase name="save_withEmptyName_showsNameRequiredError" classname="com.example.cobaltevents.ui.EntrantActivityTest" time="7.411" />
+  <testcase name="save_withInvalidEmail_showsInvalidEmailError" classname="com.example.cobaltevents.ui.EntrantActivityTest" time="6.134" />
+  <testcase name="save_withInvalidPhone_showsInvalidPhoneError" classname="com.example.cobaltevents.ui.EntrantActivityTest" time="6.883" />
+</testsuite>
