@@ -9,10 +9,8 @@ import android.util.Patterns;
  * - deviceId: unique device identifier (Settings.Secure.ANDROID_ID), used as
  *   the Firestore document ID and as the recipientId for notifications.
  * - name, email, phone: profile information.
- * - Validation methods for profile fields (from main branch).
- *
- * Modified for US 01.04.01: added deviceId so we can match notifications
- * to the correct device.
+ * - notificationsEnabled: opt-out preference (US 01.04.03).
+ * - Validation methods for profile fields.
  */
 public class Entrant {
 
@@ -21,11 +19,12 @@ public class Entrant {
     private String email;
     private String phone;
     private String profilePictureUrl;
-
-    public Entrant() {} // Required for Firestore
+    private boolean notificationsEnabled;
 
     /** No-arg constructor required by Firestore deserialization. */
-    public Entrant() {}
+    public Entrant() {
+        this.notificationsEnabled = true;
+    }
 
     public Entrant(String name, String email, String phone) {
         this(null, name, email, phone, null);
@@ -41,27 +40,24 @@ public class Entrant {
         this.email = email;
         this.phone = phone;
         this.profilePictureUrl = profilePictureUrl;
+        this.notificationsEnabled = true;
     }
 
-    @Exclude
     public boolean isValidName() {
         return name != null && !name.trim().isEmpty();
     }
 
-    @Exclude
     public boolean isValidEmail() {
         return email != null &&
                 !email.trim().isEmpty() &&
                 Patterns.EMAIL_ADDRESS.matcher(email).matches();
     }
 
-    @Exclude
     public boolean isValidPhone() {
         if (phone == null || phone.trim().isEmpty()) return true;
         return phone.matches("^[0-9+()\\-\\s]{7,20}$");
     }
 
-    @Exclude
     public boolean isValid() {
         return isValidName() && isValidEmail() && isValidPhone();
     }
@@ -77,4 +73,10 @@ public class Entrant {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    public String getProfilePictureUrl() { return profilePictureUrl; }
+    public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
+
+    public boolean isNotificationsEnabled() { return notificationsEnabled; }
+    public void setNotificationsEnabled(boolean notificationsEnabled) { this.notificationsEnabled = notificationsEnabled; }
 }

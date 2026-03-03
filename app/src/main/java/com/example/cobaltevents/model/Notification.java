@@ -4,14 +4,16 @@ import java.util.Date;
 
 /**
  * Data model for the Firestore "notifications" collection.
- * Used for US 01.04.01 — Notification When Selected.
+ * US 01.04.01 — Notification When Selected.
+ * US 01.04.02 — Notification When Not Selected.
  *
  * Each document represents a notification sent to an entrant
- * (e.g., when they are selected from the waiting list).
+ * (e.g., when they are selected or not selected from the waiting list).
  */
 public class Notification {
 
     public static final String TYPE_SELECTED = "selected";
+    public static final String TYPE_NOT_SELECTED = "not_selected";
 
     private String id;
     private String recipientId;
@@ -32,7 +34,7 @@ public class Notification {
      * @param eventId      the event this notification is about
      * @param title        notification title (shown in system notification)
      * @param message      notification body text
-     * @param type         notification type (e.g., TYPE_SELECTED)
+     * @param type         notification type (e.g., TYPE_SELECTED, TYPE_NOT_SELECTED)
      */
     public Notification(String recipientId, String eventId, String title, String message, String type) {
         this.recipientId = recipientId;

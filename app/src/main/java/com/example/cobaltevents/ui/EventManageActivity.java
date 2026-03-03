@@ -14,8 +14,6 @@ import com.example.cobaltevents.model.Event;
 
 /**
  * Allows organizers to manage their events.
- * This activity provides tools for organizers to upload or update
- * event posters and perform other event management actions.
  */
 public class EventManageActivity extends AppCompatActivity {
 

@@ -40,7 +40,11 @@ public class EventDB {
                 .get()
                 .addOnSuccessListener(snapshot -> {
                     if (snapshot.exists()) {
-                        onSuccess.onSuccess(snapshot.toObject(Event.class));
+                        Event event = snapshot.toObject(Event.class);
+                        if (event != null) {
+                            event.setEventId(snapshot.getId());
+                        }
+                        onSuccess.onSuccess(event);
                     } else {
                         onSuccess.onSuccess(null);
                     }
@@ -56,7 +60,10 @@ public class EventDB {
                     List<Event> events = new ArrayList<>();
                     for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshot.getDocuments()) {
                         Event e = doc.toObject(Event.class);
-                        if (e != null) events.add(e);
+                        if (e != null) {
+                            e.setEventId(doc.getId());
+                            events.add(e);
+                        }
                     }
                     onSuccess.onSuccess(events);
                 })
@@ -73,7 +80,10 @@ public class EventDB {
                     List<Event> events = new ArrayList<>();
                     for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshot.getDocuments()) {
                         Event e = doc.toObject(Event.class);
-                        if (e != null) events.add(e);
+                        if (e != null) {
+                            e.setEventId(doc.getId());
+                            events.add(e);
+                        }
                     }
                     onSuccess.onSuccess(events);
                 })
@@ -96,6 +106,15 @@ public class EventDB {
         db.collection(COLLECTION)
                 .document(eventId)
                 .delete()
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
+    /** Mark an event's lottery as drawn. */
+    public void markLotteryDrawn(String eventId, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
+        db.collection(COLLECTION)
+                .document(eventId)
+                .update("lotteryDrawn", true)
                 .addOnSuccessListener(onSuccess)
                 .addOnFailureListener(onFailure);
     }

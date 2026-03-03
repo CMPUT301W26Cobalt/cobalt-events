@@ -12,12 +12,6 @@ import com.example.cobaltevents.controller.NotificationController;
 /**
  * App entry point. Initializes the notification system for US 01.04.01,
  * then redirects to EventListActivity.
- *
- * Notification setup:
- * - Creates notification channel (required for Android 8+)
- * - Requests POST_NOTIFICATIONS permission (required for Android 13+)
- * - Starts a real-time Firestore listener for incoming notifications
- * - Stops the listener when the activity pauses
  */
 public class MainActivity extends AppCompatActivity {
 

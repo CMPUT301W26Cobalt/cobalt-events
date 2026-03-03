@@ -13,8 +13,7 @@ import com.example.cobaltevents.model.Event;
 
 /**
  * Displays detailed information about a selected event.
- * This activity retrieves the event from Firestore and shows
- * the event details and poster image to users.
+ * US 01.04.01 criteria 4: Notification links to this activity via eventId intent extra.
  */
 public class EventDetailActivity extends AppCompatActivity {
 
@@ -37,7 +36,7 @@ public class EventDetailActivity extends AppCompatActivity {
 
         eventDB = new EventDB();
 
-        // Get eventId passed from previous activity
+        // Get eventId passed from previous activity or notification tap
         String eventId = getIntent().getStringExtra("eventId");
 
         if (eventId != null) {

@@ -18,6 +18,8 @@ import com.example.cobaltevents.R;
 import com.example.cobaltevents.db.NotificationDB;
 import com.example.cobaltevents.model.Notification;
 import com.example.cobaltevents.ui.EventDetailActivity;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.HashSet;
@@ -26,14 +28,8 @@ import java.util.Set;
 
 /**
  * Controller for notification logic.
- * Handles US 01.04.01 — Notification When Selected.
- *
- * Responsibilities:
- * - Creates an Android notification channel (required for API 26+)
- * - Requests POST_NOTIFICATIONS permission (required for API 33+)
- * - Sends a "selected" notification to Firestore when an entrant wins the lottery
- * - Listens for new notifications in Firestore in real-time
- * - Displays system notifications with a tap action that opens EventDetailActivity
+ * US 01.04.01 — Notification When Selected.
+ * US 01.04.02 — Notification When Not Selected.
  */
 public class NotificationController {
 
@@ -52,7 +48,6 @@ public class NotificationController {
 
     /**
      * Creates the notification channel. Must be called once at app startup (API 26+).
-     * Safe to call multiple times — Android ignores duplicate channel creation.
      */
     public void createNotificationChannel(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -72,7 +67,6 @@ public class NotificationController {
 
     /**
      * Requests POST_NOTIFICATIONS permission on Android 13+ (API 33).
-     * On older versions this is a no-op since notification permission is granted by default.
      */
     public void requestNotificationPermission(Activity activity) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -87,12 +81,7 @@ public class NotificationController {
 
     /**
      * Creates a "selected" notification document in Firestore.
-     * Called by the organizer/lottery system when an entrant is chosen.
-     * The entrant's device will pick this up via the real-time listener.
-     *
-     * @param entrantId  device ID of the selected entrant
-     * @param eventId    ID of the event they were selected for
-     * @param eventName  name of the event (for the notification message)
+     * US 01.04.01
      */
     public void sendSelectedNotification(String entrantId, String eventId, String eventName) {
         Notification notification = new Notification(
@@ -110,14 +99,40 @@ public class NotificationController {
     }
 
     /**
+     * Creates a "not selected" notification document in Firestore.
+     * US 01.04.02
+     */
+    public void sendNotSelectedNotification(String entrantId, String eventId, String eventName) {
+        Notification notification = new Notification(
+                entrantId,
+                eventId,
+                "Lottery Result",
+                "Unfortunately, you were not selected for " + eventName + ".",
+                Notification.TYPE_NOT_SELECTED
+        );
+
+        notificationDB.saveNotification(notification,
+                unused -> { /* success */ },
+                e -> e.printStackTrace()
+        );
+    }
+
+    /**
+     * Fetches all in-app notifications for the current user.
+     */
+    public void getNotifications(String deviceId, OnSuccessListener<List<Notification>> onSuccess, OnFailureListener onFailure) {
+        notificationDB.getNotificationsForRecipient(deviceId, onSuccess, onFailure);
+    }
+
+    /** Mark a notification as read when the user taps it. */
+    public void markAsRead(String notificationId) {
+        notificationDB.markAsRead(notificationId, unused -> {}, e -> e.printStackTrace());
+    }
+
+    /**
      * Starts a real-time Firestore listener for unread notifications for this device.
-     * When a new notification arrives, it is shown as an Android system notification.
-     *
-     * @param context   application or activity context
-     * @param deviceId  the current device's ID (used as recipientId in Firestore)
      */
     public void startNotificationListener(Context context, String deviceId) {
-        // Remove existing listener before starting a new one
         stopNotificationListener();
 
         listenerRegistration = notificationDB.listenForNotifications(deviceId,
@@ -125,7 +140,6 @@ public class NotificationController {
                     @Override
                     public void onNotifications(List<Notification> notifications) {
                         for (Notification n : notifications) {
-                            // Only show each notification once per session
                             if (n.getId() != null && !shownNotificationIds.contains(n.getId())) {
                                 shownNotificationIds.add(n.getId());
                                 showSystemNotification(context, n);
@@ -141,7 +155,7 @@ public class NotificationController {
     }
 
     /**
-     * Stops the Firestore real-time listener. Call this in onPause() or onDestroy().
+     * Stops the Firestore real-time listener.
      */
     public void stopNotificationListener() {
         if (listenerRegistration != null) {
@@ -151,18 +165,16 @@ public class NotificationController {
     }
 
     /**
-     * Displays an Android system notification for a Firestore notification.
-     * Tapping the notification opens EventDetailActivity for the related event.
+     * Displays an Android system notification.
      */
     private void showSystemNotification(Context context, Notification notification) {
-        // Build an intent that opens EventDetailActivity with the eventId
         Intent intent = new Intent(context, EventDetailActivity.class);
         intent.putExtra("eventId", notification.getEventId());
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 context,
-                notification.getId().hashCode(),  // unique request code per notification
+                notification.getId().hashCode(),
                 intent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
@@ -177,7 +189,6 @@ public class NotificationController {
 
         NotificationManagerCompat manager = NotificationManagerCompat.from(context);
 
-        // Check permission before posting (required for API 33+)
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                 ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
                         == PackageManager.PERMISSION_GRANTED) {

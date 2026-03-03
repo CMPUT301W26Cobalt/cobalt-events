@@ -32,12 +32,11 @@
         <activity android:name=".ui.EventManageActivity" />
         <activity android:name=".ui.QRScanActivity" />
         <activity android:name=".ui.AccountSettingsActivity" />
+        <activity android:name=".ui.NotificationListActivity" />
         <activity android:name=".ui.admin.AdminActivity" />
         <activity android:name=".ui.admin.AdminEventListActivity" />
         <activity android:name=".ui.admin.AdminProfileListActivity" />
         <activity android:name=".ui.admin.AdminImageListActivity" />
-
-        <!-- TODO: Add Google Maps API key meta-data if using maps -->
 
     </application>
 </manifest>

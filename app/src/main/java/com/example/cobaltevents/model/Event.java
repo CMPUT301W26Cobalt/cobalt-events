@@ -24,11 +24,13 @@ public class Event {
     private String qrCodeData;
     private List<String> confirmedAttendeeIds;
     private String category;
+    private boolean lotteryDrawn;
 
     public Event() {
         this.confirmedAttendeeIds = new ArrayList<>();
         this.geolocationRequired = false;
         this.waitingListCapacity = 0;
+        this.lotteryDrawn = false;
     }
 
     public Event(String name, String description, String location,
@@ -44,10 +46,13 @@ public class Event {
         this.confirmedAttendeeIds = new ArrayList<>();
         this.geolocationRequired = false;
         this.waitingListCapacity = 0;
+        this.lotteryDrawn = false;
     }
 
     public String getEventId() { return eventId; }
     public String getName() { return name; }
+    /** Alias for getName(), used by notification code. */
+    public String getTitle() { return name; }
     public String getDescription() { return description; }
     public String getLocation() { return location; }
     public Timestamp getEventDate() { return eventDate; }
@@ -61,9 +66,11 @@ public class Event {
     public String getQrCodeData() { return qrCodeData; }
     public List<String> getConfirmedAttendeeIds() { return confirmedAttendeeIds; }
     public String getCategory() { return category; }
+    public boolean isLotteryDrawn() { return lotteryDrawn; }
 
     public void setEventId(String eventId) { this.eventId = eventId; }
     public void setName(String name) { this.name = name; }
+    public void setTitle(String title) { this.name = title; }
     public void setDescription(String description) { this.description = description; }
     public void setLocation(String location) { this.location = location; }
     public void setEventDate(Timestamp eventDate) { this.eventDate = eventDate; }
@@ -77,4 +84,5 @@ public class Event {
     public void setQrCodeData(String qrCodeData) { this.qrCodeData = qrCodeData; }
     public void setConfirmedAttendeeIds(List<String> confirmedAttendeeIds) { this.confirmedAttendeeIds = confirmedAttendeeIds; }
     public void setCategory(String category) { this.category = category; }
+    public void setLotteryDrawn(boolean lotteryDrawn) { this.lotteryDrawn = lotteryDrawn; }
 }
