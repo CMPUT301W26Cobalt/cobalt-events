@@ -1,16 +1,218 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- TODO: Implement activity_event_list layout -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center">
+    android:background="#F0F4F0">
 
-    <TextView
+    <!-- Header bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@color/header_teal"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Upcoming Events"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Search bar + filter row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Search input -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_input_field"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:layout_marginEnd="8dp">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@android:drawable/ic_menu_search"
+                    app:tint="#AAAAAA"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/et_search"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:hint="Search events..."
+                    android:textSize="14sp"
+                    android:textColorHint="#BBBBBB"
+                    android:background="@null"
+                    android:inputType="text" />
+            </LinearLayout>
+
+            <!-- Filter button (separate pill) -->
+            <LinearLayout
+                android:id="@+id/btn_filter"
+                android:layout_width="52dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_button_filter"
+                android:gravity="center">
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/ic_menu_sort_by_size"
+                    app:tint="@color/white" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Progress bar -->
+    <ProgressBar
+        android:id="@+id/progress_bar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="activity_event_list"
-        android:textSize="16sp"
-        android:textColor="#888888" />
+        android:layout_gravity="center"
+        android:layout_marginTop="32dp"
+        android:layout_marginBottom="32dp"
+        android:visibility="gone" />
+
+    <!-- Event list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_events"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp"
+        android:paddingTop="4dp"
+        android:clipToPadding="false" />
+
+    <!-- Bottom Navigation -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:orientation="horizontal"
+        android:background="@drawable/bg_bottom_nav"
+        android:gravity="center_vertical"
+        android:elevation="8dp">
+
+        <LinearLayout
+            android:id="@+id/nav_notifications"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@android:drawable/ic_popup_reminder"
+                app:tint="#AAAAAA" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Alerts"
+                android:textSize="10sp"
+                android:textColor="#AAAAAA" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/nav_my_events"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@android:drawable/ic_menu_agenda"
+                app:tint="#AAAAAA" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="My Events"
+                android:textSize="10sp"
+                android:textColor="#AAAAAA" />
+        </LinearLayout>
+
+        <!-- QR center button -->
+        <LinearLayout
+            android:id="@+id/nav_qr"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center">
+
+            <LinearLayout
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:background="@drawable/bg_qr_button"
+                android:gravity="center">
+
+                <ImageView
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:src="@android:drawable/ic_menu_camera"
+                    app:tint="#FFFFFF" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/nav_events"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@android:drawable/ic_menu_compass"
+                app:tint="#2E7D32" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Events"
+                android:textSize="10sp"
+                android:textColor="#2E7D32" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/nav_account"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center">
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:src="@android:drawable/ic_menu_myplaces"
+                app:tint="#AAAAAA" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Account"
+                android:textSize="10sp"
+                android:textColor="#AAAAAA" />
+        </LinearLayout>
+
+    </LinearLayout>
 
 </LinearLayout>

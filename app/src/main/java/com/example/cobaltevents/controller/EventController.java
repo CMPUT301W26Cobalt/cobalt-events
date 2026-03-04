@@ -1,13 +1,49 @@
 package com.example.cobaltevents.controller;
 
+import com.example.cobaltevents.db.EventDB;
+import com.example.cobaltevents.model.Event;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+
+import java.util.List;
+
 /**
- * TODO: Implement EventController
+ * Controller that mediates between Event UI activities and the database layer.
  */
 public class EventController {
 
-    // TODO: Add fields
+    private final EventDB eventDB;
 
-    public EventController() {}
+    public EventController() {
+        this.eventDB = new EventDB();
+    }
 
-    // TODO: Add methods
+    public void getAllEvents(OnSuccessListener<List<Event>> onSuccess,
+                             OnFailureListener onFailure) {
+        eventDB.getAllEvents(onSuccess, onFailure);
+    }
+
+    public void getEvent(String eventId,
+                         OnSuccessListener<Event> onSuccess,
+                         OnFailureListener onFailure) {
+        eventDB.getEvent(eventId, onSuccess, onFailure);
+    }
+
+    public void getEventsByOrganizer(String organizerDeviceId,
+                                     OnSuccessListener<List<Event>> onSuccess,
+                                     OnFailureListener onFailure) {
+        eventDB.getEventsByOrganizer(organizerDeviceId, onSuccess, onFailure);
+    }
+
+    public void updateEvent(Event event,
+                            OnSuccessListener<Void> onSuccess,
+                            OnFailureListener onFailure) {
+        eventDB.updateEvent(event, onSuccess, onFailure);
+    }
+
+    public void deleteEvent(String eventId,
+                            OnSuccessListener<Void> onSuccess,
+                            OnFailureListener onFailure) {
+        eventDB.deleteEvent(eventId, onSuccess, onFailure);
+    }
 }
