@@ -9,9 +9,8 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 
 /**
- * Manages entrant profiles and notification preferences.
- * US 01.04.03: setNotificationsEnabled toggles the opt-out preference.
- * Supporting all stories: getOrCreateEntrant provides device-based identification.
+ * Manages entrant profiles, validation, and notification preferences.
+ * Merges main's validation with lx's Firestore async + notification opt-out (US 01.04.03).
  */
 public class EntrantController {
 
@@ -25,6 +24,32 @@ public class EntrantController {
     public static String getDeviceId(Context context) {
         return Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
     }
+
+    // --- Validation methods (from main) ---
+
+    public String validateName(String name) {
+        if (name == null || name.trim().isEmpty())
+            return "Name is required.";
+        return null;
+    }
+
+    public String validateEmail(String email) {
+        if (email == null || email.trim().isEmpty())
+            return "Email is required.";
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches())
+            return "Invalid email format.";
+        return null;
+    }
+
+    public String validatePhone(String phone) {
+        if (phone == null || phone.trim().isEmpty())
+            return null; // optional
+        if (!phone.matches("^[0-9+()\\-\\s]{7,20}$"))
+            return "Invalid phone number.";
+        return null;
+    }
+
+    // --- Firestore async methods (from lx) ---
 
     /**
      * Loads or creates the entrant profile based on device ID.
@@ -45,6 +70,11 @@ public class EntrantController {
         }, e -> listener.onError(e));
     }
 
+    /** Saves entrant profile to Firestore. */
+    public void saveEntrant(Entrant entrant, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
+        entrantDB.saveEntrant(entrant, onSuccess, onFailure);
+    }
+
     /**
      * Updates the notification opt-out preference.
      * US 01.04.03: Entrant can opt out of receiving notifications.
@@ -53,7 +83,7 @@ public class EntrantController {
         entrantDB.updateNotificationPreference(deviceId, enabled, onSuccess, onFailure);
     }
 
-    /** Reads the current notification preference for an entrant. */
+    /** Reads the current entrant profile. */
     public void getEntrant(String deviceId, OnSuccessListener<Entrant> onSuccess, OnFailureListener onFailure) {
         entrantDB.getEntrant(deviceId, onSuccess, onFailure);
     }

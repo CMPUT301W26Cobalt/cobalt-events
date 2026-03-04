@@ -2,7 +2,7 @@ package com.example.cobaltevents.ui;
 
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.TextView;
+import android.util.Patterns;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,39 +11,44 @@ import com.example.cobaltevents.R;
 import com.example.cobaltevents.controller.EntrantController;
 import com.example.cobaltevents.model.Entrant;
 import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.google.android.material.textfield.TextInputEditText;
+import com.google.android.material.textfield.TextInputLayout;
 
 /**
- * Entrant profile screen with notification opt-out toggle.
- * US 01.04.03: The notification switch allows entrants to opt out of notifications.
+ * Combined entrant profile screen: main's editing form + lx's notification toggle.
+ * US 01.04.03: SwitchMaterial for notification opt-out.
  */
 public class EntrantActivity extends AppCompatActivity {
 
     private static final String TAG = "EntrantActivity";
 
-    private EntrantController entrantController;
-    private String deviceId;
-    private TextView tvName;
-    private TextView tvEmail;
+    private TextInputLayout nameLayout, emailLayout, phoneLayout;
+    private TextInputEditText nameInput, emailInput, phoneInput;
     private SwitchMaterial switchNotifications;
+
+    private EntrantController controller;
+    private String deviceId;
+    private Entrant currentEntrant;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_entrant);
 
-        entrantController = new EntrantController();
+        controller = new EntrantController();
         deviceId = EntrantController.getDeviceId(this);
 
-        tvName = findViewById(R.id.tv_entrant_name);
-        tvEmail = findViewById(R.id.tv_entrant_email);
+        nameLayout = findViewById(R.id.nameLayout);
+        emailLayout = findViewById(R.id.emailLayout);
+        phoneLayout = findViewById(R.id.phoneLayout);
+        nameInput = findViewById(R.id.nameInput);
+        emailInput = findViewById(R.id.emailInput);
+        phoneInput = findViewById(R.id.phoneInput);
         switchNotifications = findViewById(R.id.switch_notifications);
-
-        // Load entrant profile
-        loadEntrant();
 
         // US 01.04.03: Toggle notification preference
         switchNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            entrantController.setNotificationsEnabled(deviceId, isChecked,
+            controller.setNotificationsEnabled(deviceId, isChecked,
                     unused -> Log.d(TAG, "Notification preference updated: " + isChecked),
                     e -> {
                         Log.e(TAG, "Failed to update notification preference", e);
@@ -52,23 +57,25 @@ public class EntrantActivity extends AppCompatActivity {
             );
         });
 
-        // Edit profile button
-        findViewById(R.id.btn_edit_profile).setOnClickListener(v ->
-                startActivity(new android.content.Intent(this, EntrantEditActivity.class)));
+        findViewById(R.id.saveButton).setOnClickListener(v -> saveProfile());
+
+        loadEntrant();
     }
 
     private void loadEntrant() {
-        entrantController.getEntrant(deviceId, entrant -> {
+        controller.getEntrant(deviceId, entrant -> {
             if (entrant != null) {
-                tvName.setText(entrant.getName());
-                tvEmail.setText(entrant.getEmail() != null && !entrant.getEmail().isEmpty()
-                        ? entrant.getEmail() : "No email set");
+                currentEntrant = entrant;
+                nameInput.setText(entrant.getName());
+                emailInput.setText(entrant.getEmail());
+                if (entrant.getPhone() != null) {
+                    phoneInput.setText(entrant.getPhone());
+                }
                 // Set switch without triggering the listener
                 switchNotifications.setOnCheckedChangeListener(null);
                 switchNotifications.setChecked(entrant.isNotificationsEnabled());
-                // Re-attach listener
                 switchNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                    entrantController.setNotificationsEnabled(deviceId, isChecked,
+                    controller.setNotificationsEnabled(deviceId, isChecked,
                             unused -> Log.d(TAG, "Notification preference updated: " + isChecked),
                             e -> {
                                 Log.e(TAG, "Failed to update notification preference", e);
@@ -78,6 +85,61 @@ public class EntrantActivity extends AppCompatActivity {
                 });
             }
         }, e -> Log.e(TAG, "Failed to load entrant", e));
+    }
+
+    private void saveProfile() {
+        clearErrors();
+
+        String name = safe(nameInput);
+        String email = safe(emailInput);
+        String phone = safe(phoneInput);
+
+        boolean hasError = false;
+
+        if (name.isEmpty()) {
+            nameLayout.setError("Name is required.");
+            hasError = true;
+        }
+        if (email.isEmpty()) {
+            emailLayout.setError("Email is required.");
+            hasError = true;
+        } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            emailLayout.setError("Invalid email format.");
+            hasError = true;
+        }
+        if (!phone.isEmpty() && !phone.matches("^[0-9+()\\-\\s]{7,20}$")) {
+            phoneLayout.setError("Invalid phone number.");
+            hasError = true;
+        }
+
+        if (!hasError) {
+            Entrant entrant = currentEntrant != null ? currentEntrant : new Entrant(deviceId, name, email);
+            entrant.setName(name.trim());
+            entrant.setEmail(email.trim());
+            entrant.setPhone(phone.trim());
+            entrant.setDeviceId(deviceId);
+
+            controller.saveEntrant(entrant,
+                    unused -> {
+                        Toast.makeText(this, "Profile saved!", Toast.LENGTH_SHORT).show();
+                        finish();
+                    },
+                    e -> {
+                        Log.e(TAG, "Failed to save profile", e);
+                        Toast.makeText(this, R.string.error_generic, Toast.LENGTH_SHORT).show();
+                    }
+            );
+        }
+    }
+
+    private void clearErrors() {
+        nameLayout.setError(null);
+        emailLayout.setError(null);
+        phoneLayout.setError(null);
+    }
+
+    private String safe(TextInputEditText input) {
+        return input.getText() == null ? "" : input.getText().toString().trim();
     }
 
     @Override

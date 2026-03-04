@@ -3,14 +3,15 @@ package com.example.cobaltevents.db;
 import com.example.cobaltevents.model.Event;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Firestore operations for the "events" collection.
- * Supporting US 01.04.01: getEvent loads event details when a notification is tapped.
+ * Handles all Firestore database operations for Event objects.
+ * Merges main's full CRUD with lx's markLotteryDrawn for notification support.
  */
 public class EventDB {
 
@@ -18,21 +19,28 @@ public class EventDB {
     private final FirebaseFirestore db;
 
     public EventDB() {
-        db = FirebaseFirestore.getInstance();
+        this.db = EventDBConnector.getInstance().getFirestore();
     }
 
-    /** Fetch a single event by ID. */
-    public void getEvent(String eventId, OnSuccessListener<Event> onSuccess, OnFailureListener onFailure) {
+    public void createEvent(Event event,
+                            OnSuccessListener<String> onSuccess,
+                            OnFailureListener onFailure) {
+        DocumentReference ref = db.collection(COLLECTION).document();
+        event.setEventId(ref.getId());
+        ref.set(event)
+                .addOnSuccessListener(unused -> onSuccess.onSuccess(ref.getId()))
+                .addOnFailureListener(onFailure);
+    }
+
+    public void getEvent(String eventId,
+                         OnSuccessListener<Event> onSuccess,
+                         OnFailureListener onFailure) {
         db.collection(COLLECTION)
                 .document(eventId)
                 .get()
-                .addOnSuccessListener(doc -> {
-                    if (doc.exists()) {
-                        Event event = doc.toObject(Event.class);
-                        if (event != null) {
-                            event.setEventId(doc.getId());
-                        }
-                        onSuccess.onSuccess(event);
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.exists()) {
+                        onSuccess.onSuccess(snapshot.toObject(Event.class));
                     } else {
                         onSuccess.onSuccess(null);
                     }
@@ -40,49 +48,73 @@ public class EventDB {
                 .addOnFailureListener(onFailure);
     }
 
-    /** Fetch all events. */
-    public void getAllEvents(OnSuccessListener<List<Event>> onSuccess, OnFailureListener onFailure) {
+    public void getAllEvents(OnSuccessListener<List<Event>> onSuccess,
+                             OnFailureListener onFailure) {
         db.collection(COLLECTION)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
                     List<Event> events = new ArrayList<>();
-                    for (var doc : querySnapshot.getDocuments()) {
-                        Event event = doc.toObject(Event.class);
-                        if (event != null) {
-                            event.setEventId(doc.getId());
-                            events.add(event);
-                        }
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        Event e = doc.toObject(Event.class);
+                        if (e != null) events.add(e);
                     }
                     onSuccess.onSuccess(events);
                 })
                 .addOnFailureListener(onFailure);
     }
 
-    /** Save or update an event. If eventId is null, a new document is created. */
-    public void saveEvent(Event event, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
-        if (event.getEventId() != null) {
-            db.collection(COLLECTION)
-                    .document(event.getEventId())
-                    .set(event)
-                    .addOnSuccessListener(onSuccess)
-                    .addOnFailureListener(onFailure);
-        } else {
-            db.collection(COLLECTION)
-                    .add(event)
-                    .addOnSuccessListener(docRef -> {
-                        event.setEventId(docRef.getId());
-                        onSuccess.onSuccess(null);
-                    })
-                    .addOnFailureListener(onFailure);
-        }
+    public void getEventsByOrganizer(String organizerDeviceId,
+                                     OnSuccessListener<List<Event>> onSuccess,
+                                     OnFailureListener onFailure) {
+        db.collection(COLLECTION)
+                .whereEqualTo("organizerDeviceId", organizerDeviceId)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    List<Event> events = new ArrayList<>();
+                    for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        Event e = doc.toObject(Event.class);
+                        if (e != null) events.add(e);
+                    }
+                    onSuccess.onSuccess(events);
+                })
+                .addOnFailureListener(onFailure);
     }
 
-    /** Mark an event's lottery as drawn. */
+    public void updateEvent(Event event,
+                            OnSuccessListener<Void> onSuccess,
+                            OnFailureListener onFailure) {
+        db.collection(COLLECTION)
+                .document(event.getEventId())
+                .set(event)
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
+    public void deleteEvent(String eventId,
+                            OnSuccessListener<Void> onSuccess,
+                            OnFailureListener onFailure) {
+        db.collection(COLLECTION)
+                .document(eventId)
+                .delete()
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
+    /** lx: Mark an event's lottery as drawn (for notification flow). */
     public void markLotteryDrawn(String eventId, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
         db.collection(COLLECTION)
                 .document(eventId)
                 .update("lotteryDrawn", true)
                 .addOnSuccessListener(onSuccess)
                 .addOnFailureListener(onFailure);
+    }
+
+    /** lx: Save or update an event (alias for updateEvent/createEvent). */
+    public void saveEvent(Event event, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
+        if (event.getEventId() != null) {
+            updateEvent(event, onSuccess, onFailure);
+        } else {
+            createEvent(event, id -> onSuccess.onSuccess(null), onFailure);
+        }
     }
 }

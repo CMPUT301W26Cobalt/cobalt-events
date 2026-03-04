@@ -1,51 +1,90 @@
 package com.example.cobaltevents.model;
 
-import java.util.Date;
+import com.google.firebase.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Data model for an event stored in the Firestore "events" collection.
- * Notifications reference events so users can tap a notification to see event details (US 01.04.01 criteria 4).
+ * Represents an event in the Cobalt Events application.
+ * Merges main's full event model with lx's lottery fields for notification support.
  */
 public class Event {
 
     private String eventId;
-    private String title;
+    private String name;
     private String description;
-    private Date date;
-    private String organizerId;
-    private int maxEntrants;
-    private boolean lotteryDrawn;
+    private String location;
+    private Timestamp eventDate;
+    private Timestamp registrationOpen;
+    private Timestamp registrationClose;
+    private String organizerDeviceId;
+    private String waitingListId;
+    private String posterImageUrl;
+    private boolean geolocationRequired;
+    private int waitingListCapacity;   // 0 = unlimited
+    private String qrCodeData;
+    private List<String> confirmedAttendeeIds;
+    private boolean lotteryDrawn; // lx: tracks if lottery has been run
 
-    /** No-arg constructor required by Firestore deserialization. */
-    public Event() {}
-
-    public Event(String title, String description, Date date, String organizerId, int maxEntrants) {
-        this.title = title;
-        this.description = description;
-        this.date = date;
-        this.organizerId = organizerId;
-        this.maxEntrants = maxEntrants;
+    public Event() {
+        this.confirmedAttendeeIds = new ArrayList<>();
+        this.geolocationRequired = false;
+        this.waitingListCapacity = 0;
         this.lotteryDrawn = false;
     }
 
+    public Event(String name, String description, String location,
+                 Timestamp eventDate, Timestamp registrationOpen,
+                 Timestamp registrationClose, String organizerDeviceId) {
+        this.name = name;
+        this.description = description;
+        this.location = location;
+        this.eventDate = eventDate;
+        this.registrationOpen = registrationOpen;
+        this.registrationClose = registrationClose;
+        this.organizerDeviceId = organizerDeviceId;
+        this.confirmedAttendeeIds = new ArrayList<>();
+        this.geolocationRequired = false;
+        this.waitingListCapacity = 0;
+        this.lotteryDrawn = false;
+    }
+
+    // --- Getters ---
     public String getEventId() { return eventId; }
-    public void setEventId(String eventId) { this.eventId = eventId; }
-
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-
+    public String getName() { return name; }
     public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public Date getDate() { return date; }
-    public void setDate(Date date) { this.date = date; }
-
-    public String getOrganizerId() { return organizerId; }
-    public void setOrganizerId(String organizerId) { this.organizerId = organizerId; }
-
-    public int getMaxEntrants() { return maxEntrants; }
-    public void setMaxEntrants(int maxEntrants) { this.maxEntrants = maxEntrants; }
-
+    public String getLocation() { return location; }
+    public Timestamp getEventDate() { return eventDate; }
+    public Timestamp getRegistrationOpen() { return registrationOpen; }
+    public Timestamp getRegistrationClose() { return registrationClose; }
+    public String getOrganizerDeviceId() { return organizerDeviceId; }
+    public String getWaitingListId() { return waitingListId; }
+    public String getPosterImageUrl() { return posterImageUrl; }
+    public boolean isGeolocationRequired() { return geolocationRequired; }
+    public int getWaitingListCapacity() { return waitingListCapacity; }
+    public String getQrCodeData() { return qrCodeData; }
+    public List<String> getConfirmedAttendeeIds() { return confirmedAttendeeIds; }
     public boolean isLotteryDrawn() { return lotteryDrawn; }
+
+    /** Alias for getName() — used by notification code. */
+    public String getTitle() { return name; }
+    /** Alias for getWaitingListCapacity() — used by lottery code. */
+    public int getMaxEntrants() { return waitingListCapacity; }
+
+    // --- Setters ---
+    public void setEventId(String eventId) { this.eventId = eventId; }
+    public void setName(String name) { this.name = name; }
+    public void setDescription(String description) { this.description = description; }
+    public void setLocation(String location) { this.location = location; }
+    public void setEventDate(Timestamp eventDate) { this.eventDate = eventDate; }
+    public void setRegistrationOpen(Timestamp registrationOpen) { this.registrationOpen = registrationOpen; }
+    public void setRegistrationClose(Timestamp registrationClose) { this.registrationClose = registrationClose; }
+    public void setOrganizerDeviceId(String organizerDeviceId) { this.organizerDeviceId = organizerDeviceId; }
+    public void setWaitingListId(String waitingListId) { this.waitingListId = waitingListId; }
+    public void setPosterImageUrl(String posterImageUrl) { this.posterImageUrl = posterImageUrl; }
+    public void setGeolocationRequired(boolean geolocationRequired) { this.geolocationRequired = geolocationRequired; }
+    public void setWaitingListCapacity(int waitingListCapacity) { this.waitingListCapacity = waitingListCapacity; }
+    public void setQrCodeData(String qrCodeData) { this.qrCodeData = qrCodeData; }
+    public void setConfirmedAttendeeIds(List<String> confirmedAttendeeIds) { this.confirmedAttendeeIds = confirmedAttendeeIds; }
     public void setLotteryDrawn(boolean lotteryDrawn) { this.lotteryDrawn = lotteryDrawn; }
 }
