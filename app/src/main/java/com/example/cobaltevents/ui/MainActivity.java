@@ -1,5 +1,6 @@
 package com.example.cobaltevents.ui;
 
+import android.content.Intent;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 import com.example.cobaltevents.R;
@@ -14,5 +15,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         // TODO: setContentView(R.layout.activity_xxx);
         // TODO: Initialize views and logic
+
+        Intent intent = new Intent(this, EventListActivity.class);
+        startActivity(intent);
+        finish();
     }
 }

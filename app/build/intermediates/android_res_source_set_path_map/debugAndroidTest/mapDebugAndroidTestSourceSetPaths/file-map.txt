@@ -1,7 +1,0 @@
-com.example.cobaltevents.test.app-jetified-core-1.7.0-0 /Users/emmanuelokusanya/.gradle/caches/9.1.0/transforms/7cedad2326b48b75c1a81a5ac84fe1bf/transformed/jetified-core-1.7.0/res
-com.example.cobaltevents.test.app-jetified-tracing-1.1.0-1 /Users/emmanuelokusanya/.gradle/caches/9.1.0/transforms/b776f6f80bc50450e568b181e1f6f057/transformed/jetified-tracing-1.1.0/res
-com.example.cobaltevents.test.app-androidTest-2 /Users/emmanuelokusanya/CMPUT 301/cobalt-events/app/build/generated/res/resValues/androidTest/debug
-com.example.cobaltevents.test.app-updated_navigation_xml-3 /Users/emmanuelokusanya/CMPUT 301/cobalt-events/app/build/generated/updated_navigation_xml/debugAndroidTest
-com.example.cobaltevents.test.app-mergeDebugAndroidTestResources-4 /Users/emmanuelokusanya/CMPUT 301/cobalt-events/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/merged.dir
-com.example.cobaltevents.test.app-mergeDebugAndroidTestResources-5 /Users/emmanuelokusanya/CMPUT 301/cobalt-events/app/build/intermediates/incremental/debugAndroidTest/mergeDebugAndroidTestResources/stripped.dir
-com.example.cobaltevents.test.app-debugAndroidTest-6 /Users/emmanuelokusanya/CMPUT 301/cobalt-events/app/build/intermediates/merged_res/debugAndroidTest/mergeDebugAndroidTestResources
