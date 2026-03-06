@@ -91,16 +91,32 @@
         android:layout_marginBottom="32dp"
         android:visibility="gone" />
 
-    <!-- Event list -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_events"
+    <!-- Event list + empty state -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp"
-        android:paddingTop="4dp"
-        android:clipToPadding="false" />
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_events"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="4dp"
+            android:clipToPadding="false" />
+
+        <TextView
+            android:id="@+id/tv_empty"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="No events found"
+            android:textSize="15sp"
+            android:textColor="#888888"
+            android:visibility="gone" />
+
+    </FrameLayout>
 
     <!-- Bottom Navigation -->
     <LinearLayout
