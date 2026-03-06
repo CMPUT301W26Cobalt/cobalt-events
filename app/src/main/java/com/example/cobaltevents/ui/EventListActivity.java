@@ -142,45 +142,44 @@ public class EventListActivity extends AppCompatActivity {
             });
         }
     }
-    
+
     private void applyFilters() {
         List<Event> filtered = new ArrayList<>();
-        
+
         for (Event event : allEvents) {
             // Search filter
             if (!currentQuery.isEmpty()) {
                 String query = currentQuery.toLowerCase();
-                boolean matches = event.getName().toLowerCase().contains(query) ||
-                                event.getDescription().toLowerCase().contains(query) ||
-                                event.getLocation().toLowerCase().contains(query);
+                boolean matches = (event.getName() != null && event.getName().toLowerCase().contains(query)) ||
+                                (event.getDescription() != null && event.getDescription().toLowerCase().contains(query)) ||
+                                (event.getLocation() != null && event.getLocation().toLowerCase().contains(query));
                 if (!matches) continue;
             }
-            
-            // Category filter (placeholder - add category field to Event model if needed)
+
             // Date filter
             if (selectedDateIndex > 0) {
                 if (!matchesDateFilter(event, selectedDateIndex)) continue;
             }
-            
+
             // Availability filter
             if (selectedAvailabilityIndex > 0) {
                 if (!matchesAvailabilityFilter(event, selectedAvailabilityIndex)) continue;
             }
-            
+
             filtered.add(event);
         }
-        
+
         adapter.updateEvents(filtered);
         tvEmpty.setVisibility(filtered.isEmpty() ? View.VISIBLE : View.GONE);
     }
-    
+
     private boolean matchesDateFilter(Event event, int dateIndex) {
         if (event.getEventDate() == null) return false;
-        
+
         Calendar eventCal = Calendar.getInstance();
         eventCal.setTime(event.getEventDate().toDate());
         Calendar now = Calendar.getInstance();
-        
+
         switch (dateIndex) {
             case 1: // Today
                 return isSameDay(eventCal, now);
@@ -192,13 +191,13 @@ public class EventListActivity extends AppCompatActivity {
                 return true;
         }
     }
-    
+
     private boolean matchesAvailabilityFilter(Event event, int availabilityIndex) {
         Timestamp now = Timestamp.now();
-        
+
         switch (availabilityIndex) {
             case 1: // Open
-                return event.getRegistrationOpen() != null && 
+                return event.getRegistrationOpen() != null &&
                        event.getRegistrationClose() != null &&
                        now.compareTo(event.getRegistrationOpen()) >= 0 &&
                        now.compareTo(event.getRegistrationClose()) <= 0;
@@ -212,44 +211,44 @@ public class EventListActivity extends AppCompatActivity {
                 return true;
         }
     }
-    
+
     private boolean isSameDay(Calendar cal1, Calendar cal2) {
         return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
                cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR);
     }
-    
+
     private boolean isSameWeek(Calendar cal1, Calendar cal2) {
         return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
                cal1.get(Calendar.WEEK_OF_YEAR) == cal2.get(Calendar.WEEK_OF_YEAR);
     }
-    
+
     private boolean isSameMonth(Calendar cal1, Calendar cal2) {
         return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
                cal1.get(Calendar.MONTH) == cal2.get(Calendar.MONTH);
     }
-    
+
     private void showFilterDialog() {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_filter_events, null);
-        
+
         Spinner spinnerCategory = dialogView.findViewById(R.id.spinner_category);
         Spinner spinnerDate = dialogView.findViewById(R.id.spinner_date);
         Spinner spinnerAvailability = dialogView.findViewById(R.id.spinner_availability);
-        
+
         ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, CATEGORY_OPTIONS);
         categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerCategory.setAdapter(categoryAdapter);
         spinnerCategory.setSelection(selectedCategoryIndex);
-        
+
         ArrayAdapter<String> dateAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, DATE_OPTIONS);
         dateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerDate.setAdapter(dateAdapter);
         spinnerDate.setSelection(selectedDateIndex);
-        
+
         ArrayAdapter<String> availabilityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, AVAILABILITY_OPTIONS);
         availabilityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerAvailability.setAdapter(availabilityAdapter);
         spinnerAvailability.setSelection(selectedAvailabilityIndex);
-        
+
         new AlertDialog.Builder(this)
                 .setTitle("Filter Events")
                 .setView(dialogView)
@@ -262,16 +261,16 @@ public class EventListActivity extends AppCompatActivity {
                 .setNegativeButton("Cancel", null)
                 .show();
     }
-    
+
     private void joinWaitlist(Event event) {
         if (event.getEventId() == null) {
             Toast.makeText(this, "Invalid event", Toast.LENGTH_SHORT).show();
             return;
         }
-        
+
         WaitingList registration = new WaitingList(event.getEventId(), deviceId, "pending");
-        
-        waitingListDB.addRegistration(registration, 
+
+        waitingListDB.addRegistration(registration,
             registrationId -> {
                 Toast.makeText(this, "Successfully joined waitlist for " + event.getName(), Toast.LENGTH_SHORT).show();
             },
