@@ -12,7 +12,6 @@ import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.content.Intent;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -70,10 +69,8 @@ public class EventListActivity extends AppCompatActivity {
         tvEmpty = findViewById(R.id.tv_empty);
 
         adapter = new EventAdapter(new ArrayList<>(), event -> {
-            Intent intent = new Intent(this, EventDetailActivity.class);
-            intent.putExtra("eventId", event.getEventId());
-            intent.putExtra("deviceId", deviceId);
-            startActivity(intent);
+            // TODO: handle join waitlist action for event
+            Toast.makeText(this, "Joining: " + event.getName(), Toast.LENGTH_SHORT).show();
         });
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
