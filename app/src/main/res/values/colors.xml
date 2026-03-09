@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#2E7D32</color>
+    <color name="primary_user">#2E7D32</color>
     <color name="primary_dark">#1B5E20</color>
-    <color name="accent">#4CAF50</color>
+    <color name="accent">#4CAF50</color> <!-- use for the join button -->
+    <color name="red_accent">#e7000b</color> <!-- use for the join button -->
     <color name="background">#F0F4F0</color>
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
     <color name="text_primary">#1A1A1A</color>
     <color name="text_secondary">#666666</color>
     <color name="header_teal">#00897B</color>
-    <color name="filter_button">#33aba1</color>
+    <color name="filter_button">#33aba1</color> <!-- needed colour just for filter button -->
+    <color name="primary_organizer">#2752fa</color>
 </resources>
