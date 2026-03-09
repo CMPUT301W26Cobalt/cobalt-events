@@ -4,6 +4,7 @@ import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -14,13 +15,15 @@ import com.example.cobaltevents.model.Event;
 import com.google.firebase.Timestamp;
 
 import java.text.SimpleDateFormat;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * RecyclerView adapter for displaying a list of Event objects.
- * Each card shows the event name, location, date, registration status,
- * and a join button. Closed events are visually dimmed.
+ * Tapping a card expands it inline to show full event details.
+ * The JOIN button calls the provided listener.
  */
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHolder> {
 
@@ -30,6 +33,8 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
     private List<Event> events;
     private final OnEventClickListener listener;
+    private final Set<String> expandedIds = new HashSet<>();
+
     private static final SimpleDateFormat DATE_FORMAT =
             new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
 
@@ -54,7 +59,10 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     @Override
     public void onBindViewHolder(@NonNull EventViewHolder holder, int position) {
         Event event = events.get(position);
+        String eventId = event.getEventId() != null ? event.getEventId() : String.valueOf(position);
+        boolean isExpanded = expandedIds.contains(eventId);
 
+        // Basic fields
         holder.tvName.setText(event.getName());
         holder.tvLocation.setText(event.getLocation() != null ? event.getLocation() : "");
 
@@ -64,7 +72,15 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.tvDate.setText("Date TBD");
         }
 
-        // Determine registration status
+        // Category tag
+        if (event.getCategory() != null && !event.getCategory().isEmpty()) {
+            holder.tvCategoryTag.setVisibility(View.VISIBLE);
+            holder.tvCategoryTag.setText(event.getCategory());
+        } else {
+            holder.tvCategoryTag.setVisibility(View.GONE);
+        }
+
+        // Registration status
         Timestamp now = Timestamp.now();
         boolean registrationClosed = event.getRegistrationClose() != null
                 && event.getRegistrationClose().compareTo(now) < 0;
@@ -91,7 +107,59 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.btnJoin.setEnabled(true);
         }
 
-        holder.itemView.setOnClickListener(v -> listener.onEventClick(event));
+        // Expanded detail section
+        holder.layoutExpandedDetails.setVisibility(isExpanded ? View.VISIBLE : View.GONE);
+        holder.tvChevron.setText(isExpanded ? "▲" : "▼");
+
+        if (isExpanded) {
+            // Description
+            holder.tvDescription.setText(
+                    event.getDescription() != null && !event.getDescription().isEmpty()
+                            ? event.getDescription() : "No description available.");
+
+            // Capacity
+            if (event.getWaitingListCapacity() > 0) {
+                holder.tvCapacity.setText(event.getWaitingListCapacity() + " spots");
+            } else {
+                holder.tvCapacity.setText("Unlimited");
+            }
+
+            // Registration open date
+            if (event.getRegistrationOpen() != null) {
+                holder.tvRegOpen.setText(DATE_FORMAT.format(event.getRegistrationOpen().toDate()));
+            } else {
+                holder.tvRegOpen.setText("TBD");
+            }
+
+            // Registration close date
+            if (event.getRegistrationClose() != null) {
+                holder.tvRegClose.setText(DATE_FORMAT.format(event.getRegistrationClose().toDate()));
+            } else {
+                holder.tvRegClose.setText("TBD");
+            }
+
+            // Geolocation note
+            if (event.isGeolocationRequired()) {
+                holder.layoutGeoNote.setVisibility(View.VISIBLE);
+            } else {
+                holder.layoutGeoNote.setVisibility(View.GONE);
+            }
+        }
+
+        // Toggle expand on card tap (but not on JOIN button)
+        View.OnClickListener toggleExpand = v -> {
+            if (expandedIds.contains(eventId)) {
+                expandedIds.remove(eventId);
+            } else {
+                expandedIds.add(eventId);
+            }
+            notifyItemChanged(holder.getAdapterPosition());
+        };
+
+        holder.itemView.setOnClickListener(toggleExpand);
+        holder.tvChevron.setOnClickListener(toggleExpand);
+
+        // JOIN button calls the listener
         holder.btnJoin.setOnClickListener(v -> listener.onEventClick(event));
     }
 
@@ -101,7 +169,10 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     }
 
     static class EventViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvLocation, tvDate, tvStatus, btnJoin;
+        TextView tvName, tvLocation, tvDate, tvStatus, tvChevron, tvCategoryTag;
+        TextView btnJoin;
+        TextView tvDescription, tvCapacity, tvRegOpen, tvRegClose, tvGeoNote;
+        LinearLayout layoutExpandedDetails, layoutGeoNote;
 
         EventViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -109,7 +180,16 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             tvLocation = itemView.findViewById(R.id.tv_event_location);
             tvDate = itemView.findViewById(R.id.tv_event_date);
             tvStatus = itemView.findViewById(R.id.tv_event_status);
+            tvChevron = itemView.findViewById(R.id.tv_chevron);
+            tvCategoryTag = itemView.findViewById(R.id.tv_category_tag);
             btnJoin = itemView.findViewById(R.id.btn_join);
+            layoutExpandedDetails = itemView.findViewById(R.id.layout_expanded_details);
+            tvDescription = itemView.findViewById(R.id.tv_description);
+            tvCapacity = itemView.findViewById(R.id.tv_capacity);
+            tvRegOpen = itemView.findViewById(R.id.tv_reg_open);
+            tvRegClose = itemView.findViewById(R.id.tv_reg_close);
+            layoutGeoNote = itemView.findViewById(R.id.layout_geo_note);
+            tvGeoNote = itemView.findViewById(R.id.tv_geo_note);
         }
     }
 }
