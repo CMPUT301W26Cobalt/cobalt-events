@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "389282970219",
+    "project_id": "cmput301-cobalt-events",
+    "storage_bucket": "cmput301-cobalt-events.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:389282970219:android:5066010b96300335accf2e",
+        "android_client_info": {
+          "package_name": "com.example.cobaltevents"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyChmW-N2_8HYhESZx7Zj69RfhIX6U4LsS8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
