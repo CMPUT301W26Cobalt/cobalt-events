@@ -1,4 +1,4 @@
-package com.example.cobaltevents.controller;
+﻿package com.example.cobaltevents.controller;
 
 import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.model.Event;
@@ -16,6 +16,15 @@ public class EventController {
 
     public EventController() {
         this.eventDB = new EventDB();
+    }
+
+    /**
+     * US 2.01.01: Creates a new event in the database
+     */
+    public void createEvent(Event event,
+                            OnSuccessListener<String> onSuccess,
+                            OnFailureListener onFailure) {
+        eventDB.createEvent(event, onSuccess, onFailure);
     }
 
     public void getAllEvents(OnSuccessListener<List<Event>> onSuccess,

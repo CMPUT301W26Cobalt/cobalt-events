@@ -1,5 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <string name="app_name">Cobalt Events</string>
-    <!-- TODO: Add more strings -->
+
+    <!-- Event Manage UI -->
+    <string name="upload_poster">Upload / Update Poster</string>
+    <string name="run_lottery">Run Lottery Draw</string>
+    <string name="notify_invited">Notify Invited Entrants</string>
+    <string name="event_poster">Event poster image</string>
+
 </resources>

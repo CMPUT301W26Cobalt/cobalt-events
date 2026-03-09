@@ -10,6 +10,7 @@
     <color name="text_primary">#1A1A1A</color>
     <color name="text_secondary">#666666</color>
     <color name="header_teal">#00897B</color>
-    <color name="filter_button">#33aba1</color> <!-- needed colour just for filter button -->
-    <color name="primary_organizer">#2752fa</color>
+    <color name="filter_button">#33aba1</color>
+    <color name="primary_blue">#3B5BDB</color>
+    <color name="primary_blue_dark">#2F4ACB</color>
 </resources>
