@@ -10,7 +10,7 @@ import com.google.firebase.storage.StorageReference;
 import java.util.UUID;
 
 /**
- * Handles Firestore and Firebase Storage operations for images.
+ * Handles Firebase Storage operations for images (profile images and event posters).
  */
 public class ImageDB {
 
