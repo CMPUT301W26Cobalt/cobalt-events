@@ -1,16 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- TODO: Implement activity_event_manage layout -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center">
+    android:layout_height="match_parent">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="activity_event_manage"
-        android:textSize="16sp"
-        android:textColor="#888888" />
+    <LinearLayout
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-</LinearLayout>
+        <!-- Event Poster -->
+        <ImageView
+            android:id="@+id/eventPoster"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="@string/event_poster"/>
+
+        <!-- Upload / Update Poster -->
+        <Button
+            android:id="@+id/btn_upload_poster"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/upload_poster"
+            android:backgroundTint="@color/primary_blue"
+            android:textColor="@color/white"
+            android:layout_marginTop="12dp"/>
+
+        <!-- Event Name -->
+        <TextView
+            android:id="@+id/eventName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"/>
+
+        <!-- Location -->
+        <TextView
+            android:id="@+id/eventLocation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"/>
+
+        <!-- Capacity -->
+        <TextView
+            android:id="@+id/eventCapacity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"/>
+
+        <!-- Run Lottery -->
+        <Button
+            android:id="@+id/btn_run_lottery"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/run_lottery"
+            android:backgroundTint="@color/primary_blue"
+            android:textColor="@color/white"
+            android:layout_marginTop="20dp"/>
+
+        <!-- Notify Invited -->
+        <Button
+            android:id="@+id/btn_notify_invited"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/notify_invited"
+            android:backgroundTint="@color/primary_blue_dark"
+            android:textColor="@color/white"
+            android:layout_marginTop="12dp"/>
+
+    </LinearLayout>
+
+</ScrollView>

@@ -10,4 +10,6 @@
     <color name="text_secondary">#666666</color>
     <color name="header_teal">#00897B</color>
     <color name="filter_button">#33aba1</color>
+    <color name="primary_blue">#3B5BDB</color>
+    <color name="primary_blue_dark">#2F4ACB</color>
 </resources>
