@@ -103,5 +103,6 @@ public class AccountSettingsActivityTest {
         Context context = ApplicationProvider.getApplicationContext();
         SharedPreferences prefs = context.getSharedPreferences("EntrantProfile", Context.MODE_PRIVATE);
         assertEquals("Emmanuel Okusanya", prefs.getString("name", ""));
-    }
+        // the random comment
+    }    
 }
