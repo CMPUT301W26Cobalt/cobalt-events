@@ -50,6 +50,7 @@ public class EventListActivity extends AppCompatActivity {
         recyclerView.setAdapter(adapter);
 
         loadEvents();
+        setupBottomNavigation();
     }
 
     @Override
@@ -67,5 +68,25 @@ public class EventListActivity extends AppCompatActivity {
             progressBar.setVisibility(View.GONE);
             Toast.makeText(this, "Failed to load events: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         });
+    }
+
+    private void setupBottomNavigation() {
+        View navAccount = findViewById(R.id.nav_account);
+        if (navAccount != null) {
+            navAccount.setOnClickListener(v -> {
+                Intent intent = new Intent(this, AccountSettingsActivity.class);
+                intent.putExtra("deviceId", deviceId);
+                startActivity(intent);
+            });
+        }
+
+        View navQr = findViewById(R.id.nav_qr);
+        if (navQr != null) {
+            navQr.setOnClickListener(v -> {
+                Intent intent = new Intent(this, QRScanActivity.class);
+                intent.putExtra("deviceId", deviceId);
+                startActivity(intent);
+            });
+        }
     }
 }
