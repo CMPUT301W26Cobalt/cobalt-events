@@ -1,4 +1,4 @@
-﻿package com.example.cobaltevents.ui;
+package com.example.cobaltevents.ui;
 
 import android.os.Bundle;
 import android.provider.Settings;
@@ -24,11 +24,11 @@ public class EventCreateActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event_create);
-        
+
         eventController = new EventController();
         qrCodeController = new QRCodeController();
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        
+
         // TODO: Initialize UI components when layout is ready
     }
 
@@ -37,30 +37,30 @@ public class EventCreateActivity extends AppCompatActivity {
      * US 2.01.01: Generate unique promotional QR code that links to event
      */
     private void createEvent(String name, String description, String location,
-                            Timestamp eventDate, Timestamp registrationOpen, 
-                            Timestamp registrationClose) {
-        
-        Event event = new Event(name, description, location, eventDate, 
-                               registrationOpen, registrationClose, deviceId);
-        
+                             Timestamp eventDate, Timestamp registrationOpen,
+                             Timestamp registrationClose) {
+
+        Event event = new Event(name, description, location, eventDate,
+                registrationOpen, registrationClose, deviceId);
+
         eventController.createEvent(event,
-            eventId -> {
-                // Generate QR code data for the event
-                String qrCodeData = qrCodeController.generateQRCodeData(eventId);
-                event.setQrCodeData(qrCodeData);
-                
-                // Update event with QR code data
-                eventController.updateEvent(event,
-                    unused -> {
-                        Toast.makeText(this, "Event created with QR code!", Toast.LENGTH_SHORT).show();
-                        finish();
-                    },
-                    e -> Toast.makeText(this, "Failed to update QR code: " + e.getMessage(), 
-                                      Toast.LENGTH_SHORT).show()
-                );
-            },
-            e -> Toast.makeText(this, "Failed to create event: " + e.getMessage(), 
-                              Toast.LENGTH_SHORT).show()
+                eventId -> {
+                    // Generate QR code data for the event
+                    String qrCodeData = qrCodeController.generateQRCodeData(eventId);
+                    event.setQrCodeData(qrCodeData);
+
+                    // Update event with QR code data
+                    eventController.updateEvent(event,
+                            unused -> {
+                                Toast.makeText(this, "Event created with QR code!", Toast.LENGTH_SHORT).show();
+                                finish();
+                            },
+                            e -> Toast.makeText(this, "Failed to update QR code: " + e.getMessage(),
+                                    Toast.LENGTH_SHORT).show()
+                    );
+                },
+                e -> Toast.makeText(this, "Failed to create event: " + e.getMessage(),
+                        Toast.LENGTH_SHORT).show()
         );
     }
 }

@@ -1,16 +1,111 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- TODO: Implement activity_admin layout -->
+
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="center">
+    android:background="#F5F7FA">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:paddingBottom="16dp"
+        android:background="#0D1B2A">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Admin Dashboard"
+            android:textColor="#FFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="System Administration"
+            android:textColor="#C0C0C0"
+            android:textSize="14sp"
+            android:layout_marginTop="4dp" />
+        <EditText
+            android:id="@+id/etSearch"
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:layout_marginTop="12dp"
+            android:hint="Search..."
+            android:padding="10dp"
+            android:background="@drawable/bg_input_field" />
+
+    </LinearLayout>
+
+    <!-- Scrollable Tabs -->
+    <HorizontalScrollView
+        android:id="@+id/adminTabsScroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="10dp">
+
+            <!-- Events -->
+            <TextView
+                android:id="@+id/tab_events"
+                style="@style/AdminTab"
+                android:text="Events" />
+
+            <!-- Profiles -->
+            <TextView
+                android:id="@+id/tab_profiles"
+                style="@style/AdminTab"
+                android:text="Profiles" />
+
+            <!-- Images -->
+            <TextView
+                android:id="@+id/tab_images"
+                style="@style/AdminTab"
+                android:text="Images" />
+
+            <!-- Organizers -->
+
+            <!-- Notifications -->
+            <TextView
+                android:id="@+id/tab_organizers"
+                style="@style/AdminTab"
+                android:text="Organizers" />
+
+            <TextView
+                android:id="@+id/tab_notifications"
+                style="@style/AdminTab"
+                android:text="Notifications" />
+
+        </LinearLayout>
+    </HorizontalScrollView>
+
 
     <TextView
-        android:layout_width="wrap_content"
+        android:id="@+id/emptyMessage"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="activity_admin"
+        android:text="No results found"
         android:textSize="16sp"
-        android:textColor="#888888" />
+        android:textColor="#6B7280"
+        android:gravity="center"
+        android:padding="20dp"
+        android:visibility="gone" />
+    <!-- Content Area -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/adminRecycler"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="12dp" />
 
 </LinearLayout>

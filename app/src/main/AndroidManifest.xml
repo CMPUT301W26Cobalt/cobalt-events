@@ -14,7 +14,8 @@
         <activity android:name=".ui.MainActivity" />
 
         <!-- WelcomeActivity is now the main page -->
-        <activity android:name=".ui.WelcomeActivity"
+        <activity
+            android:name=".ui.WelcomeActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -31,6 +32,8 @@
         <activity android:name=".ui.EventManageActivity" />
         <activity android:name=".ui.QRScanActivity" />
         <activity android:name=".ui.AccountSettingsActivity" />
+
+        <!-- Admin screens -->
         <activity android:name=".ui.admin.AdminActivity" />
         <activity android:name=".ui.admin.AdminEventListActivity" />
         <activity android:name=".ui.admin.AdminProfileListActivity" />
