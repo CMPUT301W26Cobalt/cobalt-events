@@ -1,13 +1,117 @@
 package com.example.cobaltevents.db;
 
+import com.example.cobaltevents.model.Notification;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QuerySnapshot;
+
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * TODO: Implement NotificationDB — handles Firestore operations
+ * Handles Firestore operations for the "notifications" collection.
+ * Used by NotificationController to persist and listen for notifications.
+ *
+ * US 01.04.01 — stores "selected" notifications so the entrant's device
+ * can pick them up via a real-time listener.
  */
 public class NotificationDB {
 
-    // TODO: Add Firestore instance
+    private static final String COLLECTION = "notifications";
+    private final FirebaseFirestore db;
 
-    public NotificationDB() {}
+    public NotificationDB() {
+        this.db = FirebaseFirestore.getInstance();
+    }
 
-    // TODO: Add create, read, update, delete methods
+    /**
+     * Saves a notification document to Firestore.
+     * The document ID is auto-generated and set back on the notification object.
+     */
+    public void saveNotification(Notification notification,
+                                 OnSuccessListener<Void> onSuccess,
+                                 OnFailureListener onFailure) {
+        String docId = db.collection(COLLECTION).document().getId();
+        notification.setId(docId);
+        db.collection(COLLECTION).document(docId)
+                .set(notification)
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
+    /**
+     * Fetches all notifications for a given recipient, ordered by timestamp descending.
+     */
+    public void getNotificationsForRecipient(String recipientId,
+                                             OnSuccessListener<List<Notification>> onSuccess,
+                                             OnFailureListener onFailure) {
+        db.collection(COLLECTION)
+                .whereEqualTo("recipientId", recipientId)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    List<Notification> notifications = new ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        Notification n = doc.toObject(Notification.class);
+                        if (n != null) {
+                            n.setId(doc.getId());
+                            notifications.add(n);
+                        }
+                    }
+                    onSuccess.onSuccess(notifications);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
+    /**
+     * Marks a notification as read.
+     */
+    public void markAsRead(String notificationId,
+                           OnSuccessListener<Void> onSuccess,
+                           OnFailureListener onFailure) {
+        db.collection(COLLECTION).document(notificationId)
+                .update("read", true)
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
+    /**
+     * Starts a real-time listener for new unread notifications for a recipient.
+     * Returns a ListenerRegistration that should be removed when no longer needed.
+     */
+    public ListenerRegistration listenForNotifications(String recipientId,
+                                                       OnNotificationListener listener) {
+        return db.collection(COLLECTION)
+                .whereEqualTo("recipientId", recipientId)
+                .whereEqualTo("read", false)
+                .addSnapshotListener((snapshots, error) -> {
+                    if (error != null) {
+                        listener.onError(error);
+                        return;
+                    }
+                    if (snapshots != null) {
+                        List<Notification> notifications = new ArrayList<>();
+                        for (DocumentSnapshot doc : snapshots.getDocuments()) {
+                            Notification n = doc.toObject(Notification.class);
+                            if (n != null) {
+                                n.setId(doc.getId());
+                                notifications.add(n);
+                            }
+                        }
+                        listener.onNotifications(notifications);
+                    }
+                });
+    }
+
+    /**
+     * Callback interface for real-time notification updates.
+     */
+    public interface OnNotificationListener {
+        void onNotifications(List<Notification> notifications);
+        void onError(Exception e);
+    }
 }
