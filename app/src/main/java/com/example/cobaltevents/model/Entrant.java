@@ -19,32 +19,49 @@ public class Entrant {
     private String deviceId;
     private String name;
     private String email;
-    private String phone; // this is optional so hint feature in XML is utilized
+    private String phone;
+    private String profilePictureUrl;
+
+    public Entrant() {} // Required for Firestore
 
     /** No-arg constructor required by Firestore deserialization. */
     public Entrant() {}
 
     public Entrant(String name, String email, String phone) {
+        this(null, name, email, phone, null);
+    }
+
+    public Entrant(String name, String email, String phone, String profilePictureUrl) {
+        this(null, name, email, phone, profilePictureUrl);
+    }
+
+    public Entrant(String deviceId, String name, String email, String phone, String profilePictureUrl) {
+        this.deviceId = deviceId;
         this.name = name;
         this.email = email;
         this.phone = phone;
+        this.profilePictureUrl = profilePictureUrl;
     }
 
+    @Exclude
     public boolean isValidName() {
         return name != null && !name.trim().isEmpty();
     }
 
+    @Exclude
     public boolean isValidEmail() {
         return email != null &&
                 !email.trim().isEmpty() &&
                 Patterns.EMAIL_ADDRESS.matcher(email).matches();
     }
 
+    @Exclude
     public boolean isValidPhone() {
-        if (phone == null || phone.trim().isEmpty()) return true; // optional
+        if (phone == null || phone.trim().isEmpty()) return true;
         return phone.matches("^[0-9+()\\-\\s]{7,20}$");
     }
 
+    @Exclude
     public boolean isValid() {
         return isValidName() && isValidEmail() && isValidPhone();
     }

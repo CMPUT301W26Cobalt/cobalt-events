@@ -2,15 +2,23 @@
 <resources>
     <color name="primary_user">#2E7D32</color>
     <color name="primary_dark">#1B5E20</color>
-    <color name="accent">#4CAF50</color> <!-- use for the join button -->
-    <color name="red_accent">#e7000b</color> <!-- use for the join button -->
-    <color name="background">#F0F4F0</color>
+    <color name="accent">#4CAF50</color>
+    <color name="background">#F5F7FA</color>
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
-    <color name="text_primary">#1A1A1A</color>
-    <color name="text_secondary">#666666</color>
+    <color name="text_primary">#1A2B3C</color>
+    <color name="text_secondary">#707E8C</color>
     <color name="header_teal">#00897B</color>
     <color name="filter_button">#33aba1</color>
-    <color name="primary_blue">#3B5BDB</color>
-    <color name="primary_blue_dark">#2F4ACB</color>
+
+    <!-- Welcome Screen Colors -->
+    <color name="user_green">#00A859</color>
+    <color name="user_green_light">#E0F5EB</color>
+    <color name="organizer_blue">#2962FF</color>
+    <color name="organizer_blue_light">#E3F2FD</color>
+    <color name="welcome_star_bg">#00897B</color>
+    
+    <!-- Event Management Colors -->
+    <color name="primary_blue">#2962FF</color>
+    <color name="primary_blue_dark">#1E4FCC</color>
 </resources>

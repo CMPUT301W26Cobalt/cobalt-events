@@ -11,7 +11,10 @@
         android:label="@string/app_name"
         android:theme="@style/Theme.CobaltEvents">
 
-        <activity android:name=".ui.MainActivity"
+        <activity android:name=".ui.MainActivity" />
+
+        <!-- WelcomeActivity is now the main page -->
+        <activity android:name=".ui.WelcomeActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -19,15 +22,16 @@
             </intent-filter>
         </activity>
 
-        <!-- TODO: Register all activities -->
         <activity android:name=".ui.EntrantActivity" />
         <activity android:name=".ui.EntrantEditActivity" />
         <activity android:name=".ui.EventListActivity" />
         <activity android:name=".ui.EventDetailActivity" />
         <activity android:name=".ui.EventCreateActivity" />
+        <activity android:name=".ui.EventHistoryActivity" />
         <activity android:name=".ui.OrganizerActivity" />
         <activity android:name=".ui.EventManageActivity" />
         <activity android:name=".ui.QRScanActivity" />
+        <activity android:name=".ui.AccountSettingsActivity" />
         <activity android:name=".ui.admin.AdminActivity" />
         <activity android:name=".ui.admin.AdminEventListActivity" />
         <activity android:name=".ui.admin.AdminProfileListActivity" />
