@@ -13,6 +13,13 @@ import java.util.UUID;
 /**
  * Handles Firestore and Firebase Storage operations for images.
  */
+
+import android.net.Uri;
+
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 public class ImageDB {
 
     private final FirebaseStorage storage;
@@ -46,3 +53,5 @@ public class ImageDB {
         }
     }
 }
+
+

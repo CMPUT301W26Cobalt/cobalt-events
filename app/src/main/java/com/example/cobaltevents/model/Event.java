@@ -23,6 +23,7 @@ public class Event {
     private int waitingListCapacity;   // 0 = unlimited
     private String qrCodeData;
     private List<String> confirmedAttendeeIds;
+    private String category;
 
     public Event() {
         this.confirmedAttendeeIds = new ArrayList<>();
@@ -59,6 +60,7 @@ public class Event {
     public int getWaitingListCapacity() { return waitingListCapacity; }
     public String getQrCodeData() { return qrCodeData; }
     public List<String> getConfirmedAttendeeIds() { return confirmedAttendeeIds; }
+    public String getCategory() { return category; }
 
     public void setEventId(String eventId) { this.eventId = eventId; }
     public void setName(String name) { this.name = name; }
@@ -74,4 +76,5 @@ public class Event {
     public void setWaitingListCapacity(int waitingListCapacity) { this.waitingListCapacity = waitingListCapacity; }
     public void setQrCodeData(String qrCodeData) { this.qrCodeData = qrCodeData; }
     public void setConfirmedAttendeeIds(List<String> confirmedAttendeeIds) { this.confirmedAttendeeIds = confirmedAttendeeIds; }
+    public void setCategory(String category) { this.category = category; }
 }
