@@ -1,4 +1,4 @@
-﻿package com.example.cobaltevents.controller;
+package com.example.cobaltevents.controller;
 
 import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.model.Event;

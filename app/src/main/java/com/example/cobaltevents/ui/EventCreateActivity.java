@@ -1,4 +1,4 @@
-﻿package com.example.cobaltevents.ui;
+package com.example.cobaltevents.ui;
 
 import android.os.Bundle;
 import android.provider.Settings;

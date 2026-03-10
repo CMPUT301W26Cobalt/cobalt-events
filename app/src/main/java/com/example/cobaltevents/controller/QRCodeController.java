@@ -1,4 +1,4 @@
-﻿package com.example.cobaltevents.controller;
+package com.example.cobaltevents.controller;
 
 import android.graphics.Bitmap;
 import android.graphics.Color;
