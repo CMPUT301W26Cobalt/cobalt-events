@@ -1,3 +1,4 @@
+
 package com.example.cobaltevents.ui;
 
 import android.os.Bundle;
@@ -64,3 +65,4 @@ public class EventCreateActivity extends AppCompatActivity {
         );
     }
 }
+
