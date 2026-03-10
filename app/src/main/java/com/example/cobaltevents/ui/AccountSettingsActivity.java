@@ -37,6 +37,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
 
     private ImageView dialogProfileImage;
     private TextView dialogProfileInitials;
+    private String originalProfilePictureUrl;
 
     private final ActivityResultLauncher<String> getContent = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
@@ -109,11 +110,21 @@ public class AccountSettingsActivity extends AppCompatActivity {
         editEmail.setText(currentEntrant.getEmail());
         editPhone.setText(currentEntrant.getPhone());
         updateProfileImageUI(dialogProfileImage, dialogProfileInitials);
+        
+        // Store original state for cancel restoration
+        originalProfilePictureUrl = currentEntrant.getProfilePictureUrl();
 
         AlertDialog dialog = builder.create();
 
         btnUpload.setOnClickListener(v -> getContent.launch("image/*"));
-        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        
+        btnCancel.setOnClickListener(v -> {
+            // Restore previous profile picture URL if it was changed during upload
+            currentEntrant.setProfilePictureUrl(originalProfilePictureUrl);
+            displayProfile();
+            dialog.dismiss();
+        });
+        
         btnSave.setOnClickListener(v -> {
             String name = editName.getText().toString().trim();
             String email = editEmail.getText().toString().trim();
@@ -124,16 +135,24 @@ public class AccountSettingsActivity extends AppCompatActivity {
                 return;
             }
 
-            currentEntrant.setDeviceId(entrantDB.getEntrant().getDeviceId());
-            Entrant updatedEntrant = new Entrant(currentEntrant.getDeviceId(), name, email, phone, currentEntrant.getProfilePictureUrl());
-            if (controller.saveEntrant(updatedEntrant)) {
-                currentEntrant = updatedEntrant;
-                displayProfile();
-                dialog.dismiss();
-                Toast.makeText(this, "Profile updated", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(this, "Failed to update profile", Toast.LENGTH_SHORT).show();
-            }
+            // Confirm update
+            new AlertDialog.Builder(this)
+                .setTitle("Update Profile")
+                .setMessage("Are you sure you want to save these changes?")
+                .setPositiveButton("Yes", (d, which) -> {
+                    currentEntrant.setDeviceId(entrantDB.getEntrant().getDeviceId());
+                    Entrant updatedEntrant = new Entrant(currentEntrant.getDeviceId(), name, email, phone, currentEntrant.getProfilePictureUrl());
+                    if (controller.saveEntrant(updatedEntrant)) {
+                        currentEntrant = updatedEntrant;
+                        displayProfile();
+                        dialog.dismiss();
+                        Toast.makeText(this, "Profile updated", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "Failed to update profile", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("No", null)
+                .show();
         });
 
         dialog.show();

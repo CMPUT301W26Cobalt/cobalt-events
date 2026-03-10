@@ -67,6 +67,9 @@ public class AccountSettingsActivityTest {
         // Save
         onView(withId(R.id.btn_save_changes)).perform(click());
 
+        // Confirm save in AlertDialog
+        onView(withText("Yes")).perform(click());
+
         // Verify UI updated
         onView(withId(R.id.tv_name)).check(matches(withText("Leo Sexyy")));
         onView(withId(R.id.tv_email)).check(matches(withText("leooo@example.com")));
