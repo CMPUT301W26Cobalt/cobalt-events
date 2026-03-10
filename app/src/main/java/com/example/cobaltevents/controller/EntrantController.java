@@ -2,14 +2,17 @@ package com.example.cobaltevents.controller;
 
 
 import com.example.cobaltevents.db.EntrantDB;
+import com.example.cobaltevents.db.ProfileDB;
 import com.example.cobaltevents.model.Entrant;
 
 public class EntrantController {
 
-    private EntrantDB entrantDB;
+    private EntrantDB localDB;
+    private ProfileDB remoteDB;
 
-    public EntrantController(EntrantDB entrantDB) {
-        this.entrantDB = entrantDB;
+    public EntrantController(EntrantDB localDB) {
+        this.localDB = localDB;
+        this.remoteDB = new ProfileDB();
     }
 
     public String validateName(String name) {
@@ -34,13 +37,19 @@ public class EntrantController {
         return null;
     }
 
-    public boolean saveEntrant(String name, String email, String phone) {
-
-        Entrant entrant = new Entrant(name.trim(), email.trim(), phone.trim());
-
+    public boolean saveEntrant(Entrant entrant) {
         if (!entrant.isValid()) return false;
-
-        entrantDB.saveEntrant(entrant);
+        
+        // Save locally for immediate access
+        localDB.saveEntrant(entrant);
+        
+        // Sync to Firestore for admin/backup
+        remoteDB.saveProfile(entrant, 
+            unused -> {}, 
+            e -> {
+                // Log failure or handle retry if needed
+            });
+            
         return true;
     }
 }
