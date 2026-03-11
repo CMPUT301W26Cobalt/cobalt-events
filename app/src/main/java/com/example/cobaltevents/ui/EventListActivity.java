@@ -101,11 +101,6 @@ public class EventListActivity extends AppCompatActivity {
 
         findViewById(R.id.btn_filter).setOnClickListener(v -> showFilterDialog());
 
-        View fabAdd = findViewById(R.id.fab_add_event);
-        if (fabAdd != null) {
-            fabAdd.setOnClickListener(v -> startActivity(new Intent(this, EventCreateActivity.class)));
-        }
-
         loadEvents();
         setupBottomNavigation();
     }

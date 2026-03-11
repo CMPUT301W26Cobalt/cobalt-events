@@ -110,7 +110,7 @@
             android:textColor="@color/white"
             android:textSize="13sp"
             android:textStyle="bold"
-            android:background="@drawable/bg_button_green_pill" />
+            android:background="@drawable/bg_button_primary_account" />
     </LinearLayout>
 
 </LinearLayout>

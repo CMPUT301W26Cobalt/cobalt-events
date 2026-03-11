@@ -1454,6 +1454,7 @@ color dim_foreground_disabled_material_dark
 color dim_foreground_disabled_material_light
 color dim_foreground_material_dark
 color dim_foreground_material_light
+color divider_light
 color error_color_material_dark
 color error_color_material_light
 color filter_button
@@ -2138,6 +2139,8 @@ color primary_text_default_material_light
 color primary_text_disabled_material_dark
 color primary_text_disabled_material_light
 color primary_user
+color red_300
+color red_50
 color ripple_material_dark
 color ripple_material_light
 color secondary_text_default_material_dark
@@ -2153,9 +2156,13 @@ color switch_thumb_material_dark
 color switch_thumb_material_light
 color switch_thumb_normal_material_dark
 color switch_thumb_normal_material_light
+color switch_track_off
+color switch_track_on
+color switch_track_selector
 color tag_teal_background
 color text_primary
 color text_secondary
+color thumb_white
 color tooltip_background_dark
 color tooltip_background_light
 color user_green
@@ -3039,13 +3046,20 @@ drawable abc_textfield_search_material
 drawable abc_vector_test
 drawable avd_hide_password
 drawable avd_show_password
+drawable bg_avatar_circle
 drawable bg_bottom_nav
+drawable bg_button_cancel_8dp
 drawable bg_button_filter
 drawable bg_button_green_pill
 drawable bg_button_outline_grey_pill
+drawable bg_button_primary_account
+drawable bg_button_red_8dp
 drawable bg_button_red_pill
 drawable bg_card_event
+drawable bg_delete_confirm_panel
 drawable bg_dialog_rounded
+drawable bg_divider_horizontal
+drawable bg_edit_field
 drawable bg_edit_text
 drawable bg_guidelines_box
 drawable bg_icon_organizer
@@ -3091,8 +3105,10 @@ drawable googleg_disabled_color_18
 drawable googleg_standard_color_18
 drawable ic_arrow_back
 drawable ic_arrow_back_black_24
+drawable ic_avatar_person
 drawable ic_clear_black_24
 drawable ic_clock_black_24dp
+drawable ic_edit_pencil
 drawable ic_filter_sliders
 drawable ic_keyboard_black_24dp
 drawable ic_launcher_foreground
@@ -3289,6 +3305,7 @@ id bounceStart
 id btn_apply_filters
 id btn_back
 id btn_cancel
+id btn_cancel_edit
 id btn_clear_filters
 id btn_close
 id btn_close_filter
@@ -3296,6 +3313,8 @@ id btn_confirm_join
 id btn_continue_organizer
 id btn_continue_user
 id btn_delete_account
+id btn_delete_cancel
+id btn_delete_confirm
 id btn_edit_info
 id btn_filter
 id btn_join
@@ -3351,6 +3370,7 @@ id decelerate
 id decelerateAndComplete
 id decor_content_parent
 id default_activity_button
+id delete_confirm_panel
 id deltaRelative
 id dependency_ordering
 id design_bottom_sheet
@@ -3366,6 +3386,7 @@ id disableIntraAutoTransition
 id disablePostScroll
 id disableScroll
 id disjoint
+id divider
 id divider_after_waitlist
 id dragAnticlockwise
 id dragClockwise
@@ -3406,7 +3427,6 @@ id eventPoster
 id exitUntilCollapsed
 id expand_activities_button
 id expanded_menu
-id fab_add_event
 id fade
 id fill
 id fill_horizontal
@@ -3470,6 +3490,7 @@ id layout_event_notifications
 id layout_expanded_details
 id layout_geo_note
 id layout_note
+id layout_notifications_enabled
 id layout_participants
 id layout_phone
 id left
@@ -3604,8 +3625,10 @@ id pooling_container_listener_holder_tag
 id position
 id postLayout
 id pressed
+id profile_edit_panel
 id profile_image
 id profile_initials
+id profile_view_panel
 id progress_bar
 id progress_circular
 id progress_horizontal
@@ -3618,6 +3641,7 @@ id ratio
 id rectangles
 id recycler_events
 id recycler_history
+id recycler_notification_events
 id report_drawn
 id reverseSawtooth
 id right
@@ -3692,6 +3716,7 @@ id stretch
 id submenuarrow
 id submit_area
 id supportScrollUp
+id switch_event_notification
 id switch_event_notifications
 id switch_event_updates
 id switch_general
@@ -3948,6 +3973,7 @@ layout dialog_leave_waitlist_confirm
 layout item_admin
 layout item_event
 layout item_event_history
+layout item_notification_event
 layout m3_alert_dialog
 layout m3_alert_dialog_actions
 layout m3_alert_dialog_title
@@ -4075,6 +4101,10 @@ string common_signin_button_text_long
 string confirm_join
 string contact_email
 string contact_phone
+string delete_account
+string delete_account_cancel
+string delete_account_confirm
+string delete_account_confirm_message
 string dialog_cancel
 string dialog_join_waitlist_confirm
 string dialog_join_waitlist_disclaimer
@@ -4090,10 +4120,14 @@ string error_icon_content_description
 string event_notifications
 string event_notifications_subtitle
 string event_poster
+string event_update_notifications
+string event_update_notifications_desc
 string exposed_dropdown_menu_content_description
 string fab_transformation_scrim_behavior
 string fab_transformation_sheet_behavior
 string gcm_defaultSenderId
+string general_app_notifications
+string general_app_notifications_desc
 string google_api_key
 string google_app_id
 string google_crash_reporting_api_key
@@ -4204,10 +4238,13 @@ string mtrl_switch_track_decoration_path
 string mtrl_switch_track_path
 string mtrl_timepicker_cancel
 string mtrl_timepicker_confirm
+string my_event_notifications
 string notification_channel_name
 string notification_method
 string notification_selected_message
 string notification_selected_title
+string notification_settings
+string notifications_enabled
 string notify_invited
 string num_participants
 string password_toggle_content_description
@@ -5044,6 +5081,7 @@ style Widget_AppCompat_TextView
 style Widget_AppCompat_TextView_SpinnerItem
 style Widget_AppCompat_Toolbar
 style Widget_AppCompat_Toolbar_Button_Navigation
+style Widget_CobaltEvents_Switch
 style Widget_Compat_NotificationActionContainer
 style Widget_Compat_NotificationActionText
 style Widget_Design_AppBarLayout

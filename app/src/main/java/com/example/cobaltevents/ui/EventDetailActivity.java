@@ -131,7 +131,7 @@ public class EventDetailActivity extends AppCompatActivity {
     private void applyJoinLeaveUi() {
         boolean joined = activeRegistration != null;
         btnJoinLeave.setText(joined ? getString(R.string.leave_waitlist_button) : getString(R.string.join_waitlist_button));
-        btnJoinLeave.setBackgroundResource(joined ? R.drawable.bg_button_red_pill : R.drawable.bg_button_green_pill);
+        btnJoinLeave.setBackgroundResource(joined ? R.drawable.bg_button_red_pill : R.drawable.bg_button_primary_account);
 
         if (joined) {
             layoutEventNotifications.setVisibility(View.VISIBLE);

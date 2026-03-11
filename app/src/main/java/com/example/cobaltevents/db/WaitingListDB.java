@@ -9,6 +9,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 public class WaitingListDB {
@@ -99,5 +100,38 @@ public class WaitingListDB {
                     onSuccess.onSuccess(count.get());
                 })
                 .addOnFailureListener(onFailure);
+    }
+
+    public void removeUserFromAllWaitlists(String deviceId, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
+        db.collection(COLLECTION_NAME)
+            .whereEqualTo("deviceId", deviceId)
+            .get()
+            .addOnSuccessListener(querySnapshot -> {
+                if (querySnapshot.isEmpty()) {
+                    onSuccess.onSuccess(null);
+                    return;
+                }
+                AtomicInteger pending = new AtomicInteger(querySnapshot.size());
+                AtomicReference<Exception> firstError = new java.util.concurrent.atomic.AtomicReference<>(null);
+                for (QueryDocumentSnapshot doc : querySnapshot) {
+                    doc.getReference().delete()
+                        .addOnSuccessListener(v -> {
+                            if (pending.decrementAndGet() == 0) {
+                                if (firstError.get() != null) {
+                                    onFailure.onFailure(firstError.get());
+                                } else {
+                                    onSuccess.onSuccess(null);
+                                }
+                            }
+                        })
+                        .addOnFailureListener(e -> {
+                            firstError.compareAndSet(null, e);
+                            if (pending.decrementAndGet() == 0) {
+                                onFailure.onFailure(firstError.get() != null ? firstError.get() : e);
+                            }
+                        });
+                }
+            })
+            .addOnFailureListener(onFailure);
     }
 }

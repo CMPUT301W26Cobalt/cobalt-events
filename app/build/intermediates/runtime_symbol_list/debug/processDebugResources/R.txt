@@ -1453,6 +1453,7 @@ int color dim_foreground_disabled_material_dark 0x7f050062
 int color dim_foreground_disabled_material_light 0x7f050063
 int color dim_foreground_material_dark 0x7f050064
 int color dim_foreground_material_light 0x7f050065
+int color divider_light 0x7f05032c
 int color error_color_material_dark 0x7f050066
 int color error_color_material_light 0x7f050067
 int color filter_button 0x7f050068
@@ -2137,6 +2138,8 @@ int color primary_text_default_material_light 0x7f05030e
 int color primary_text_disabled_material_dark 0x7f05030f
 int color primary_text_disabled_material_light 0x7f050310
 int color primary_user 0x7f050311
+int color red_300 0x7f05032a
+int color red_50 0x7f05032b
 int color ripple_material_dark 0x7f050312
 int color ripple_material_light 0x7f050313
 int color secondary_text_default_material_dark 0x7f050314
@@ -2152,9 +2155,13 @@ int color switch_thumb_material_dark 0x7f05031d
 int color switch_thumb_material_light 0x7f05031e
 int color switch_thumb_normal_material_dark 0x7f05031f
 int color switch_thumb_normal_material_light 0x7f050320
+int color switch_track_off 0x7f05032d
+int color switch_track_on 0x7f05032e
+int color switch_track_selector 0x7f05032f
 int color tag_teal_background 0x7f050321
 int color text_primary 0x7f050322
 int color text_secondary 0x7f050323
+int color thumb_white 0x7f050330
 int color tooltip_background_dark 0x7f050324
 int color tooltip_background_light 0x7f050325
 int color user_green 0x7f050326
@@ -3038,13 +3045,20 @@ int drawable abc_textfield_search_material 0x7f070075
 int drawable abc_vector_test 0x7f070076
 int drawable avd_hide_password 0x7f070077
 int drawable avd_show_password 0x7f070078
+int drawable bg_avatar_circle 0x7f07010d
 int drawable bg_bottom_nav 0x7f070079
+int drawable bg_button_cancel_8dp 0x7f070112
 int drawable bg_button_filter 0x7f07007a
 int drawable bg_button_green_pill 0x7f07007b
 int drawable bg_button_outline_grey_pill 0x7f070104
+int drawable bg_button_primary_account 0x7f07010e
+int drawable bg_button_red_8dp 0x7f070113
 int drawable bg_button_red_pill 0x7f07007c
 int drawable bg_card_event 0x7f07007d
+int drawable bg_delete_confirm_panel 0x7f070114
 int drawable bg_dialog_rounded 0x7f07007e
+int drawable bg_divider_horizontal 0x7f070115
+int drawable bg_edit_field 0x7f070110
 int drawable bg_edit_text 0x7f07007f
 int drawable bg_guidelines_box 0x7f07010c
 int drawable bg_icon_organizer 0x7f070080
@@ -3090,8 +3104,10 @@ int drawable googleg_disabled_color_18 0x7f0700a7
 int drawable googleg_standard_color_18 0x7f0700a8
 int drawable ic_arrow_back 0x7f0700a9
 int drawable ic_arrow_back_black_24 0x7f0700aa
+int drawable ic_avatar_person 0x7f07010f
 int drawable ic_clear_black_24 0x7f0700ab
 int drawable ic_clock_black_24dp 0x7f0700ac
+int drawable ic_edit_pencil 0x7f070111
 int drawable ic_filter_sliders 0x7f07010b
 int drawable ic_keyboard_black_24dp 0x7f0700ad
 int drawable ic_launcher_foreground 0x7f0700ae
@@ -3288,6 +3304,7 @@ int id bounceStart 0x7f080063
 int id btn_apply_filters 0x7f080064
 int id btn_back 0x7f080065
 int id btn_cancel 0x7f080066
+int id btn_cancel_edit 0x7f080261
 int id btn_clear_filters 0x7f080067
 int id btn_close 0x7f080256
 int id btn_close_filter 0x7f080068
@@ -3295,6 +3312,8 @@ int id btn_confirm_join 0x7f080069
 int id btn_continue_organizer 0x7f08006a
 int id btn_continue_user 0x7f08006b
 int id btn_delete_account 0x7f08006c
+int id btn_delete_cancel 0x7f080264
+int id btn_delete_confirm 0x7f080265
 int id btn_edit_info 0x7f08006d
 int id btn_filter 0x7f08006e
 int id btn_join 0x7f08006f
@@ -3350,6 +3369,7 @@ int id decelerate 0x7f08009f
 int id decelerateAndComplete 0x7f0800a0
 int id decor_content_parent 0x7f0800a1
 int id default_activity_button 0x7f0800a2
+int id delete_confirm_panel 0x7f080266
 int id deltaRelative 0x7f0800a3
 int id dependency_ordering 0x7f0800a4
 int id design_bottom_sheet 0x7f0800a5
@@ -3365,6 +3385,7 @@ int id disableIntraAutoTransition 0x7f0800ae
 int id disablePostScroll 0x7f0800af
 int id disableScroll 0x7f0800b0
 int id disjoint 0x7f0800b1
+int id divider 0x7f080267
 int id divider_after_waitlist 0x7f080257
 int id dragAnticlockwise 0x7f0800b2
 int id dragClockwise 0x7f0800b3
@@ -3405,7 +3426,6 @@ int id eventPoster 0x7f0800d5
 int id exitUntilCollapsed 0x7f0800d6
 int id expand_activities_button 0x7f0800d7
 int id expanded_menu 0x7f0800d8
-int id fab_add_event 0x7f080258
 int id fade 0x7f0800d9
 int id fill 0x7f0800da
 int id fill_horizontal 0x7f0800db
@@ -3469,6 +3489,7 @@ int id layout_event_notifications 0x7f080114
 int id layout_expanded_details 0x7f080115
 int id layout_geo_note 0x7f080116
 int id layout_note 0x7f080117
+int id layout_notifications_enabled 0x7f080268
 int id layout_participants 0x7f080118
 int id layout_phone 0x7f080119
 int id left 0x7f08011a
@@ -3603,8 +3624,10 @@ int id pooling_container_listener_holder_tag 0x7f08019a
 int id position 0x7f08019b
 int id postLayout 0x7f08019c
 int id pressed 0x7f08019d
+int id profile_edit_panel 0x7f080262
 int id profile_image 0x7f08019e
 int id profile_initials 0x7f08019f
+int id profile_view_panel 0x7f080263
 int id progress_bar 0x7f0801a0
 int id progress_circular 0x7f0801a1
 int id progress_horizontal 0x7f0801a2
@@ -3617,6 +3640,7 @@ int id ratio 0x7f0801a8
 int id rectangles 0x7f0801a9
 int id recycler_events 0x7f0801aa
 int id recycler_history 0x7f0801ab
+int id recycler_notification_events 0x7f080269
 int id report_drawn 0x7f0801ac
 int id reverseSawtooth 0x7f0801ad
 int id right 0x7f0801ae
@@ -3691,6 +3715,7 @@ int id stretch 0x7f0801f2
 int id submenuarrow 0x7f0801f3
 int id submit_area 0x7f0801f4
 int id supportScrollUp 0x7f0801f5
+int id switch_event_notification 0x7f08026a
 int id switch_event_notifications 0x7f0801f6
 int id switch_event_updates 0x7f0801f7
 int id switch_general 0x7f0801f8
@@ -3947,6 +3972,7 @@ int layout dialog_leave_waitlist_confirm 0x7f0b0080
 int layout item_admin 0x7f0b003f
 int layout item_event 0x7f0b0040
 int layout item_event_history 0x7f0b0041
+int layout item_notification_event 0x7f0b0081
 int layout m3_alert_dialog 0x7f0b0042
 int layout m3_alert_dialog_actions 0x7f0b0043
 int layout m3_alert_dialog_title 0x7f0b0044
@@ -4074,6 +4100,10 @@ int string common_signin_button_text_long 0x7f0f003b
 int string confirm_join 0x7f0f003c
 int string contact_email 0x7f0f003d
 int string contact_phone 0x7f0f003e
+int string delete_account 0x7f0f00db
+int string delete_account_cancel 0x7f0f00dc
+int string delete_account_confirm 0x7f0f00dd
+int string delete_account_confirm_message 0x7f0f00de
 int string dialog_cancel 0x7f0f003f
 int string dialog_join_waitlist_confirm 0x7f0f0040
 int string dialog_join_waitlist_disclaimer 0x7f0f00d9
@@ -4089,10 +4119,14 @@ int string error_icon_content_description 0x7f0f0048
 int string event_notifications 0x7f0f0049
 int string event_notifications_subtitle 0x7f0f004a
 int string event_poster 0x7f0f004b
+int string event_update_notifications 0x7f0f00df
+int string event_update_notifications_desc 0x7f0f00e0
 int string exposed_dropdown_menu_content_description 0x7f0f004c
 int string fab_transformation_scrim_behavior 0x7f0f004d
 int string fab_transformation_sheet_behavior 0x7f0f004e
 int string gcm_defaultSenderId 0x7f0f004f
+int string general_app_notifications 0x7f0f00e1
+int string general_app_notifications_desc 0x7f0f00e2
 int string google_api_key 0x7f0f0050
 int string google_app_id 0x7f0f0051
 int string google_crash_reporting_api_key 0x7f0f0052
@@ -4203,10 +4237,13 @@ int string mtrl_switch_track_decoration_path 0x7f0f00ba
 int string mtrl_switch_track_path 0x7f0f00bb
 int string mtrl_timepicker_cancel 0x7f0f00bc
 int string mtrl_timepicker_confirm 0x7f0f00bd
+int string my_event_notifications 0x7f0f00e3
 int string notification_channel_name 0x7f0f00be
 int string notification_method 0x7f0f00bf
 int string notification_selected_message 0x7f0f00c0
 int string notification_selected_title 0x7f0f00c1
+int string notification_settings 0x7f0f00e4
+int string notifications_enabled 0x7f0f00e5
 int string notify_invited 0x7f0f00c2
 int string num_participants 0x7f0f00c3
 int string password_toggle_content_description 0x7f0f00c4
@@ -5043,6 +5080,7 @@ int style Widget_AppCompat_TextView 0x7f100329
 int style Widget_AppCompat_TextView_SpinnerItem 0x7f10032a
 int style Widget_AppCompat_Toolbar 0x7f10032b
 int style Widget_AppCompat_Toolbar_Button_Navigation 0x7f10032c
+int style Widget_CobaltEvents_Switch 0x7f10045d
 int style Widget_Compat_NotificationActionContainer 0x7f10032d
 int style Widget_Compat_NotificationActionText 0x7f10032e
 int style Widget_Design_AppBarLayout 0x7f10032f

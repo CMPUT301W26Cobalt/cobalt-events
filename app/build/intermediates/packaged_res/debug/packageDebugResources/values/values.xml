@@ -4,6 +4,7 @@
     <color name="alert_red">#F44336</color>
     <color name="background">#F5F7FA</color>
     <color name="black">#000000</color>
+    <color name="divider_light">#F3F4F6</color>
     <color name="filter_button">#33aba1</color>
     <color name="grey_border">#E0E0E0</color>
     <color name="grey_border_light">#E9ECEF</color>
@@ -21,9 +22,13 @@
     <color name="primary_blue_dark">#1E4FCC</color>
     <color name="primary_dark">#1B5E20</color>
     <color name="primary_user">#2E7D32</color>
+    <color name="red_300">#FCA5A5</color>
+    <color name="red_50">#FEF2F2</color>
     <color name="status_error_red">#C62828</color>
     <color name="status_success_green">#2E7D32</color>
     <color name="status_warning_orange">#E65100</color>
+    <color name="switch_track_off">#D1D5DB</color>
+    <color name="switch_track_on">#1A2B3C</color>
     <color name="tag_teal_background">#E0F2F1</color>
     <color name="text_primary">#1A2B3C</color>
     <color name="text_secondary">#707E8C</color>
@@ -37,6 +42,10 @@
     <string name="confirm_join">Confirm and Join</string>
     <string name="contact_email">Email</string>
     <string name="contact_phone">Phone (optional)</string>
+    <string name="delete_account">Delete Account</string>
+    <string name="delete_account_cancel">Cancel</string>
+    <string name="delete_account_confirm">Delete</string>
+    <string name="delete_account_confirm_message">Are you sure you want to delete your account? This cannot be undone.</string>
     <string name="dialog_cancel">CANCEL</string>
     <string name="dialog_join_waitlist_confirm">JOIN WAITLIST</string>
     <string name="dialog_join_waitlist_disclaimer">Make sure you meet the event criteria and can commit to attending if selected.</string>
@@ -50,7 +59,11 @@
     <string name="event_notifications">Event Notifications</string>
     <string name="event_notifications_subtitle">You won\'t receive updates about this event</string>
     <string name="event_poster">Event poster image</string>
+    <string name="event_update_notifications">Event Update Notifications</string>
+    <string name="event_update_notifications_desc">Receive updates from events you\'ve joined.</string>
     <string name="gcm_defaultSenderId" translatable="false">389282970219</string>
+    <string name="general_app_notifications">General App Notifications</string>
+    <string name="general_app_notifications_desc">Receive notifications about app updates and announcements.</string>
     <string name="google_api_key" translatable="false">AIzaSyChmW-N2_8HYhESZx7Zj69RfhIX6U4LsS8</string>
     <string name="google_app_id" translatable="false">1:389282970219:android:5066010b96300335accf2e</string>
     <string name="google_crash_reporting_api_key" translatable="false">AIzaSyChmW-N2_8HYhESZx7Zj69RfhIX6U4LsS8</string>
@@ -58,10 +71,13 @@
     <string name="join_waitlist">Join Waitlist</string>
     <string name="join_waitlist_button">JOIN WAITLIST</string>
     <string name="leave_waitlist_button">LEAVE WAITLIST</string>
+    <string name="my_event_notifications">My Event Notifications</string>
     <string name="notification_channel_name">Event Lottery Results</string>
     <string name="notification_method">Preferred notification method</string>
     <string name="notification_selected_message">You have been chosen to attend %1$s.</string>
     <string name="notification_selected_title">You\'ve been selected!</string>
+    <string name="notification_settings">Notification Settings</string>
+    <string name="notifications_enabled">Notifications enabled</string>
     <string name="notify_invited">Notify Invited Entrants</string>
     <string name="num_participants">Number of participants</string>
     <string name="project_id" translatable="false">cmput301-cobalt-events</string>
@@ -78,5 +94,9 @@
         <item name="colorPrimaryDark">@color/primary_dark</item>
         <item name="colorAccent">@color/accent</item>
         <item name="android:windowBackground">@color/page_background</item>
+    </style>
+    <style name="Widget.CobaltEvents.Switch" parent="Widget.AppCompat.CompoundButton.Switch">
+        <item name="thumbTint">@color/white</item>
+        <item name="trackTint">@color/switch_track_selector</item>
     </style>
 </resources>

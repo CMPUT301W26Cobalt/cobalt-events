@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background"
+    android:background="@color/page_background"
     android:orientation="vertical">
 
     <!-- Header bar -->
@@ -38,7 +38,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="16dp"
                 app:cardElevation="2dp">
 
                 <LinearLayout
@@ -51,118 +51,267 @@
                     <FrameLayout
                         android:layout_width="80dp"
                         android:layout_height="80dp"
-                        android:layout_marginBottom="16dp">
+                        android:layout_marginBottom="16dp"
+                        android:background="@drawable/bg_avatar_circle"
+                        android:elevation="4dp">
 
                         <ImageView
                             android:id="@+id/profile_image"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:src="@drawable/bg_icon_user" />
-
-                        <ImageView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:layout_gravity="center"
-                            android:src="@drawable/ic_user_group"
-                            app:tint="@color/user_green" />
-
-                        <TextView
-                            android:id="@+id/profile_initials"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:gravity="center"
-                            android:textColor="@color/user_green"
-                            android:textSize="24sp"
-                            android:textStyle="bold"
+                            android:scaleType="centerCrop"
                             android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/profile_initials"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:textColor="@color/user_green"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
                     </FrameLayout>
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="start"
-                        android:text="Name"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/tv_name"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="start"
-                        android:layout_marginTop="4dp"
-                        android:text="Jordan Smith"
-                        android:textColor="@color/text_primary"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="start"
-                        android:layout_marginTop="12dp"
-                        android:text="Email"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/tv_email"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="start"
-                        android:layout_marginTop="4dp"
-                        android:text="jordan.smith@email.com"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="start"
-                        android:layout_marginTop="12dp"
-                        android:text="Phone Number"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/tv_phone"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="start"
-                        android:layout_marginTop="4dp"
-                        android:text="(555) 123-4567"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
-
-                    <Button
-                        android:id="@+id/btn_edit_info"
+                    <LinearLayout
+                        android:id="@+id/profile_view_panel"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="20dp"
-                        android:backgroundTint="@color/user_green"
-                        android:text="EDIT INFORMATION"
-                        android:textAllCaps="true"
-                        android:textColor="@color/white"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        app:cornerRadius="8dp"
-                        app:icon="@android:drawable/ic_menu_edit"
-                        app:iconGravity="textStart" />
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
 
-                    <Button
-                        android:id="@+id/btn_delete_account"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Name"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="14sp" />
+                        <TextView
+                            android:id="@+id/tv_name"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:paddingStart="4dp"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="Email"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="14sp" />
+                        <TextView
+                            android:id="@+id/tv_email"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:paddingStart="4dp"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="Phone Number"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="14sp" />
+                        <TextView
+                            android:id="@+id/tv_phone"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:paddingStart="4dp"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_edit_info"
+                            style="@style/Widget.MaterialComponents.Button"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="24dp"
+                            android:background="@drawable/bg_button_primary_account"
+                            android:text="EDIT INFORMATION"
+                            android:textAllCaps="true"
+                            android:textColor="@color/white"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            app:backgroundTint="@color/user_green"
+                            app:icon="@drawable/ic_edit_pencil"
+                            app:iconGravity="textStart"
+                            app:iconPadding="8dp"
+                            app:iconTint="@color/white" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_delete_account"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="12dp"
+                            android:text="@string/delete_account"
+                            android:textColor="@color/alert_red"
+                            android:textSize="14sp"
+                            app:cornerRadius="12dp"
+                            app:icon="@android:drawable/ic_menu_delete"
+                            app:iconGravity="textStart"
+                            app:iconSize="14dp"
+                            app:iconTint="@color/alert_red"
+                            app:strokeColor="@color/alert_red"
+                            app:strokeWidth="1dp" />
+
+                        <LinearLayout
+                            android:id="@+id/delete_confirm_panel"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:background="@drawable/bg_delete_confirm_panel"
+                            android:orientation="vertical"
+                            android:padding="16dp"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:text="@string/delete_account_confirm_message"
+                                android:textColor="@color/alert_red"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="12dp" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
+
+                                <TextView
+                                    android:id="@+id/btn_delete_cancel"
+                                    android:layout_width="0dp"
+                                    android:layout_height="40dp"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/bg_button_cancel_8dp"
+                                    android:gravity="center"
+                                    android:text="@string/delete_account_cancel"
+                                    android:textColor="@color/text_secondary"
+                                    android:textSize="14sp"
+                                    android:textStyle="bold" />
+
+                                <View
+                                    android:layout_width="8dp"
+                                    android:layout_height="0dp" />
+
+                                <TextView
+                                    android:id="@+id/btn_delete_confirm"
+                                    android:layout_width="0dp"
+                                    android:layout_height="40dp"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/bg_button_red_8dp"
+                                    android:gravity="center"
+                                    android:text="@string/delete_account_confirm"
+                                    android:textColor="@color/white"
+                                    android:textSize="14sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/profile_edit_panel"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="12dp"
-                        android:text="Delete Account"
-                        android:textColor="@color/alert_red"
-                        android:textSize="14sp"
-                        app:cornerRadius="8dp"
-                        app:icon="@android:drawable/ic_menu_delete"
-                        app:iconGravity="textStart"
-                        app:iconTint="@color/alert_red"
-                        app:strokeColor="@color/alert_red" />
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Name"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="14sp" />
+                        <EditText
+                            android:id="@+id/edit_name"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:background="@drawable/bg_edit_field"
+                            android:inputType="textPersonName"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:paddingTop="12dp"
+                            android:paddingBottom="12dp"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="Email"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="14sp" />
+                        <EditText
+                            android:id="@+id/edit_email"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:background="@drawable/bg_edit_field"
+                            android:inputType="textEmailAddress"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:paddingTop="12dp"
+                            android:paddingBottom="12dp"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="Phone Number"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="14sp" />
+                        <EditText
+                            android:id="@+id/edit_phone"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:background="@drawable/bg_edit_field"
+                            android:inputType="phone"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="16dp"
+                            android:paddingTop="12dp"
+                            android:paddingBottom="12dp"
+                            android:textColor="@color/text_primary"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:id="@+id/btn_save_changes"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="24dp"
+                            android:background="@drawable/bg_button_primary_account"
+                            android:gravity="center"
+                            android:text="SAVE CHANGES"
+                            android:textAllCaps="true"
+                            android:textColor="@color/white"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/btn_cancel_edit"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="12dp"
+                            android:background="@drawable/bg_button_outline_grey_pill"
+                            android:gravity="center"
+                            android:text="Cancel"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
@@ -170,55 +319,57 @@
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="12dp"
+                app:cardCornerRadius="16dp"
                 app:cardElevation="2dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="20dp">
 
                         <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:src="@android:drawable/ic_popup_reminder"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:src="@drawable/ic_nav_bell"
                             app:tint="@color/user_green" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="8dp"
-                            android:text="Notification Settings"
+                            android:text="@string/notification_settings"
                             android:textColor="@color/text_primary"
-                            android:textSize="16sp"
+                            android:textSize="18sp"
                             android:textStyle="bold" />
                     </LinearLayout>
 
-                    <!-- Switch 1 -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingTop="16dp"
+                        android:paddingBottom="16dp">
 
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:paddingEnd="16dp">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="General App Notifications"
+                                android:text="@string/general_app_notifications"
                                 android:textColor="@color/text_primary"
                                 android:textSize="14sp"
                                 android:textStyle="bold" />
@@ -226,35 +377,45 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Receive notifications about app updates and announcements."
+                                android:layout_marginTop="2dp"
+                                android:text="@string/general_app_notifications_desc"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
                         </LinearLayout>
 
                         <androidx.appcompat.widget.SwitchCompat
                             android:id="@+id/switch_general"
+                            style="@style/Widget.CobaltEvents.Switch"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
+                            android:layout_height="wrap_content"
+                            android:minWidth="48dp"
+                            android:minHeight="28dp" />
                     </LinearLayout>
 
-                    <!-- Switch 2 -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/divider_light" />
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        android:paddingTop="16dp"
+                        android:paddingBottom="16dp">
 
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:paddingEnd="16dp">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Event Update Notifications"
+                                android:text="@string/event_update_notifications"
                                 android:textColor="@color/text_primary"
                                 android:textSize="14sp"
                                 android:textStyle="bold" />
@@ -262,60 +423,42 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Receive updates from events you've joined."
+                                android:layout_marginTop="2dp"
+                                android:text="@string/event_update_notifications_desc"
                                 android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
                         </LinearLayout>
 
                         <androidx.appcompat.widget.SwitchCompat
                             android:id="@+id/switch_event_updates"
+                            style="@style/Widget.CobaltEvents.Switch"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" />
+                            android:layout_height="wrap_content"
+                            android:minWidth="48dp"
+                            android:minHeight="28dp" />
                     </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/divider_light" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
-                        android:text="My Event Notifications"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp"
+                        android:layout_marginBottom="12dp"
+                        android:text="@string/my_event_notifications"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
                         android:textStyle="bold" />
 
-                    <!-- Specific Event 1 -->
-                    <LinearLayout
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recycler_notification_events"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Interpretive Dance Class"
-                                android:textColor="@color/text_primary"
-                                android:textSize="14sp" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Notifications enabled"
-                                android:textColor="@color/accent"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-
-                        <androidx.appcompat.widget.SwitchCompat
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:checked="true" />
-                    </LinearLayout>
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
         </LinearLayout>
