@@ -3230,6 +3230,8 @@ drawable notification_template_icon_bg
 drawable notification_template_icon_low_bg
 drawable notification_tile_bg
 drawable notify_panel_notification_icon_bg
+drawable switch_thumb_pill
+drawable switch_track_pill
 drawable test_level_drawable
 drawable tooltip_frame_dark
 drawable tooltip_frame_light
@@ -3731,9 +3733,10 @@ id snapMargins
 id south
 id spacer
 id special_effects_controller_view_tag
+id spinner_age_group
 id spinner_availability
 id spinner_category
-id spinner_date
+id spinner_price_range
 id spline
 id split_action_bar
 id spread

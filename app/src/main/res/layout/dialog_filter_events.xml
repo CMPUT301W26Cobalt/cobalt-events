@@ -7,7 +7,6 @@
     android:background="@drawable/bg_dialog_rounded"
     android:padding="20dp">
 
-    <!-- Title row -->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -34,7 +33,70 @@
             android:contentDescription="Close" />
     </RelativeLayout>
 
-    <!-- Category -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Price Range"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="6dp" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_input_field"
+        android:layout_marginBottom="16dp">
+        <Spinner
+            android:id="@+id/spinner_price_range"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@null"
+            android:paddingStart="12dp"
+            android:paddingEnd="40dp" />
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="12dp"
+            android:src="@android:drawable/arrow_down_float"
+            app:tint="@color/grey_medium"
+            android:contentDescription="Dropdown" />
+    </RelativeLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Age Group"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="6dp" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_input_field"
+        android:layout_marginBottom="16dp">
+        <Spinner
+            android:id="@+id/spinner_age_group"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@null"
+            android:paddingStart="12dp"
+            android:paddingEnd="40dp" />
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="12dp"
+            android:src="@android:drawable/arrow_down_float"
+            app:tint="@color/grey_medium"
+            android:contentDescription="Dropdown" />
+    </RelativeLayout>
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -67,40 +129,6 @@
             android:contentDescription="Dropdown" />
     </RelativeLayout>
 
-    <!-- Date -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Date"
-        android:textSize="13sp"
-        android:textStyle="bold"
-        android:textColor="@color/text_primary"
-        android:layout_marginBottom="6dp" />
-
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="@drawable/bg_input_field"
-        android:layout_marginBottom="16dp">
-        <Spinner
-            android:id="@+id/spinner_date"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@null"
-            android:paddingStart="12dp"
-            android:paddingEnd="40dp" />
-        <ImageView
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:layout_marginEnd="12dp"
-            android:src="@android:drawable/arrow_down_float"
-            app:tint="@color/grey_medium"
-            android:contentDescription="Dropdown" />
-    </RelativeLayout>
-
-    <!-- Availability -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -133,7 +161,6 @@
             android:contentDescription="Dropdown" />
     </RelativeLayout>
 
-    <!-- Action buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -151,18 +178,19 @@
             android:textColor="@color/white"
             android:gravity="center"
             android:background="@drawable/bg_button_green_pill"
-            android:layout_marginEnd="16dp" />
+            android:layout_marginEnd="8dp" />
 
         <TextView
             android:id="@+id/btn_clear_filters"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="48dp"
+            android:layout_weight="1"
             android:text="CLEAR FILTERS"
             android:textSize="13sp"
             android:textStyle="bold"
             android:textColor="@color/grey_muted_text"
             android:gravity="center"
-            android:background="@null" />
+            android:background="@drawable/bg_button_outline_grey_pill" />
 
     </LinearLayout>
 

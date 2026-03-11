@@ -8,7 +8,10 @@
     </style>
 
     <style name="Widget.CobaltEvents.Switch" parent="Widget.AppCompat.CompoundButton.Switch">
-        <item name="thumbTint">@color/white</item>
+        <item name="thumbTint">@color/thumb_white</item>
+        <item name="track">@drawable/switch_track_pill</item>
         <item name="trackTint">@color/switch_track_selector</item>
+        <item name="android:minWidth">56dp</item>
+        <item name="android:minHeight">28dp</item>
     </style>
 </resources>

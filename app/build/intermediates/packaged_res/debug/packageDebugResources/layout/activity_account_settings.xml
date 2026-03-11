@@ -387,9 +387,7 @@
                             android:id="@+id/switch_general"
                             style="@style/Widget.CobaltEvents.Switch"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="48dp"
-                            android:minHeight="28dp" />
+                            android:layout_height="wrap_content" />
                     </LinearLayout>
 
                     <View
@@ -433,9 +431,7 @@
                             android:id="@+id/switch_event_updates"
                             style="@style/Widget.CobaltEvents.Switch"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="48dp"
-                            android:minHeight="28dp" />
+                            android:layout_height="wrap_content" />
                     </LinearLayout>
 
                     <View

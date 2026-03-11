@@ -105,6 +105,8 @@ drawable ic_notif_x_badge
 drawable ic_organizer_building
 drawable ic_user_group
 drawable ic_welcome_star
+drawable switch_thumb_pill
+drawable switch_track_pill
 id badge_accepted
 id badge_declined
 id btn_accept
@@ -191,9 +193,10 @@ id recycler_history
 id recycler_notification_events
 id recycler_notifications
 id saveButton
+id spinner_age_group
 id spinner_availability
 id spinner_category
-id spinner_date
+id spinner_price_range
 id switch_event_notification
 id switch_event_notifications
 id switch_event_updates

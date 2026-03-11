@@ -8,16 +8,16 @@
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\ic_arrow_back.xml"
     },
     {
+        "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_bg_switch_track_off.xml.flat",
+        "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\bg_switch_track_off.xml"
+    },
+    {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_ic_organizer_building.xml.flat",
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\ic_organizer_building.xml"
     },
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_bg_button_red_8dp.xml.flat",
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\bg_button_red_8dp.xml"
-    },
-    {
-        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_notifications.xml.flat",
-        "source": "com.example.cobaltevents.app-main-40:/layout/activity_notifications.xml"
     },
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_bg_notif_icon_trophy.xml.flat",
@@ -68,12 +68,20 @@
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\ic_nav_user.xml"
     },
     {
+        "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_switch_track_pill.xml.flat",
+        "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\switch_track_pill.xml"
+    },
+    {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_ic_edit_pencil.xml.flat",
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\ic_edit_pencil.xml"
     },
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_bg_avatar_circle.xml.flat",
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\bg_avatar_circle.xml"
+    },
+    {
+        "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_switch_track_apple.xml.flat",
+        "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\switch_track_apple.xml"
     },
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_ic_nav_calendar.xml.flat",
@@ -98,6 +106,10 @@
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\layout_activity_event_manage.xml.flat",
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\layout\\activity_event_manage.xml"
+    },
+    {
+        "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_bg_switch_track_on.xml.flat",
+        "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\bg_switch_track_on.xml"
     },
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\layout_dialog_filter_events.xml.flat",
@@ -200,8 +212,16 @@
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\bg_button_red_pill.xml"
     },
     {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_dialog_filter_events.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/dialog_filter_events.xml"
+    },
+    {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_bg_guidelines_box.xml.flat",
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\bg_guidelines_box.xml"
+    },
+    {
+        "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_switch_thumb_pill.xml.flat",
+        "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\switch_thumb_pill.xml"
     },
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_bg_qr_button.xml.flat",
