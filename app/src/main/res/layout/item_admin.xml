@@ -1,37 +1,169 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="14dp"
     android:layout_marginBottom="10dp"
-    android:background="@drawable/bg_card_event">
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="#FFFFFF">
 
-    <TextView
-        android:id="@+id/adminItemTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Item Title"
-        android:textSize="17sp"
-        android:textStyle="bold"
-        android:textColor="#0D1B2A"/>
-
-    <TextView
-        android:id="@+id/adminItemSubtitle"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Item Subtitle"
-        android:textSize="13sp"
-        android:textColor="#6B7280"
-        android:layout_marginTop="6dp"/>
+        android:orientation="horizontal"
+        android:padding="14dp"
+        android:gravity="top">
 
-    <Button
-        android:id="@+id/adminItemDeleteButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Remove"
-        android:textAllCaps="false"
-        android:layout_marginTop="12dp"
-        android:backgroundTint="#D32F2F"
-        android:textColor="#FFFFFF"/>
-</LinearLayout>
+        <!-- Avatar (Profiles/Organizers only) -->
+        <FrameLayout
+            android:id="@+id/adminItemAvatarContainer"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:layout_marginEnd="12dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/adminItemAvatar"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                android:contentDescription="Avatar" />
+
+            <TextView
+                android:id="@+id/adminItemInitials"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
+                android:gravity="center"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/bg_avatar_circle" />
+
+        </FrameLayout>
+
+        <!-- Content -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <!-- Title row + buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/adminItemTitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Item Title"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="#0D1B2A"
+                    android:ellipsize="end"
+                    android:maxLines="2" />
+
+                <ImageButton
+                    android:id="@+id/adminItemViewButton"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:src="@drawable/ic_visibility"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="View"
+                    app:tint="#6B7280" />
+
+                <ImageButton
+                    android:id="@+id/adminItemDeleteButton"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:src="@drawable/ic_delete"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Delete"
+                    app:tint="#D32F2F"
+                    android:layout_marginStart="4dp" />
+
+            </LinearLayout>
+
+            <!-- Badge -->
+            <TextView
+                android:id="@+id/adminItemBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:text="active"
+                android:textSize="11sp"
+                android:textColor="#2E7D32"
+                android:background="@drawable/bg_tag_teal"
+                android:visibility="gone" />
+
+            <!-- Subtitle -->
+            <TextView
+                android:id="@+id/adminItemSubtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Item Subtitle"
+                android:textSize="13sp"
+                android:textColor="#6B7280"
+                android:layout_marginTop="4dp" />
+
+            <!-- Detail line -->
+            <TextView
+                android:id="@+id/adminItemDetail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#9CA3AF"
+                android:layout_marginTop="4dp"
+                android:visibility="gone" />
+
+            <!-- Meta row -->
+            <LinearLayout
+                android:id="@+id/adminItemMetaRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/adminItemMeta1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="#6B7280"
+                    android:layout_marginEnd="16dp" />
+
+                <TextView
+                    android:id="@+id/adminItemMeta2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="12sp"
+                    android:textColor="#6B7280" />
+
+            </LinearLayout>
+
+            <!-- Image thumbnail (Images tab only) -->
+            <ImageView
+                android:id="@+id/adminItemImage"
+                android:layout_width="match_parent"
+                android:layout_height="140dp"
+                android:scaleType="centerCrop"
+                android:layout_marginTop="10dp"
+                android:visibility="gone"
+                android:contentDescription="Event poster" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

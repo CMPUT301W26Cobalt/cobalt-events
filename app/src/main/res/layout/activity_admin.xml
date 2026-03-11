@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -16,30 +14,41 @@
         android:paddingBottom="16dp"
         android:background="#0D1B2A">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Admin Dashboard"
-            android:textColor="#FFFFFF"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Admin Dashboard"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="System Administration"
             android:textColor="#C0C0C0"
-            android:textSize="14sp"
-            android:layout_marginTop="4dp" />
+            android:textSize="13sp"
+            android:layout_marginTop="2dp" />
+
+        <!-- Search bar -->
         <EditText
             android:id="@+id/etSearch"
             android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:layout_marginTop="12dp"
+            android:layout_height="42dp"
+            android:layout_marginTop="14dp"
             android:hint="Search..."
+            android:textColor="#0D1B2A"
+            android:textSize="14sp"
             android:padding="10dp"
             android:background="@drawable/bg_input_field" />
-
     </LinearLayout>
 
     <!-- Scrollable Tabs -->
@@ -47,35 +56,34 @@
         android:id="@+id/adminTabsScroll"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:scrollbars="none">
+        android:scrollbars="none"
+        android:background="#FFFFFF"
+        android:elevation="2dp">
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:padding="10dp">
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp">
 
-            <!-- Events -->
             <TextView
                 android:id="@+id/tab_events"
                 style="@style/AdminTab"
                 android:text="Events" />
 
-            <!-- Profiles -->
             <TextView
                 android:id="@+id/tab_profiles"
                 style="@style/AdminTab"
                 android:text="Profiles" />
 
-            <!-- Images -->
             <TextView
                 android:id="@+id/tab_images"
                 style="@style/AdminTab"
                 android:text="Images" />
 
-            <!-- Organizers -->
-
-            <!-- Notifications -->
             <TextView
                 android:id="@+id/tab_organizers"
                 style="@style/AdminTab"
@@ -85,11 +93,40 @@
                 android:id="@+id/tab_notifications"
                 style="@style/AdminTab"
                 android:text="Notifications" />
-
         </LinearLayout>
     </HorizontalScrollView>
 
+    <!-- Section header with count -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="8dp"
+        android:gravity="center_vertical">
 
+        <TextView
+            android:id="@+id/tvSectionTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Browse &amp; Manage Events"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#0D1B2A" />
+
+        <TextView
+            android:id="@+id/tvSectionCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="13sp"
+            android:textColor="#6B7280" />
+    </LinearLayout>
+
+    <!-- Empty state -->
     <TextView
         android:id="@+id/emptyMessage"
         android:layout_width="match_parent"
@@ -98,14 +135,19 @@
         android:textSize="16sp"
         android:textColor="#6B7280"
         android:gravity="center"
-        android:padding="20dp"
+        android:padding="40dp"
         android:visibility="gone" />
-    <!-- Content Area -->
+
+    <!-- Content -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/adminRecycler"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:padding="12dp" />
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="12dp"
+        android:clipToPadding="false" />
 
 </LinearLayout>

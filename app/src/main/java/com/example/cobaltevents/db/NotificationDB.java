@@ -7,17 +7,12 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Handles Firestore operations for the "notifications" collection.
- * Used by NotificationController to persist and listen for notifications.
- *
- * US 01.04.01 — stores "selected" notifications so the entrant's device
- * can pick them up via a real-time listener.
  */
 public class NotificationDB {
 
@@ -30,7 +25,6 @@ public class NotificationDB {
 
     /**
      * Saves a notification document to Firestore.
-     * The document ID is auto-generated and set back on the notification object.
      */
     public void saveNotification(Notification notification,
                                  OnSuccessListener<Void> onSuccess,
@@ -68,6 +62,29 @@ public class NotificationDB {
     }
 
     /**
+     * US 03.08.01 — Fetches ALL notifications for admin review,
+     * ordered by most recent first.
+     */
+    public void getAllNotifications(OnSuccessListener<List<Notification>> onSuccess,
+                                    OnFailureListener onFailure) {
+        db.collection(COLLECTION)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    List<Notification> notifications = new ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        Notification n = doc.toObject(Notification.class);
+                        if (n != null) {
+                            n.setId(doc.getId());
+                            notifications.add(n);
+                        }
+                    }
+                    onSuccess.onSuccess(notifications);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
+    /**
      * Marks a notification as read.
      */
     public void markAsRead(String notificationId,
@@ -81,7 +98,6 @@ public class NotificationDB {
 
     /**
      * Starts a real-time listener for new unread notifications for a recipient.
-     * Returns a ListenerRegistration that should be removed when no longer needed.
      */
     public ListenerRegistration listenForNotifications(String recipientId,
                                                        OnNotificationListener listener) {
@@ -107,9 +123,6 @@ public class NotificationDB {
                 });
     }
 
-    /**
-     * Callback interface for real-time notification updates.
-     */
     public interface OnNotificationListener {
         void onNotifications(List<Notification> notifications);
         void onError(Exception e);
