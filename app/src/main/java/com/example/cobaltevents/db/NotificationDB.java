@@ -12,13 +12,6 @@ import com.google.firebase.firestore.QuerySnapshot;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Handles Firestore operations for the "notifications" collection.
- * Used by NotificationController to persist and listen for notifications.
- *
- * US 01.04.01 — stores "selected" notifications so the entrant's device
- * can pick them up via a real-time listener.
- */
 public class NotificationDB {
 
     private static final String COLLECTION = "notifications";
@@ -28,10 +21,6 @@ public class NotificationDB {
         this.db = FirebaseFirestore.getInstance();
     }
 
-    /**
-     * Saves a notification document to Firestore.
-     * The document ID is auto-generated and set back on the notification object.
-     */
     public void saveNotification(Notification notification,
                                  OnSuccessListener<Void> onSuccess,
                                  OnFailureListener onFailure) {
@@ -43,9 +32,6 @@ public class NotificationDB {
                 .addOnFailureListener(onFailure);
     }
 
-    /**
-     * Fetches all notifications for a given recipient, ordered by timestamp descending.
-     */
     public void getNotificationsForRecipient(String recipientId,
                                              OnSuccessListener<List<Notification>> onSuccess,
                                              OnFailureListener onFailure) {
@@ -67,9 +53,6 @@ public class NotificationDB {
                 .addOnFailureListener(onFailure);
     }
 
-    /**
-     * Updates the read status of a notification (accepted or rejected).
-     */
     public void updateReadStatus(String notificationId, String readStatus,
                                  OnSuccessListener<Void> onSuccess,
                                  OnFailureListener onFailure) {
@@ -79,10 +62,6 @@ public class NotificationDB {
                 .addOnFailureListener(onFailure);
     }
 
-    /**
-     * Starts a real-time listener for new unread notifications for a recipient.
-     * Returns a ListenerRegistration that should be removed when no longer needed.
-     */
     public ListenerRegistration listenForNotifications(String recipientId,
                                                        OnNotificationListener listener) {
         return db.collection(COLLECTION)
@@ -107,9 +86,6 @@ public class NotificationDB {
                 });
     }
 
-    /**
-     * Callback interface for real-time notification updates.
-     */
     public interface OnNotificationListener {
         void onNotifications(List<Notification> notifications);
         void onError(Exception e);
