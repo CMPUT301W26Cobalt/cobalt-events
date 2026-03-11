@@ -13,6 +13,7 @@ public class Event {
     private String name;
     private String description;
     private String location;
+    private String price;
     private Timestamp eventDate;
     private Timestamp registrationOpen;
     private Timestamp registrationClose;
@@ -50,6 +51,7 @@ public class Event {
     public String getName() { return name; }
     public String getDescription() { return description; }
     public String getLocation() { return location; }
+    public String getPrice() { return price; }
     public Timestamp getEventDate() { return eventDate; }
     public Timestamp getRegistrationOpen() { return registrationOpen; }
     public Timestamp getRegistrationClose() { return registrationClose; }
@@ -66,6 +68,7 @@ public class Event {
     public void setName(String name) { this.name = name; }
     public void setDescription(String description) { this.description = description; }
     public void setLocation(String location) { this.location = location; }
+    public void setPrice(String price) { this.price = price; }
     public void setEventDate(Timestamp eventDate) { this.eventDate = eventDate; }
     public void setRegistrationOpen(Timestamp registrationOpen) { this.registrationOpen = registrationOpen; }
     public void setRegistrationClose(Timestamp registrationClose) { this.registrationClose = registrationClose; }

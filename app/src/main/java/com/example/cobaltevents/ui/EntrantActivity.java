@@ -34,8 +34,6 @@ public class EntrantActivity extends AppCompatActivity {
         entrantDB = new EntrantDB(this);
         controller = new EntrantController(entrantDB);
         currentEntrant = entrantDB.getEntrant();
-
-        // If profile is already complete, go to EventListActivity immediately
         if (currentEntrant.isValid()) {
             navigateToMain();
             return;

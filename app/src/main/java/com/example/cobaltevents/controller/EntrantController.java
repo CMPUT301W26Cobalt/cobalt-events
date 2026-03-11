@@ -39,16 +39,8 @@ public class EntrantController {
 
     public boolean saveEntrant(Entrant entrant) {
         if (!entrant.isValid()) return false;
-        
-        // Save locally for immediate access
         localDB.saveEntrant(entrant);
-        
-        // Sync to Firestore for admin/backup
-        remoteDB.saveProfile(entrant, 
-            unused -> {}, 
-            e -> {
-                // Log failure or handle retry if needed
-            });
+        remoteDB.saveProfile(entrant, unused -> {}, e -> {});
             
         return true;
     }

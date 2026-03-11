@@ -31,4 +31,8 @@ public class EntrantDB {
         String profilePictureUrl = prefs.getString("profilePictureUrl", null);
         return new Entrant(deviceId, name, email, phone, profilePictureUrl);
     }
+
+    public void clearEntrant() {
+        prefs.edit().clear().apply();
+    }
 }
