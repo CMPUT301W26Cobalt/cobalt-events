@@ -153,13 +153,27 @@ public class AccountSettingsActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        btnOrganizerMode.setOnClickListener(v -> {
-            notificationPrefs.edit().putString("account_mode", "organizer").apply();
-            updateModeSelectionUI("organizer", btnUserMode, btnOrganizerMode);
-            Intent intent = new Intent(this, OrganizerActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
-        });
+        btnOrganizerMode.setOnClickListener(v ->
+            profileDB.getProfile(currentEntrant.getDeviceId(),
+                profile -> {
+                    if (profile != null && Boolean.FALSE.equals(profile.getOrganizerEnabled())) {
+                        Toast.makeText(this, "Organizer access has been revoked for this account", Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    notificationPrefs.edit().putString("account_mode", "organizer").apply();
+                    updateModeSelectionUI("organizer", btnUserMode, btnOrganizerMode);
+                    Intent intent = new Intent(this, OrganizerActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                },
+                e -> {
+                    // Firestore unreachable — allow the switch
+                    notificationPrefs.edit().putString("account_mode", "organizer").apply();
+                    updateModeSelectionUI("organizer", btnUserMode, btnOrganizerMode);
+                    Intent intent = new Intent(this, OrganizerActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                }));
     }
 
     private void updateModeSelectionUI(String mode, View btnUserMode, View btnOrganizerMode) {
