@@ -277,14 +277,12 @@ public class AccountSettingsActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.nav_my_events).setOnClickListener(v -> {
-            // Navigate to my events
         });
 
         findViewById(R.id.nav_qr).setOnClickListener(v -> {
             startActivity(new Intent(this, QRScanActivity.class));
         });
 
-        // Set active state for account
         ImageView ivAccount = findViewById(R.id.iv_nav_account);
         TextView tvAccount = findViewById(R.id.tv_nav_account);
         ivAccount.setColorFilter(getResources().getColor(R.color.user_green));

@@ -2,10 +2,6 @@ package com.example.cobaltevents.model;
 
 import com.google.firebase.Timestamp;
 
-/**testing
- * Represents an entrant's registration on a waiting list for an event.
- * US 01.01.01 — Join waitlist: note, numParticipants, contact info, notification preference.
- */
 public class WaitingList {
 
     public static final String STATUS_PENDING = "pending";
@@ -39,7 +35,6 @@ public class WaitingList {
         this.numParticipants = 1;
     }
 
-    /** Full constructor for US 01.01.01 join form. */
     public WaitingList(String eventId, String deviceId, String note, int numParticipants,
                        String email, String phone, String notificationMethod) {
         this.eventId = eventId;

@@ -22,11 +22,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * RecyclerView adapter for displaying a list of Event objects.
- * Tapping a card expands it inline to show full event details.
- * The JOIN button calls the provided listener.
- */
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHolder> {
 
     public interface OnEventClickListener {
