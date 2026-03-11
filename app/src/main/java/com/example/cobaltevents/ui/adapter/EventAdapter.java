@@ -12,12 +12,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.model.Event;
+import com.example.cobaltevents.model.WaitingList;
 import com.google.firebase.Timestamp;
 
 import java.text.SimpleDateFormat;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -28,12 +30,13 @@ import java.util.Set;
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHolder> {
 
     public interface OnEventClickListener {
-        void onEventClick(Event event);
+        void onEventClick(Event event, boolean isJoined);
     }
 
     private List<Event> events;
     private final OnEventClickListener listener;
     private final Set<String> expandedIds = new HashSet<>();
+    private Map<String, WaitingList> activeRegistrationsByEventId;
 
     private static final SimpleDateFormat DATE_FORMAT =
             new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
@@ -45,6 +48,12 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
     public void updateEvents(List<Event> newEvents) {
         this.events = newEvents;
+        notifyDataSetChanged();
+    }
+
+    /** Map eventId -> active waiting list registration (not withdrawn/cancelled). */
+    public void setActiveRegistrationsByEventId(Map<String, WaitingList> map) {
+        this.activeRegistrationsByEventId = map;
         notifyDataSetChanged();
     }
 
@@ -61,6 +70,9 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         Event event = events.get(position);
         String eventId = event.getEventId() != null ? event.getEventId() : String.valueOf(position);
         boolean isExpanded = expandedIds.contains(eventId);
+        boolean isJoined = event.getEventId() != null
+                && activeRegistrationsByEventId != null
+                && activeRegistrationsByEventId.containsKey(event.getEventId());
 
         // Basic fields
         holder.tvName.setText(event.getName());
@@ -93,18 +105,21 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.btnJoin.setText("REGISTRATION CLOSED");
             holder.btnJoin.setAlpha(0.45f);
             holder.btnJoin.setEnabled(false);
+            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_green_pill);
         } else if (registrationNotOpen) {
             holder.tvStatus.setText("UPCOMING");
             holder.tvStatus.setTextColor(Color.parseColor("#E65100"));
-            holder.btnJoin.setText("JOIN WAITLIST");
+            holder.btnJoin.setText(isJoined ? "LEAVE WAITLIST" : "JOIN WAITLIST");
             holder.btnJoin.setAlpha(0.65f);
             holder.btnJoin.setEnabled(true);
+            holder.btnJoin.setBackgroundResource(isJoined ? R.drawable.bg_button_red_pill : R.drawable.bg_button_green_pill);
         } else {
             holder.tvStatus.setText("OPEN");
             holder.tvStatus.setTextColor(Color.parseColor("#2E7D32"));
-            holder.btnJoin.setText("JOIN WAITLIST");
+            holder.btnJoin.setText(isJoined ? "LEAVE WAITLIST" : "JOIN WAITLIST");
             holder.btnJoin.setAlpha(1.0f);
             holder.btnJoin.setEnabled(true);
+            holder.btnJoin.setBackgroundResource(isJoined ? R.drawable.bg_button_red_pill : R.drawable.bg_button_green_pill);
         }
 
         // Expanded detail section
@@ -160,7 +175,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         holder.tvChevron.setOnClickListener(toggleExpand);
 
         // JOIN button calls the listener
-        holder.btnJoin.setOnClickListener(v -> listener.onEventClick(event));
+        holder.btnJoin.setOnClickListener(v -> listener.onEventClick(event, isJoined));
     }
 
     @Override

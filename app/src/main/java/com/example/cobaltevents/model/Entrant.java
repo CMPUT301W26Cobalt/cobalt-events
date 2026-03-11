@@ -1,6 +1,7 @@
 package com.example.cobaltevents.model;
 
 import android.util.Patterns;
+import com.google.firebase.firestore.Exclude;
 
 /**
  * Data model for an entrant (user who enters event lotteries).
@@ -21,8 +22,6 @@ public class Entrant {
     private String email;
     private String phone;
     private String profilePictureUrl;
-
-    public Entrant() {} // Required for Firestore
 
     /** No-arg constructor required by Firestore deserialization. */
     public Entrant() {}
@@ -77,4 +76,22 @@ public class Entrant {
 
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
+
+    public String getProfilePictureUrl() { return profilePictureUrl; }
+    public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
+
+    public String getInitials() {
+        if (name == null || name.trim().isEmpty()) {
+            return "?";
+        }
+        String[] parts = name.trim().split("\\s+");
+        if (parts.length == 0) return "?";
+
+        StringBuilder initials = new StringBuilder();
+        initials.append(parts[0].substring(0, 1).toUpperCase());
+        if (parts.length > 1) {
+            initials.append(parts[parts.length - 1].substring(0, 1).toUpperCase());
+        }
+        return initials.toString();
+    }
 }

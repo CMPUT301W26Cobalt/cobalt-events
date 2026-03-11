@@ -29,7 +29,9 @@ import com.google.firebase.Timestamp;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Displays a scrollable list of all available events fetched from Firestore.
@@ -54,6 +56,7 @@ public class EventListActivity extends AppCompatActivity {
     private String deviceId;
     private EventController eventController;
     private WaitingListDB waitingListDB;
+    private final Map<String, WaitingList> activeRegistrationsByEventId = new HashMap<>();
 
     private List<Event> allEvents = new ArrayList<>();
     private String currentQuery = "";
@@ -74,7 +77,7 @@ public class EventListActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progress_bar);
         tvEmpty = findViewById(R.id.tv_empty);
 
-        adapter = new EventAdapter(new ArrayList<>(), this::joinWaitlist);
+        adapter = new EventAdapter(new ArrayList<>(), this::handleJoinOrLeave);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
@@ -107,10 +110,34 @@ public class EventListActivity extends AppCompatActivity {
         eventController.getAllEvents(events -> {
             progressBar.setVisibility(View.GONE);
             allEvents = events != null ? events : new ArrayList<>();
-            applyFilters();
+            loadActiveRegistrationsThenApplyFilters();
         }, e -> {
             progressBar.setVisibility(View.GONE);
             Toast.makeText(this, "Failed to load events: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void loadActiveRegistrationsThenApplyFilters() {
+        activeRegistrationsByEventId.clear();
+        waitingListDB.getEntrantHistory(deviceId, registrations -> {
+            if (registrations != null) {
+                for (WaitingList r : registrations) {
+                    if (r == null) continue;
+                    String status = r.getStatus();
+                    boolean isActive = status == null
+                            || (!WaitingList.STATUS_WITHDRAWN.equals(status)
+                            && !WaitingList.STATUS_CANCELLED.equals(status));
+                    if (isActive && r.getEventId() != null) {
+                        activeRegistrationsByEventId.put(r.getEventId(), r);
+                    }
+                }
+            }
+            adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+            applyFilters();
+        }, e -> {
+            // If we can't load registrations, still show events.
+            adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+            applyFilters();
         });
     }
 
@@ -262,22 +289,41 @@ public class EventListActivity extends AppCompatActivity {
                 .setNegativeButton("Cancel", null)
                 .show();
     }
-    
-    private void joinWaitlist(Event event) {
+
+    private void handleJoinOrLeave(Event event, boolean isJoined) {
+        if (isJoined) {
+            leaveWaitlist(event);
+        } else {
+            openEventDetail(event);
+        }
+    }
+
+    /** Navigate to event details where user can tap Add to join waitlist with full form. */
+    private void openEventDetail(Event event) {
         if (event.getEventId() == null) {
             Toast.makeText(this, "Invalid event", Toast.LENGTH_SHORT).show();
             return;
         }
-        
-        WaitingList registration = new WaitingList(event.getEventId(), deviceId, "pending");
-        
-        waitingListDB.addRegistration(registration, 
-            registrationId -> {
-                Toast.makeText(this, "Successfully joined waitlist for " + event.getName(), Toast.LENGTH_SHORT).show();
-            },
-            e -> {
-                Toast.makeText(this, "Failed to join waitlist: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        );
+        Intent intent = new Intent(this, EventDetailActivity.class);
+        intent.putExtra("eventId", event.getEventId());
+        startActivity(intent);
+    }
+
+    private void leaveWaitlist(Event event) {
+        if (event.getEventId() == null) {
+            Toast.makeText(this, "Invalid event", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        WaitingList reg = activeRegistrationsByEventId.get(event.getEventId());
+        if (reg == null || reg.getId() == null) {
+            Toast.makeText(this, "Could not find your registration.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        waitingListDB.updateStatus(reg.getId(), WaitingList.STATUS_WITHDRAWN,
+                unused -> {
+                    Toast.makeText(this, "Left waitlist for " + event.getName(), Toast.LENGTH_SHORT).show();
+                    loadActiveRegistrationsThenApplyFilters();
+                },
+                e -> Toast.makeText(this, "Failed to leave waitlist: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 }

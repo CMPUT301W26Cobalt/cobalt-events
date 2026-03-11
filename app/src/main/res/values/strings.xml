@@ -13,4 +13,19 @@
     <string name="notification_selected_title">You\'ve been selected!</string>
     <string name="notification_selected_message">You have been chosen to attend %1$s.</string>
 
+    <!-- US 01.01.01 Join Waitlist -->
+    <string name="add_to_waitlist">Add to waitlist</string>
+    <string name="join_waitlist">Join Waitlist</string>
+    <string name="brief_note">Brief description or note</string>
+    <string name="num_participants">Number of participants</string>
+    <string name="contact_email">Email</string>
+    <string name="contact_phone">Phone (optional)</string>
+    <string name="notification_method">Preferred notification method</string>
+    <string name="confirm_join">Confirm and Join</string>
+    <string name="waitlist_success">Successfully joined the waitlist!</string>
+    <string name="waitlist_fail">Failed to join waitlist.</string>
+    <string name="validation_email_required">Email is required.</string>
+    <string name="validation_email_invalid">Invalid email format.</string>
+    <string name="validation_participants">Enter a valid number of participants (1 or more).</string>
+    <string name="validation_notification_method">Please select a notification method.</string>
 </resources>
