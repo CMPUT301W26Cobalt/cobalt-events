@@ -1,6 +1,5 @@
 package com.example.cobaltevents.controller;
 
-import android.content.Context;
 import android.util.Log;
 
 import com.example.cobaltevents.db.EventDB;
@@ -28,10 +27,10 @@ public class LotteryController {
     private final EventDB eventDB;
     private final NotificationController notificationController;
 
-    public LotteryController(Context context) {
+    public LotteryController() {
         this.waitingListDB = new WaitingListDB();
         this.eventDB = new EventDB();
-        this.notificationController = new NotificationController(context);
+        this.notificationController = new NotificationController();
     }
 
     /**
@@ -63,7 +62,8 @@ public class LotteryController {
             Collections.shuffle(waitingEntries);
 
             // Split into selected and not selected
-            int selectCount = Math.min(waitingEntries.size(), event.getMaxEntrants());
+            int capacity = event.getWaitingListCapacity();
+            int selectCount = (capacity == 0) ? waitingEntries.size() : Math.min(waitingEntries.size(), capacity);
             List<String> selectedIds = new ArrayList<>();
             List<String> notSelectedIds = new ArrayList<>();
             Map<String, String> statusUpdates = new HashMap<>();
@@ -88,8 +88,13 @@ public class LotteryController {
                                 e -> Log.e(TAG, "Failed to mark lottery drawn", e)
                         );
 
-                        // Send notifications (checks opt-out per entrant)
-                        notificationController.sendLotteryNotifications(selectedIds, notSelectedIds, event);
+                        // Send notifications to all participants
+                        for (String entrantId : selectedIds) {
+                            notificationController.sendSelectedNotification(entrantId, event.getEventId(), event.getName());
+                        }
+                        for (String entrantId : notSelectedIds) {
+                            notificationController.sendNotSelectedNotification(entrantId, event.getEventId(), event.getName());
+                        }
 
                         listener.onComplete(selectedIds, notSelectedIds);
                     },

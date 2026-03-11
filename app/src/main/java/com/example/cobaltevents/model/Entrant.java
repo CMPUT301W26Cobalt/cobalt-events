@@ -77,6 +77,15 @@ public class Entrant {
     public String getProfilePictureUrl() { return profilePictureUrl; }
     public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 
+    public String getInitials() {
+        if (name == null || name.trim().isEmpty()) return "?";
+        String[] parts = name.trim().split("\\s+");
+        if (parts.length >= 2) {
+            return ("" + parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+        }
+        return ("" + parts[0].charAt(0)).toUpperCase();
+    }
+
     public boolean isNotificationsEnabled() { return notificationsEnabled; }
     public void setNotificationsEnabled(boolean notificationsEnabled) { this.notificationsEnabled = notificationsEnabled; }
 }

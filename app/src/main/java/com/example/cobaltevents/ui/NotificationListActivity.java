@@ -11,7 +11,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cobaltevents.R;
-import com.example.cobaltevents.controller.EntrantController;
+import android.provider.Settings;
+
 import com.example.cobaltevents.controller.NotificationController;
 import com.example.cobaltevents.model.Notification;
 import com.example.cobaltevents.ui.adapter.NotificationAdapter;
@@ -42,8 +43,8 @@ public class NotificationListActivity extends AppCompatActivity implements Notif
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_notification_list);
 
-        notificationController = new NotificationController(this);
-        deviceId = EntrantController.getDeviceId(this);
+        notificationController = new NotificationController();
+        deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
 
         // Toolbar with back navigation
         MaterialToolbar toolbar = findViewById(R.id.toolbar);
