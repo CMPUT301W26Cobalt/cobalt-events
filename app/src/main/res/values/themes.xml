@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.CobaltEvents" parent="Theme.MaterialComponents.Light.NoActionBar">
-        <item name="colorPrimary">#2E7D32</item>
-        <item name="colorPrimaryDark">#1B5E20</item>
-        <item name="colorAccent">#4CAF50</item>
-        <item name="android:windowBackground">#F0F4F0</item>
+        <item name="colorPrimary">@color/primary_user</item>
+        <item name="colorPrimaryDark">@color/primary_dark</item>
+        <item name="colorAccent">@color/accent</item>
+        <item name="android:windowBackground">@color/page_background</item>
+    </style>
+
+    <style name="Widget.CobaltEvents.Switch" parent="Widget.AppCompat.CompoundButton.Switch">
+        <item name="thumbTint">@color/white</item>
+        <item name="trackTint">@color/switch_track_selector</item>
     </style>
 </resources>
