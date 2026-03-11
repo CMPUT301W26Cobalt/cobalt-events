@@ -1,7 +1,11 @@
 package com.example.cobaltevents.ui;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.Editable;
@@ -57,6 +61,7 @@ public class EventListActivity extends AppCompatActivity {
     private EventController eventController;
     private WaitingListDB waitingListDB;
     private final Map<String, WaitingList> activeRegistrationsByEventId = new HashMap<>();
+    private final Map<String, Integer> waitlistCountByEventId = new HashMap<>();
 
     private List<Event> allEvents = new ArrayList<>();
     private String currentQuery = "";
@@ -133,12 +138,33 @@ public class EventListActivity extends AppCompatActivity {
                 }
             }
             adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+            loadWaitlistCountsThenApplyFilters();
             applyFilters();
         }, e -> {
             // If we can't load registrations, still show events.
             adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+            loadWaitlistCountsThenApplyFilters();
             applyFilters();
         });
+    }
+
+    private void loadWaitlistCountsThenApplyFilters() {
+        waitlistCountByEventId.clear();
+        for (Event e : allEvents) {
+            if (e == null || e.getEventId() == null) continue;
+            String eventId = e.getEventId();
+            waitingListDB.getActiveCountForEvent(eventId,
+                    count -> {
+                        waitlistCountByEventId.put(eventId, count);
+                        adapter.setWaitlistCountByEventId(waitlistCountByEventId);
+                        applyFilters();
+                    },
+                    err -> {
+                        adapter.setWaitlistCountByEventId(waitlistCountByEventId);
+                        applyFilters();
+                    });
+        }
+        adapter.setWaitlistCountByEventId(waitlistCountByEventId);
     }
 
     private void setupBottomNavigation() {
@@ -319,11 +345,31 @@ public class EventListActivity extends AppCompatActivity {
             Toast.makeText(this, "Could not find your registration.", Toast.LENGTH_SHORT).show();
             return;
         }
-        waitingListDB.updateStatus(reg.getId(), WaitingList.STATUS_WITHDRAWN,
-                unused -> {
-                    Toast.makeText(this, "Left waitlist for " + event.getName(), Toast.LENGTH_SHORT).show();
-                    loadActiveRegistrationsThenApplyFilters();
-                },
-                e -> Toast.makeText(this, "Failed to leave waitlist: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        if (!isNetworkAvailable()) {
+            Toast.makeText(this, "Failed to leave waitlist: No internet connection.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("Leave Waitlist")
+                .setMessage("Are you sure you want to leave the waitlist for " + event.getName() + "?")
+                .setPositiveButton("Leave", (d, which) -> waitingListDB.updateStatus(reg.getId(), WaitingList.STATUS_WITHDRAWN,
+                        unused -> {
+                            Toast.makeText(this, "Left waitlist for " + event.getName(), Toast.LENGTH_SHORT).show();
+                            loadActiveRegistrationsThenApplyFilters();
+                        },
+                        e -> Toast.makeText(this, "Failed to leave waitlist: " + e.getMessage(), Toast.LENGTH_SHORT).show()))
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) return false;
+        Network network = cm.getActiveNetwork();
+        if (network == null) return false;
+        NetworkCapabilities caps = cm.getNetworkCapabilities(network);
+        return caps != null && (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                || caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+                || caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
     }
 }

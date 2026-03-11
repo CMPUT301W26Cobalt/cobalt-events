@@ -37,6 +37,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     private final OnEventClickListener listener;
     private final Set<String> expandedIds = new HashSet<>();
     private Map<String, WaitingList> activeRegistrationsByEventId;
+    private Map<String, Integer> waitlistCountByEventId;
 
     private static final SimpleDateFormat DATE_FORMAT =
             new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
@@ -51,9 +52,14 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         notifyDataSetChanged();
     }
 
-    /** Map eventId -> active waiting list registration (not withdrawn/cancelled). */
     public void setActiveRegistrationsByEventId(Map<String, WaitingList> map) {
         this.activeRegistrationsByEventId = map;
+        notifyDataSetChanged();
+    }
+
+    /** Map eventId -> active waitlist count. */
+    public void setWaitlistCountByEventId(Map<String, Integer> map) {
+        this.waitlistCountByEventId = map;
         notifyDataSetChanged();
     }
 
@@ -73,6 +79,9 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         boolean isJoined = event.getEventId() != null
                 && activeRegistrationsByEventId != null
                 && activeRegistrationsByEventId.containsKey(event.getEventId());
+        Integer count = (event.getEventId() != null && waitlistCountByEventId != null)
+                ? waitlistCountByEventId.get(event.getEventId())
+                : null;
 
         // Basic fields
         holder.tvName.setText(event.getName());
@@ -82,6 +91,12 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.tvDate.setText(DATE_FORMAT.format(event.getEventDate().toDate()));
         } else {
             holder.tvDate.setText("Date TBD");
+        }
+
+        if (count != null) {
+            holder.tvWaitlistCount.setText(count + " on waitlist");
+        } else {
+            holder.tvWaitlistCount.setText("");
         }
 
         // Category tag
@@ -186,6 +201,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     static class EventViewHolder extends RecyclerView.ViewHolder {
         TextView tvName, tvLocation, tvDate, tvStatus, tvChevron, tvCategoryTag;
         TextView btnJoin;
+        TextView tvWaitlistCount;
         TextView tvDescription, tvCapacity, tvRegOpen, tvRegClose, tvGeoNote;
         LinearLayout layoutExpandedDetails, layoutGeoNote;
 
@@ -198,6 +214,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             tvChevron = itemView.findViewById(R.id.tv_chevron);
             tvCategoryTag = itemView.findViewById(R.id.tv_category_tag);
             btnJoin = itemView.findViewById(R.id.btn_join);
+            tvWaitlistCount = itemView.findViewById(R.id.tv_waitlist_count);
             layoutExpandedDetails = itemView.findViewById(R.id.layout_expanded_details);
             tvDescription = itemView.findViewById(R.id.tv_description);
             tvCapacity = itemView.findViewById(R.id.tv_capacity);

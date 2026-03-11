@@ -8,10 +8,9 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Handles Firestore operations for waiting list registrations
- */
+
 public class WaitingListDB {
     
     private final FirebaseFirestore db;
@@ -50,5 +49,27 @@ public class WaitingListDB {
             .update("status", status)
             .addOnSuccessListener(onSuccess)
             .addOnFailureListener(onFailure);
+    }
+
+    public void getActiveCountForEvent(String eventId,
+                                       OnSuccessListener<Integer> onSuccess,
+                                       OnFailureListener onFailure) {
+        db.collection(COLLECTION_NAME)
+                .whereEqualTo("eventId", eventId)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    AtomicInteger count = new AtomicInteger(0);
+                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                        WaitingList reg = doc.toObject(WaitingList.class);
+                        if (reg == null) continue;
+                        String status = reg.getStatus();
+                        boolean isActive = status == null
+                                || (!WaitingList.STATUS_WITHDRAWN.equals(status)
+                                && !WaitingList.STATUS_CANCELLED.equals(status));
+                        if (isActive) count.incrementAndGet();
+                    }
+                    onSuccess.onSuccess(count.get());
+                })
+                .addOnFailureListener(onFailure);
     }
 }

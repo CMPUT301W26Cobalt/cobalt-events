@@ -1,0 +1,166 @@
+[
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_bg_button_green_pill.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/bg_button_green_pill.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_event_detail.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_event_detail.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_partial_bottom_nav.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/partial_bottom_nav.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_dialog_filter_events.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/dialog_filter_events.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_bg_dialog_rounded.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/bg_dialog_rounded.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_bg_input_field.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/bg_input_field.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_entrant_map.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_entrant_map.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_dialog_edit_profile.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/dialog_edit_profile.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_event_create.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_event_create.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_main.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_admin.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_admin.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_ic_arrow_back.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/ic_arrow_back.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_bg_edit_text.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/bg_edit_text.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_entrant_edit.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_entrant_edit.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_event_list.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_event_list.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_bg_button_filter.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/bg_button_filter.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_ic_user_group.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/ic_user_group.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_event_history.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_event_history.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_bg_welcome_logo.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/bg_welcome_logo.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_bg_welcome_card.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/bg_welcome_card.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_bg_qr_button.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/bg_qr_button.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_item_admin.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/item_admin.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_welcome.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_welcome.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_join_waitlist.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_join_waitlist.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_bg_icon_user.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/bg_icon_user.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_admin_list.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_admin_list.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_bg_button_red_pill.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/bg_button_red_pill.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_bg_icon_organizer.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/bg_icon_organizer.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_account_settings.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_account_settings.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_organizer.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_organizer.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_entrant.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_entrant.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_bg_tag_teal.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/bg_tag_teal.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_bg_card_event.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/bg_card_event.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_bg_bottom_nav.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/bg_bottom_nav.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_qr_scan.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_qr_scan.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_activity_event_manage.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/activity_event_manage.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_ic_welcome_star.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/ic_welcome_star.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_item_event_history.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/item_event_history.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_ic_organizer_building.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/ic_organizer_building.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_item_event.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/item_event.xml"
+    }
+]
