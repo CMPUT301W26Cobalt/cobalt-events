@@ -4,8 +4,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -131,8 +133,68 @@ public class AccountSettingsActivity extends AppCompatActivity {
         switchEventUpdates.setOnCheckedChangeListener((v, isChecked) -> notificationPrefs.edit().putBoolean("notification_event_updates", isChecked).apply());
 
         loadNotificationEvents();
-        
+        setupAccountModeSelector();
         setupBottomNavigation();
+    }
+
+    private void setupAccountModeSelector() {
+        View btnUserMode = findViewById(R.id.btn_user_mode);
+        View btnOrganizerMode = findViewById(R.id.btn_organizer_mode);
+        if (btnUserMode == null || btnOrganizerMode == null) return;
+
+        String currentMode = notificationPrefs.getString("account_mode", "user");
+        updateModeSelectionUI(currentMode, btnUserMode, btnOrganizerMode);
+
+        btnUserMode.setOnClickListener(v -> {
+            notificationPrefs.edit().putString("account_mode", "user").apply();
+            updateModeSelectionUI("user", btnUserMode, btnOrganizerMode);
+            Intent intent = new Intent(this, EventListActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+        });
+
+        btnOrganizerMode.setOnClickListener(v -> {
+            notificationPrefs.edit().putString("account_mode", "organizer").apply();
+            updateModeSelectionUI("organizer", btnUserMode, btnOrganizerMode);
+            Intent intent = new Intent(this, OrganizerActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+        });
+    }
+
+    private void updateModeSelectionUI(String mode, View btnUserMode, View btnOrganizerMode) {
+        boolean isUser = "user".equals(mode);
+
+        btnUserMode.setBackground(isUser
+                ? getDrawable(R.drawable.bg_mode_option_selected)
+                : getDrawable(R.drawable.bg_mode_option));
+
+        View radioUser = btnUserMode.findViewById(R.id.radio_user_mode);
+        View radioOrg = btnOrganizerMode.findViewById(R.id.radio_organizer_mode);
+        if (radioUser != null) {
+            radioUser.setVisibility(isUser ? View.VISIBLE : View.GONE);
+            radioUser.setBackground(isUser
+                    ? getDrawable(R.drawable.bg_mode_option_selected)
+                    : getDrawable(R.drawable.bg_mode_option));
+        }
+
+        btnOrganizerMode.setBackground(!isUser
+                ? getDrawable(R.drawable.bg_mode_option_selected)
+                : getDrawable(R.drawable.bg_mode_option));
+
+        if (radioOrg != null) {
+            radioOrg.setVisibility(!isUser ? View.VISIBLE : View.GONE);
+            radioOrg.setBackground(!isUser
+                    ? getDrawable(R.drawable.bg_mode_option_selected)
+                    : getDrawable(R.drawable.bg_mode_option));
+        }
+
+        TextView tvUserLabel = btnUserMode.findViewById(R.id.tv_user_mode_label);
+        TextView tvOrgLabel = btnOrganizerMode.findViewById(R.id.tv_organizer_mode_label);
+        if (tvUserLabel != null) tvUserLabel.setTextColor(getResources().getColor(
+                isUser ? R.color.organizer_blue : R.color.text_primary));
+        if (tvOrgLabel != null) tvOrgLabel.setTextColor(getResources().getColor(
+                !isUser ? R.color.organizer_blue : R.color.text_primary));
     }
 
     private void applySwitchTints(androidx.appcompat.widget.SwitchCompat switchCompat) {
@@ -267,27 +329,55 @@ public class AccountSettingsActivity extends AppCompatActivity {
     }
 
     private void setupBottomNavigation() {
-        findViewById(R.id.nav_events).setOnClickListener(v -> {
-            startActivity(new Intent(this, EventListActivity.class));
-            finish();
-        });
-        
-        findViewById(R.id.nav_notifications).setOnClickListener(v -> {
-            startActivity(new Intent(this, NotificationsActivity.class));
-        });
+        String mode = notificationPrefs.getString("account_mode", "user");
+        FrameLayout navContainer = findViewById(R.id.nav_container);
 
-        findViewById(R.id.nav_my_events).setOnClickListener(v -> {
-            // Navigate to my events
-        });
+        // Tint header to match current mode
+        View headerBar = findViewById(R.id.header_bar);
+        if (headerBar != null) {
+            headerBar.setBackgroundColor(ContextCompat.getColor(this,
+                    "organizer".equals(mode) ? R.color.organizer_blue : R.color.header_teal));
+        }
 
-        findViewById(R.id.nav_qr).setOnClickListener(v -> {
-            startActivity(new Intent(this, QRScanActivity.class));
-        });
+        if ("organizer".equals(mode)) {
+            LayoutInflater.from(this).inflate(R.layout.partial_bottom_nav_organizer, navContainer, true);
 
-        // Set active state for account
-        ImageView ivAccount = findViewById(R.id.iv_nav_account);
-        TextView tvAccount = findViewById(R.id.tv_nav_account);
-        ivAccount.setColorFilter(getResources().getColor(R.color.user_green));
-        tvAccount.setTextColor(getResources().getColor(R.color.user_green));
+            navContainer.findViewById(R.id.nav_create).setOnClickListener(v ->
+                    startActivity(new Intent(this, EventCreateActivity.class)));
+            navContainer.findViewById(R.id.nav_dashboard).setOnClickListener(v -> {
+                startActivity(new Intent(this, OrganizerActivity.class));
+                finish();
+            });
+            navContainer.findViewById(R.id.nav_notifications).setOnClickListener(v ->
+                    startActivity(new Intent(this, NotificationsActivity.class)
+                            .putExtra("fromOrganizer", true)));
+            navContainer.findViewById(R.id.nav_my_events).setOnClickListener(v -> {
+                startActivity(new Intent(this, OrganizerActivity.class));
+                finish();
+            });
+
+            ImageView ivAccount = navContainer.findViewById(R.id.iv_nav_account);
+            TextView tvAccount = navContainer.findViewById(R.id.tv_nav_account);
+            if (ivAccount != null) ivAccount.setColorFilter(getResources().getColor(R.color.organizer_blue));
+            if (tvAccount != null) tvAccount.setTextColor(getResources().getColor(R.color.organizer_blue));
+        } else {
+            LayoutInflater.from(this).inflate(R.layout.partial_bottom_nav, navContainer, true);
+
+            navContainer.findViewById(R.id.nav_events).setOnClickListener(v -> {
+                startActivity(new Intent(this, EventListActivity.class));
+                finish();
+            });
+            navContainer.findViewById(R.id.nav_notifications).setOnClickListener(v ->
+                    startActivity(new Intent(this, NotificationsActivity.class)));
+            navContainer.findViewById(R.id.nav_my_events).setOnClickListener(v ->
+                    startActivity(new Intent(this, EventHistoryActivity.class)));
+            navContainer.findViewById(R.id.nav_qr).setOnClickListener(v ->
+                    startActivity(new Intent(this, QRScanActivity.class)));
+
+            ImageView ivAccount = navContainer.findViewById(R.id.iv_nav_account);
+            TextView tvAccount = navContainer.findViewById(R.id.tv_nav_account);
+            if (ivAccount != null) ivAccount.setColorFilter(getResources().getColor(R.color.user_green));
+            if (tvAccount != null) tvAccount.setTextColor(getResources().getColor(R.color.user_green));
+        }
     }
 }
