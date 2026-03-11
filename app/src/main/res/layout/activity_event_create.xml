@@ -13,10 +13,7 @@
         android:background="@color/organizer_blue"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingLeft="8dp"
-        android:paddingRight="16dp"
-        android:paddingTop="16dp"
-        android:paddingBottom="16dp">
+        android:padding="16dp">
 
         <ImageView
             android:id="@+id/btn_back"
@@ -32,7 +29,7 @@
             android:layout_weight="1"
             android:text="Create New Event"
             android:textColor="@color/white"
-            android:textSize="18sp"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
     </LinearLayout>
@@ -531,7 +528,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="52dp"
                 android:layout_marginBottom="16dp"
-                android:background="@drawable/bg_button_primary_account"
+                android:background="@drawable/bg_button_blue_pill"
                 android:gravity="center"
                 android:text="CREATE EVENT"
                 android:textAllCaps="true"
