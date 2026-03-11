@@ -21,8 +21,10 @@
     <string name="event_notifications">Event Notifications</string>
     <string name="event_notifications_subtitle">You won\'t receive updates about this event</string>
     <string name="dialog_join_waitlist_title">Join Waitlist</string>
+    <string name="dialog_join_waitlist_subtitle">Are you sure you want to join this event\'s waitlist?</string>
     <string name="dialog_join_waitlist_guidelines_title">Lottery Guidelines:</string>
     <string name="dialog_join_waitlist_guidelines_body">You must stay on the waitlist until the draw\nWinners are randomly selected after registration closes\nYou\'ll receive a notification if you\'re selected\nIf selected, you must accept within 24 hours\nLeaving the waitlist will remove your entry\n\nMake sure you meet the event criteria and can commit to attending if selected.</string>
+    <string name="dialog_join_waitlist_disclaimer">Make sure you meet the event criteria and can commit to attending if selected.</string>
     <string name="dialog_cancel">CANCEL</string>
     <string name="dialog_join_waitlist_confirm">JOIN WAITLIST</string>
     <string name="dialog_leave_waitlist_title">Leave Waitlist</string>

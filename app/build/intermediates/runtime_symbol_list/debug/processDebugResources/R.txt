@@ -3046,6 +3046,7 @@ int drawable bg_button_red_pill 0x7f07007c
 int drawable bg_card_event 0x7f07007d
 int drawable bg_dialog_rounded 0x7f07007e
 int drawable bg_edit_text 0x7f07007f
+int drawable bg_guidelines_box 0x7f07010c
 int drawable bg_icon_organizer 0x7f070080
 int drawable bg_icon_user 0x7f070081
 int drawable bg_input_field 0x7f070082
@@ -3091,6 +3092,7 @@ int drawable ic_arrow_back 0x7f0700a9
 int drawable ic_arrow_back_black_24 0x7f0700aa
 int drawable ic_clear_black_24 0x7f0700ab
 int drawable ic_clock_black_24dp 0x7f0700ac
+int drawable ic_filter_sliders 0x7f07010b
 int drawable ic_keyboard_black_24dp 0x7f0700ad
 int drawable ic_launcher_foreground 0x7f0700ae
 int drawable ic_m3_chip_check 0x7f0700af
@@ -3297,6 +3299,7 @@ int id btn_edit_info 0x7f08006d
 int id btn_filter 0x7f08006e
 int id btn_join 0x7f08006f
 int id btn_join_leave 0x7f080070
+int id btn_leave 0x7f08025d
 int id btn_notify_invited 0x7f080071
 int id btn_run_lottery 0x7f080072
 int id btn_save_changes 0x7f080073
@@ -3745,6 +3748,7 @@ int id tv_description 0x7f08022b
 int id tv_detail_date 0x7f080259
 int id tv_detail_location 0x7f08025a
 int id tv_detail_time 0x7f08025b
+int id tv_disclaimer 0x7f08025f
 int id tv_email 0x7f08022c
 int id tv_empty 0x7f08022d
 int id tv_event_date 0x7f08022e
@@ -3752,14 +3756,17 @@ int id tv_event_location 0x7f08022f
 int id tv_event_name 0x7f080230
 int id tv_event_status 0x7f080231
 int id tv_geo_note 0x7f080232
+int id tv_message 0x7f08025e
 int id tv_name 0x7f080233
 int id tv_nav_account 0x7f080234
 int id tv_nav_events 0x7f080235
 int id tv_nav_my_events 0x7f080236
 int id tv_nav_notifications 0x7f080237
 int id tv_phone 0x7f080238
+int id tv_price 0x7f08025c
 int id tv_reg_close 0x7f080239
 int id tv_status 0x7f08023b
+int id tv_subtitle 0x7f080260
 int id tv_title 0x7f08023c
 int id tv_waitlist_count 0x7f08023d
 int id unchecked 0x7f08023e
@@ -3936,6 +3943,7 @@ int layout design_text_input_start_icon 0x7f0b003b
 int layout dialog_edit_profile 0x7f0b003c
 int layout dialog_filter_events 0x7f0b003d
 int layout dialog_join_waitlist_confirm 0x7f0b003e
+int layout dialog_leave_waitlist_confirm 0x7f0b0080
 int layout item_admin 0x7f0b003f
 int layout item_event 0x7f0b0040
 int layout item_event_history 0x7f0b0041
@@ -4068,8 +4076,10 @@ int string contact_email 0x7f0f003d
 int string contact_phone 0x7f0f003e
 int string dialog_cancel 0x7f0f003f
 int string dialog_join_waitlist_confirm 0x7f0f0040
+int string dialog_join_waitlist_disclaimer 0x7f0f00d9
 int string dialog_join_waitlist_guidelines_body 0x7f0f0041
 int string dialog_join_waitlist_guidelines_title 0x7f0f0042
+int string dialog_join_waitlist_subtitle 0x7f0f00da
 int string dialog_join_waitlist_title 0x7f0f0043
 int string dialog_leave_waitlist_confirm 0x7f0f0044
 int string dialog_leave_waitlist_message 0x7f0f0045

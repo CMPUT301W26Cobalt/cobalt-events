@@ -121,7 +121,7 @@ public class EventListActivity extends AppCompatActivity {
         eventController.getAllEvents(events -> {
             progressBar.setVisibility(View.GONE);
             allEvents = events != null ? events : new ArrayList<>();
-            loadActiveRegistrationsThenApplyFilters();
+        loadActiveRegistrationsThenApplyFilters();
         }, e -> {
             progressBar.setVisibility(View.GONE);
             Toast.makeText(this, "Failed to load events: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -147,7 +147,6 @@ public class EventListActivity extends AppCompatActivity {
             loadWaitlistCountsThenApplyFilters();
             applyFilters();
         }, e -> {
-            // If we can't load registrations, still show events.
             adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
             loadWaitlistCountsThenApplyFilters();
             applyFilters();
@@ -174,7 +173,6 @@ public class EventListActivity extends AppCompatActivity {
     }
 
     private void setupBottomNavigation() {
-        // Mark this tab as active (teal), others inactive (grey)
         setEventsTabActive();
 
         View navAccount = findViewById(R.id.nav_account);
@@ -407,17 +405,27 @@ public class EventListActivity extends AppCompatActivity {
             Toast.makeText(this, "Failed to leave waitlist: No internet connection.", Toast.LENGTH_SHORT).show();
             return;
         }
-        new AlertDialog.Builder(this)
-                .setTitle("Leave Waitlist")
-                .setMessage("Are you sure you want to leave the waitlist for " + event.getName() + "?")
-                .setPositiveButton("Leave", (d, which) -> waitingListDB.updateStatus(reg.getId(), WaitingList.STATUS_WITHDRAWN,
-                        unused -> {
-                            Toast.makeText(this, "Left waitlist for " + event.getName(), Toast.LENGTH_SHORT).show();
-                            loadActiveRegistrationsThenApplyFilters();
-                        },
-                        e -> Toast.makeText(this, "Failed to leave waitlist: " + e.getMessage(), Toast.LENGTH_SHORT).show()))
-                .setNegativeButton("Cancel", null)
-                .show();
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_leave_waitlist_confirm, null);
+        ((TextView) dialogView.findViewById(R.id.tv_message))
+                .setText("Are you sure you want to leave the waitlist for " + event.getName() + "?");
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+
+        TextView btnCancel = dialogView.findViewById(R.id.btn_cancel);
+        TextView btnLeave = dialogView.findViewById(R.id.btn_leave);
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        btnLeave.setOnClickListener(v -> {
+            dialog.dismiss();
+            waitingListDB.updateStatus(reg.getId(), WaitingList.STATUS_WITHDRAWN,
+                    unused -> {
+                        Toast.makeText(this, "Left waitlist for " + event.getName(), Toast.LENGTH_SHORT).show();
+                        loadActiveRegistrationsThenApplyFilters();
+                    },
+                    e -> Toast.makeText(this, "Failed to leave waitlist: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        });
+
+        dialog.show();
     }
 
     private boolean isNetworkAvailable() {

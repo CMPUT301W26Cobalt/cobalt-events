@@ -31,21 +31,23 @@
             android:tint="@color/grey_medium" />
     </RelativeLayout>
 
-    <ImageView
-        android:layout_width="18dp"
-        android:layout_height="18dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="2dp"
-        android:src="@android:drawable/ic_menu_info_details"
-        android:tint="@color/header_teal" />
+    <TextView
+        android:id="@+id/tv_subtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="@string/dialog_join_waitlist_subtitle"
+        android:textAlignment="center"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="16dp"
         android:orientation="vertical"
         android:padding="12dp"
-        android:background="@color/user_green_light">
+        android:background="@drawable/bg_guidelines_box">
 
         <TextView
             android:layout_width="match_parent"
@@ -61,12 +63,23 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="@string/dialog_join_waitlist_guidelines_body"
-            android:textAlignment="center"
+            android:textAlignment="viewStart"
             android:textColor="@color/header_teal"
             android:textSize="12sp"
             android:lineSpacingExtra="2dp" />
 
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_disclaimer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:text="@string/dialog_join_waitlist_disclaimer"
+        android:textAlignment="center"
+        android:textColor="@color/grey_medium"
+        android:textSize="12sp"
+        android:textStyle="italic" />
 
     <LinearLayout
         android:layout_width="match_parent"

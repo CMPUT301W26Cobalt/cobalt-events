@@ -3047,6 +3047,7 @@ drawable bg_button_red_pill
 drawable bg_card_event
 drawable bg_dialog_rounded
 drawable bg_edit_text
+drawable bg_guidelines_box
 drawable bg_icon_organizer
 drawable bg_icon_user
 drawable bg_input_field
@@ -3092,6 +3093,7 @@ drawable ic_arrow_back
 drawable ic_arrow_back_black_24
 drawable ic_clear_black_24
 drawable ic_clock_black_24dp
+drawable ic_filter_sliders
 drawable ic_keyboard_black_24dp
 drawable ic_launcher_foreground
 drawable ic_m3_chip_check
@@ -3298,6 +3300,7 @@ id btn_edit_info
 id btn_filter
 id btn_join
 id btn_join_leave
+id btn_leave
 id btn_notify_invited
 id btn_run_lottery
 id btn_save_changes
@@ -3746,6 +3749,7 @@ id tv_description
 id tv_detail_date
 id tv_detail_location
 id tv_detail_time
+id tv_disclaimer
 id tv_email
 id tv_empty
 id tv_event_date
@@ -3753,14 +3757,17 @@ id tv_event_location
 id tv_event_name
 id tv_event_status
 id tv_geo_note
+id tv_message
 id tv_name
 id tv_nav_account
 id tv_nav_events
 id tv_nav_my_events
 id tv_nav_notifications
 id tv_phone
+id tv_price
 id tv_reg_close
 id tv_status
+id tv_subtitle
 id tv_title
 id tv_waitlist_count
 id unchecked
@@ -3937,6 +3944,7 @@ layout design_text_input_start_icon
 layout dialog_edit_profile
 layout dialog_filter_events
 layout dialog_join_waitlist_confirm
+layout dialog_leave_waitlist_confirm
 layout item_admin
 layout item_event
 layout item_event_history
@@ -4069,8 +4077,10 @@ string contact_email
 string contact_phone
 string dialog_cancel
 string dialog_join_waitlist_confirm
+string dialog_join_waitlist_disclaimer
 string dialog_join_waitlist_guidelines_body
 string dialog_join_waitlist_guidelines_title
+string dialog_join_waitlist_subtitle
 string dialog_join_waitlist_title
 string dialog_leave_waitlist_confirm
 string dialog_leave_waitlist_message

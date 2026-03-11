@@ -43,10 +43,6 @@ public class WaitingListDB {
             .addOnFailureListener(onFailure);
     }
     
-    /**
-     * Returns the caller's active registration for an event (if any).
-     * "Active" excludes withdrawn/cancelled statuses.
-     */
     public void getActiveRegistrationForEvent(String eventId,
                                               String deviceId,
                                               OnSuccessListener<WaitingList> onSuccess,

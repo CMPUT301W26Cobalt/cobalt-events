@@ -25,10 +25,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
 
-/**
- * Displays detailed information about a selected event.
- * Join/Leave waitlist happens directly on this screen (no intermediate "+" flow).
- */
 public class EventDetailActivity extends AppCompatActivity {
 
     private ImageView eventPoster;
@@ -83,9 +79,6 @@ public class EventDetailActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Loads the event from Firestore and updates the UI.
-     */
     private void loadEvent(String eventId) {
 
         eventDB.getEvent(eventId,
@@ -195,12 +188,20 @@ public class EventDetailActivity extends AppCompatActivity {
 
     private void showLeaveConfirmDialog() {
         if (activeRegistration == null || activeRegistration.getId() == null) return;
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.dialog_leave_waitlist_title)
-                .setMessage(R.string.dialog_leave_waitlist_message)
-                .setPositiveButton(R.string.dialog_leave_waitlist_confirm, (d, which) -> leaveWaitlist())
-                .setNegativeButton(R.string.dialog_cancel, null)
-                .show();
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_leave_waitlist_confirm, null);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+
+        TextView btnCancel = dialogView.findViewById(R.id.btn_cancel);
+        TextView btnLeave = dialogView.findViewById(R.id.btn_leave);
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        btnLeave.setOnClickListener(v -> {
+            dialog.dismiss();
+            leaveWaitlist();
+        });
+
+        dialog.show();
     }
 
     private void leaveWaitlist() {

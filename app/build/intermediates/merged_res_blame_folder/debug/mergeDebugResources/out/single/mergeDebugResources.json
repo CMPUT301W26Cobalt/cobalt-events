@@ -1,9 +1,5 @@
 [
     {
-        "merged": "com.example.cobaltevents.app-debug-38:/layout_partial_bottom_nav.xml.flat",
-        "source": "com.example.cobaltevents.app-main-40:/layout/partial_bottom_nav.xml"
-    },
-    {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_bg_tag_teal.xml.flat",
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\bg_tag_teal.xml"
     },
@@ -14,6 +10,10 @@
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_ic_organizer_building.xml.flat",
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\ic_organizer_building.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/layout_dialog_join_waitlist_confirm.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/layout/dialog_join_waitlist_confirm.xml"
     },
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\layout_activity_welcome.xml.flat",
@@ -44,12 +44,12 @@
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\ic_nav_user.xml"
     },
     {
-        "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\layout_activity_event_list.xml.flat",
-        "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\layout\\activity_event_list.xml"
-    },
-    {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_ic_nav_calendar.xml.flat",
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\ic_nav_calendar.xml"
+    },
+    {
+        "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\layout_activity_event_list.xml.flat",
+        "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\layout\\activity_event_list.xml"
     },
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\layout_dialog_edit_profile.xml.flat",
@@ -66,10 +66,6 @@
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\layout_dialog_filter_events.xml.flat",
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\layout\\dialog_filter_events.xml"
-    },
-    {
-        "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_bg_header_rounded.xml.flat",
-        "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\bg_header_rounded.xml"
     },
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_bg_card_event.xml.flat",
@@ -92,12 +88,12 @@
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\layout\\partial_bottom_nav.xml"
     },
     {
-        "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\layout_activity_event_create.xml.flat",
-        "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\layout\\activity_event_create.xml"
-    },
-    {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\layout_item_admin.xml.flat",
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\layout\\item_admin.xml"
+    },
+    {
+        "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\layout_activity_event_create.xml.flat",
+        "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\layout\\activity_event_create.xml"
     },
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\layout_activity_admin_list.xml.flat",
@@ -112,8 +108,16 @@
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\bg_button_filter.xml"
     },
     {
+        "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\layout_dialog_leave_waitlist_confirm.xml.flat",
+        "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\layout\\dialog_leave_waitlist_confirm.xml"
+    },
+    {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\layout_activity_organizer.xml.flat",
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\layout\\activity_organizer.xml"
+    },
+    {
+        "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_ic_filter_sliders.xml.flat",
+        "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\drawable\\ic_filter_sliders.xml"
     },
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\layout_activity_join_waitlist.xml.flat",
@@ -174,6 +178,10 @@
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\layout_item_event.xml.flat",
         "source": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-main-40:\\layout\\item_event.xml"
+    },
+    {
+        "merged": "com.example.cobaltevents.app-debug-38:/drawable_bg_guidelines_box.xml.flat",
+        "source": "com.example.cobaltevents.app-main-40:/drawable/bg_guidelines_box.xml"
     },
     {
         "merged": "C:\\Users\\MP\\.gradle\\daemon\\9.1.0\\com.example.cobaltevents.app-debug-38:\\drawable_bg_welcome_logo.xml.flat",

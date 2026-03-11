@@ -43,6 +43,8 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
     private static final SimpleDateFormat TIME_FORMAT =
             new SimpleDateFormat("h:mm a", Locale.getDefault());
+    private static final java.util.regex.Pattern PRICE_NUMBER =
+            java.util.regex.Pattern.compile("^\\d+(?:\\.\\d{1,2})?$");
 
     public EventAdapter(List<Event> events, OnEventClickListener listener) {
         this.events = events;
@@ -59,7 +61,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         notifyDataSetChanged();
     }
 
-    /** Map eventId -> active waitlist count. */
     public void setWaitlistCountByEventId(Map<String, Integer> map) {
         this.waitlistCountByEventId = map;
         notifyDataSetChanged();
@@ -85,7 +86,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 ? waitlistCountByEventId.get(event.getEventId())
                 : null;
 
-        // Basic fields
         holder.tvName.setText(event.getName());
 
         if (count != null) {
@@ -94,7 +94,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.tvWaitlistCount.setText("");
         }
 
-        // Category tag
         if (event.getCategory() != null && !event.getCategory().isEmpty()) {
             holder.tvCategoryTag.setVisibility(View.VISIBLE);
             holder.tvCategoryTag.setText(event.getCategory());
@@ -102,7 +101,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.tvCategoryTag.setVisibility(View.GONE);
         }
 
-        // Registration status (controls JOIN button state only)
         Timestamp now = Timestamp.now();
         boolean registrationClosed = event.getRegistrationClose() != null
                 && event.getRegistrationClose().compareTo(now) < 0;
@@ -126,17 +124,14 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.btnJoin.setBackgroundResource(isJoined ? R.drawable.bg_button_red_pill : R.drawable.bg_button_green_pill);
         }
 
-        // Expanded detail section
         holder.layoutExpandedDetails.setVisibility(isExpanded ? View.VISIBLE : View.GONE);
         holder.tvChevron.setText(isExpanded ? "▲" : "▼");
 
         if (isExpanded) {
-            // Description
             holder.tvDescription.setText(
                     event.getDescription() != null && !event.getDescription().isEmpty()
                             ? event.getDescription() : "No description available.");
 
-            // Date + time
             if (event.getEventDate() != null) {
                 holder.tvDetailDate.setText(DATE_FORMAT.format(event.getEventDate().toDate()));
                 holder.tvDetailTime.setText(TIME_FORMAT.format(event.getEventDate().toDate()));
@@ -145,28 +140,22 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 holder.tvDetailTime.setText("TBD");
             }
 
-            // Location
             holder.tvDetailLocation.setText(event.getLocation() != null ? event.getLocation() : "TBD");
 
-            // Price
-            String price = event.getPrice();
-            holder.tvPrice.setText(price != null && !price.trim().isEmpty() ? price : "TBD");
+            holder.tvPrice.setText(formatPrice(event.getPrice()));
 
-            // Capacity
             if (event.getWaitingListCapacity() > 0) {
                 holder.tvCapacity.setText(event.getWaitingListCapacity() + " spots");
             } else {
                 holder.tvCapacity.setText("Unlimited");
             }
 
-            // Registration close date
             if (event.getRegistrationClose() != null) {
                 holder.tvRegClose.setText(DATE_FORMAT.format(event.getRegistrationClose().toDate()));
             } else {
                 holder.tvRegClose.setText("TBD");
             }
 
-            // Geolocation note
             if (event.isGeolocationRequired()) {
                 holder.layoutGeoNote.setVisibility(View.VISIBLE);
             } else {
@@ -174,7 +163,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             }
         }
 
-        // Toggle expand on card tap (but not on JOIN button)
         View.OnClickListener toggleExpand = v -> {
             if (expandedIds.contains(eventId)) {
                 expandedIds.remove(eventId);
@@ -187,8 +175,16 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         holder.itemView.setOnClickListener(toggleExpand);
         holder.tvChevron.setOnClickListener(toggleExpand);
 
-        // JOIN button calls the listener
         holder.btnJoin.setOnClickListener(v -> listener.onEventClick(event, isJoined));
+    }
+
+    private static String formatPrice(String raw) {
+        if (raw == null) return "TBD";
+        String p = raw.trim();
+        if (p.isEmpty()) return "TBD";
+        if (p.startsWith("$")) return p;
+        if (PRICE_NUMBER.matcher(p).matches()) return "$" + p;
+        return p;
     }
 
     @Override
