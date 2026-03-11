@@ -86,6 +86,12 @@ public class NotificationsActivity extends AppCompatActivity {
     private void setupBottomNavigation(boolean fromOrganizer) {
         FrameLayout navContainer = findViewById(R.id.nav_container);
 
+        View headerBar = findViewById(R.id.header_bar);
+        if (headerBar != null) {
+            headerBar.setBackgroundColor(getResources().getColor(
+                    fromOrganizer ? R.color.organizer_blue : R.color.notif_header_teal));
+        }
+
         if (fromOrganizer) {
             LayoutInflater.from(this).inflate(R.layout.partial_bottom_nav_organizer, navContainer, true);
 

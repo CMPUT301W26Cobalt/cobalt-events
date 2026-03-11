@@ -3,7 +3,10 @@ package com.example.cobaltevents.ui;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -50,13 +53,38 @@ public class EventHistoryActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progress_bar);
         tvEmpty = findViewById(R.id.tv_empty);
         
-        findViewById(R.id.btn_back).setOnClickListener(v -> finish());
-        
         adapter = new EventHistoryAdapter(new ArrayList<>(), this::onEventClick);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
-        
+
+        setupBottomNavigation();
         loadHistory();
+    }
+
+    private void setupBottomNavigation() {
+        FrameLayout navContainer = findViewById(R.id.nav_container);
+        LayoutInflater.from(this).inflate(R.layout.partial_bottom_nav, navContainer, true);
+
+        navContainer.findViewById(R.id.nav_events).setOnClickListener(v -> {
+            startActivity(new Intent(this, EventListActivity.class));
+            finish();
+        });
+        navContainer.findViewById(R.id.nav_my_events).setOnClickListener(v -> {});
+        navContainer.findViewById(R.id.nav_qr).setOnClickListener(v ->
+                startActivity(new Intent(this, QRScanActivity.class)));
+        navContainer.findViewById(R.id.nav_notifications).setOnClickListener(v -> {
+            startActivity(new Intent(this, NotificationsActivity.class));
+            finish();
+        });
+        navContainer.findViewById(R.id.nav_account).setOnClickListener(v -> {
+            startActivity(new Intent(this, AccountSettingsActivity.class));
+            finish();
+        });
+
+        ImageView iv = navContainer.findViewById(R.id.iv_nav_my_events);
+        TextView tv = navContainer.findViewById(R.id.tv_nav_my_events);
+        if (iv != null) iv.setColorFilter(getResources().getColor(R.color.user_green));
+        if (tv != null) tv.setTextColor(getResources().getColor(R.color.user_green));
     }
     
     private void loadHistory() {
