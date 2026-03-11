@@ -11,7 +11,7 @@
     android:clipToPadding="false">
 
     <LinearLayout
-        android:id="@+id/nav_notifications"
+        android:id="@+id/nav_events"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
@@ -20,16 +20,16 @@
         android:clickable="true"
         android:focusable="true">
         <ImageView
-            android:id="@+id/iv_nav_notifications"
+            android:id="@+id/iv_nav_events"
             android:layout_width="22dp"
             android:layout_height="22dp"
-            android:src="@drawable/ic_nav_bell"
+            android:src="@drawable/ic_nav_search"
             app:tint="@color/grey_nav_inactive" />
         <TextView
-            android:id="@+id/tv_nav_notifications"
+            android:id="@+id/tv_nav_events"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Notifications"
+            android:text="Events"
             android:textSize="10sp"
             android:textColor="@color/grey_nav_inactive" />
     </LinearLayout>
@@ -84,7 +84,7 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/nav_events"
+        android:id="@+id/nav_notifications"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
@@ -93,16 +93,16 @@
         android:clickable="true"
         android:focusable="true">
         <ImageView
-            android:id="@+id/iv_nav_events"
+            android:id="@+id/iv_nav_notifications"
             android:layout_width="22dp"
             android:layout_height="22dp"
-            android:src="@drawable/ic_nav_search"
+            android:src="@drawable/ic_nav_bell"
             app:tint="@color/grey_nav_inactive" />
         <TextView
-            android:id="@+id/tv_nav_events"
+            android:id="@+id/tv_nav_notifications"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Events"
+            android:text="Notifications"
             android:textSize="10sp"
             android:textColor="@color/grey_nav_inactive" />
     </LinearLayout>
