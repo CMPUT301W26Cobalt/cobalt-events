@@ -38,10 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Displays a scrollable list of all available events fetched from Firestore.
- * Supports live search and a filter dialog (category, date, availability).
- */
 public class EventListActivity extends AppCompatActivity {
 
     private static final String[] CATEGORY_OPTIONS = {
@@ -227,7 +223,6 @@ public class EventListActivity extends AppCompatActivity {
         List<Event> filtered = new ArrayList<>();
         
         for (Event event : allEvents) {
-            // Search filter
             if (!currentQuery.isEmpty()) {
                 String query = currentQuery.toLowerCase();
                 boolean matches = event.getName().toLowerCase().contains(query) ||
@@ -235,14 +230,9 @@ public class EventListActivity extends AppCompatActivity {
                                 event.getLocation().toLowerCase().contains(query);
                 if (!matches) continue;
             }
-            
-            // Category filter (placeholder - add category field to Event model if needed)
-            // Date filter
             if (selectedDateIndex > 0) {
                 if (!matchesDateFilter(event, selectedDateIndex)) continue;
             }
-            
-            // Availability filter
             if (selectedAvailabilityIndex > 0) {
                 if (!matchesAvailabilityFilter(event, selectedAvailabilityIndex)) continue;
             }

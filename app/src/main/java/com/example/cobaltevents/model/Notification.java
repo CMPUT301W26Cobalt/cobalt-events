@@ -2,13 +2,6 @@ package com.example.cobaltevents.model;
 
 import java.util.Date;
 
-/**
- * Data model for the Firestore "notifications" collection.
- * Used for US 01.04.01 — Notification When Selected.
- *
- * Each document represents a notification sent to an entrant
- * (e.g., when they are selected from the waiting list).
- */
 public class Notification {
 
     public static final String TYPE_SELECTED = "selected";

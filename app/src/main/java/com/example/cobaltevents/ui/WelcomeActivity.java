@@ -20,7 +20,6 @@ public class WelcomeActivity extends AppCompatActivity {
         Button btnContinueOrganizer = findViewById(R.id.btn_continue_organizer);
 
         btnContinueUser.setOnClickListener(v -> {
-            // Navigate to EntrantActivity (which currently handles entrant profile/login)
             Intent intent = new Intent(WelcomeActivity.this, EntrantActivity.class);
             startActivity(intent);
         });
