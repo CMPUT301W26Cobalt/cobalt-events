@@ -43,6 +43,38 @@ public class WaitingListDB {
             .addOnFailureListener(onFailure);
     }
     
+    /**
+     * Returns the caller's active registration for an event (if any).
+     * "Active" excludes withdrawn/cancelled statuses.
+     */
+    public void getActiveRegistrationForEvent(String eventId,
+                                              String deviceId,
+                                              OnSuccessListener<WaitingList> onSuccess,
+                                              OnFailureListener onFailure) {
+        db.collection(COLLECTION_NAME)
+                .whereEqualTo("eventId", eventId)
+                .whereEqualTo("deviceId", deviceId)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    WaitingList active = null;
+                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                        WaitingList reg = doc.toObject(WaitingList.class);
+                        if (reg == null) continue;
+                        reg.setId(doc.getId());
+                        String status = reg.getStatus();
+                        boolean isActive = status == null
+                                || (!WaitingList.STATUS_WITHDRAWN.equals(status)
+                                && !WaitingList.STATUS_CANCELLED.equals(status));
+                        if (isActive) {
+                            active = reg;
+                            break;
+                        }
+                    }
+                    onSuccess.onSuccess(active);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
     public void updateStatus(String registrationId, String status, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
         db.collection(COLLECTION_NAME)
             .document(registrationId)

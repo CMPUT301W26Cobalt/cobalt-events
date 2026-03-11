@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@color/page_background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/page_background">
 
     <!-- Header bar -->
     <LinearLayout
@@ -103,7 +108,8 @@
             android:layout_height="match_parent"
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
-            android:paddingTop="4dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="96dp"
             android:clipToPadding="false" />
 
         <TextView
@@ -121,4 +127,19 @@
     <!-- Bottom Navigation -->
     <include layout="@layout/partial_bottom_nav" />
 
-</LinearLayout>
+    </LinearLayout>
+
+    <!-- Floating + action (matches figma) -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_add_event"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="88dp"
+        android:contentDescription="Add"
+        app:backgroundTint="@color/user_green"
+        app:srcCompat="@android:drawable/ic_input_add"
+        app:tint="@color/white" />
+
+</FrameLayout>

@@ -1,6 +1,5 @@
 package com.example.cobaltevents.ui;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
@@ -20,6 +19,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -100,6 +101,11 @@ public class EventListActivity extends AppCompatActivity {
 
         findViewById(R.id.btn_filter).setOnClickListener(v -> showFilterDialog());
 
+        View fabAdd = findViewById(R.id.fab_add_event);
+        if (fabAdd != null) {
+            fabAdd.setOnClickListener(v -> startActivity(new Intent(this, EventCreateActivity.class)));
+        }
+
         loadEvents();
         setupBottomNavigation();
     }
@@ -168,6 +174,9 @@ public class EventListActivity extends AppCompatActivity {
     }
 
     private void setupBottomNavigation() {
+        // Mark this tab as active (teal), others inactive (grey)
+        setEventsTabActive();
+
         View navAccount = findViewById(R.id.nav_account);
         if (navAccount != null) {
             navAccount.setOnClickListener(v -> {
@@ -194,6 +203,24 @@ public class EventListActivity extends AppCompatActivity {
                 startActivity(intent);
             });
         }
+    }
+
+    private void setEventsTabActive() {
+        int active = ContextCompat.getColor(this, R.color.header_teal);
+        int inactive = ContextCompat.getColor(this, R.color.grey_nav_inactive);
+
+        tintNavIconAndText(R.id.iv_nav_notifications, R.id.tv_nav_notifications, inactive);
+        tintNavIconAndText(R.id.iv_nav_my_events, R.id.tv_nav_my_events, inactive);
+        tintNavIconAndText(R.id.iv_nav_account, R.id.tv_nav_account, inactive);
+
+        tintNavIconAndText(R.id.iv_nav_events, R.id.tv_nav_events, active);
+    }
+
+    private void tintNavIconAndText(int iconId, int textId, int color) {
+        android.widget.ImageView icon = findViewById(iconId);
+        TextView text = findViewById(textId);
+        if (icon != null) icon.setColorFilter(color);
+        if (text != null) text.setTextColor(color);
     }
     
     private void applyFilters() {
@@ -320,19 +347,50 @@ public class EventListActivity extends AppCompatActivity {
         if (isJoined) {
             leaveWaitlist(event);
         } else {
-            openEventDetail(event);
+            showJoinConfirmDialog(event);
         }
     }
 
-    /** Navigate to event details where user can tap Add to join waitlist with full form. */
-    private void openEventDetail(Event event) {
-        if (event.getEventId() == null) {
+    private void showJoinConfirmDialog(Event event) {
+        if (event == null || event.getEventId() == null) {
             Toast.makeText(this, "Invalid event", Toast.LENGTH_SHORT).show();
             return;
         }
-        Intent intent = new Intent(this, EventDetailActivity.class);
-        intent.putExtra("eventId", event.getEventId());
-        startActivity(intent);
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_join_waitlist_confirm, null);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+
+        TextView btnCancel = dialogView.findViewById(R.id.btn_cancel);
+        TextView btnJoin = dialogView.findViewById(R.id.btn_join);
+        View btnClose = dialogView.findViewById(R.id.btn_close);
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        if (btnClose != null) btnClose.setOnClickListener(v -> dialog.dismiss());
+        btnJoin.setOnClickListener(v -> {
+            dialog.dismiss();
+            joinWaitlist(event);
+        });
+
+        dialog.show();
+    }
+
+    private void joinWaitlist(Event event) {
+        if (event == null || event.getEventId() == null) {
+            Toast.makeText(this, "Invalid event", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!isNetworkAvailable()) {
+            Toast.makeText(this, getString(R.string.waitlist_fail) + " No internet connection.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        WaitingList registration = new WaitingList(event.getEventId(), deviceId, WaitingList.STATUS_PENDING);
+        waitingListDB.addRegistration(registration,
+                id -> {
+                    Toast.makeText(this, R.string.waitlist_success, Toast.LENGTH_SHORT).show();
+                    loadActiveRegistrationsThenApplyFilters();
+                },
+                e -> Toast.makeText(this, getString(R.string.waitlist_fail) + " " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
     private void leaveWaitlist(Event event) {

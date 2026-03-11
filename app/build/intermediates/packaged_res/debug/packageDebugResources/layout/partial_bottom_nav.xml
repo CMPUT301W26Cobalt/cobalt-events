@@ -2,11 +2,13 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="64dp"
+    android:layout_height="80dp"
     android:orientation="horizontal"
     android:background="@drawable/bg_bottom_nav"
     android:gravity="center_vertical"
-    android:elevation="8dp">
+    android:elevation="8dp"
+    android:clipChildren="false"
+    android:clipToPadding="false">
 
     <LinearLayout
         android:id="@+id/nav_notifications"
@@ -21,13 +23,13 @@
             android:id="@+id/iv_nav_notifications"
             android:layout_width="22dp"
             android:layout_height="22dp"
-            android:src="@android:drawable/ic_popup_reminder"
+            android:src="@drawable/ic_nav_bell"
             app:tint="@color/grey_nav_inactive" />
         <TextView
             android:id="@+id/tv_nav_notifications"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Alerts"
+            android:text="Notifications"
             android:textSize="10sp"
             android:textColor="@color/grey_nav_inactive" />
     </LinearLayout>
@@ -45,7 +47,7 @@
             android:id="@+id/iv_nav_my_events"
             android:layout_width="22dp"
             android:layout_height="22dp"
-            android:src="@android:drawable/ic_menu_agenda"
+            android:src="@drawable/ic_nav_calendar"
             app:tint="@color/grey_nav_inactive" />
         <TextView
             android:id="@+id/tv_nav_my_events"
@@ -66,15 +68,17 @@
         android:focusable="true">
 
         <LinearLayout
-            android:layout_width="52dp"
-            android:layout_height="52dp"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginTop="-6dp"
             android:background="@drawable/bg_qr_button"
-            android:gravity="center">
+            android:gravity="center"
+            android:elevation="6dp">
 
             <ImageView
-                android:layout_width="26dp"
-                android:layout_height="26dp"
-                android:src="@android:drawable/ic_menu_camera"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:src="@drawable/ic_nav_qrcode"
                 app:tint="@color/white" />
         </LinearLayout>
     </LinearLayout>
@@ -92,7 +96,7 @@
             android:id="@+id/iv_nav_events"
             android:layout_width="22dp"
             android:layout_height="22dp"
-            android:src="@android:drawable/ic_menu_compass"
+            android:src="@drawable/ic_nav_search"
             app:tint="@color/grey_nav_inactive" />
         <TextView
             android:id="@+id/tv_nav_events"
@@ -116,7 +120,7 @@
             android:id="@+id/iv_nav_account"
             android:layout_width="22dp"
             android:layout_height="22dp"
-            android:src="@android:drawable/ic_menu_myplaces"
+            android:src="@drawable/ic_nav_user"
             app:tint="@color/grey_nav_inactive" />
         <TextView
             android:id="@+id/tv_nav_account"

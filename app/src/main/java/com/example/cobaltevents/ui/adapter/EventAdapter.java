@@ -1,6 +1,5 @@
 package com.example.cobaltevents.ui.adapter;
 
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,6 +7,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cobaltevents.R;
@@ -41,6 +41,8 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
     private static final SimpleDateFormat DATE_FORMAT =
             new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
+    private static final SimpleDateFormat TIME_FORMAT =
+            new SimpleDateFormat("h:mm a", Locale.getDefault());
 
     public EventAdapter(List<Event> events, OnEventClickListener listener) {
         this.events = events;
@@ -85,13 +87,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
         // Basic fields
         holder.tvName.setText(event.getName());
-        holder.tvLocation.setText(event.getLocation() != null ? event.getLocation() : "");
-
-        if (event.getEventDate() != null) {
-            holder.tvDate.setText(DATE_FORMAT.format(event.getEventDate().toDate()));
-        } else {
-            holder.tvDate.setText("Date TBD");
-        }
 
         if (count != null) {
             holder.tvWaitlistCount.setText(count + " on waitlist");
@@ -107,7 +102,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.tvCategoryTag.setVisibility(View.GONE);
         }
 
-        // Registration status
+        // Registration status (controls JOIN button state only)
         Timestamp now = Timestamp.now();
         boolean registrationClosed = event.getRegistrationClose() != null
                 && event.getRegistrationClose().compareTo(now) < 0;
@@ -115,22 +110,16 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 && event.getRegistrationOpen().compareTo(now) > 0;
 
         if (registrationClosed) {
-            holder.tvStatus.setText("CLOSED");
-            holder.tvStatus.setTextColor(Color.parseColor("#C62828"));
             holder.btnJoin.setText("REGISTRATION CLOSED");
             holder.btnJoin.setAlpha(0.45f);
             holder.btnJoin.setEnabled(false);
             holder.btnJoin.setBackgroundResource(R.drawable.bg_button_green_pill);
         } else if (registrationNotOpen) {
-            holder.tvStatus.setText("UPCOMING");
-            holder.tvStatus.setTextColor(Color.parseColor("#E65100"));
             holder.btnJoin.setText(isJoined ? "LEAVE WAITLIST" : "JOIN WAITLIST");
             holder.btnJoin.setAlpha(0.65f);
             holder.btnJoin.setEnabled(true);
             holder.btnJoin.setBackgroundResource(isJoined ? R.drawable.bg_button_red_pill : R.drawable.bg_button_green_pill);
         } else {
-            holder.tvStatus.setText("OPEN");
-            holder.tvStatus.setTextColor(Color.parseColor("#2E7D32"));
             holder.btnJoin.setText(isJoined ? "LEAVE WAITLIST" : "JOIN WAITLIST");
             holder.btnJoin.setAlpha(1.0f);
             holder.btnJoin.setEnabled(true);
@@ -147,18 +136,27 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                     event.getDescription() != null && !event.getDescription().isEmpty()
                             ? event.getDescription() : "No description available.");
 
+            // Date + time
+            if (event.getEventDate() != null) {
+                holder.tvDetailDate.setText(DATE_FORMAT.format(event.getEventDate().toDate()));
+                holder.tvDetailTime.setText(TIME_FORMAT.format(event.getEventDate().toDate()));
+            } else {
+                holder.tvDetailDate.setText("TBD");
+                holder.tvDetailTime.setText("TBD");
+            }
+
+            // Location
+            holder.tvDetailLocation.setText(event.getLocation() != null ? event.getLocation() : "TBD");
+
+            // Price
+            String price = event.getPrice();
+            holder.tvPrice.setText(price != null && !price.trim().isEmpty() ? price : "TBD");
+
             // Capacity
             if (event.getWaitingListCapacity() > 0) {
                 holder.tvCapacity.setText(event.getWaitingListCapacity() + " spots");
             } else {
                 holder.tvCapacity.setText("Unlimited");
-            }
-
-            // Registration open date
-            if (event.getRegistrationOpen() != null) {
-                holder.tvRegOpen.setText(DATE_FORMAT.format(event.getRegistrationOpen().toDate()));
-            } else {
-                holder.tvRegOpen.setText("TBD");
             }
 
             // Registration close date
@@ -199,17 +197,15 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     }
 
     static class EventViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvLocation, tvDate, tvStatus, tvChevron, tvCategoryTag;
+        TextView tvName, tvStatus, tvChevron, tvCategoryTag;
         TextView btnJoin;
         TextView tvWaitlistCount;
-        TextView tvDescription, tvCapacity, tvRegOpen, tvRegClose, tvGeoNote;
+        TextView tvDescription, tvDetailDate, tvDetailTime, tvDetailLocation, tvPrice, tvCapacity, tvRegClose, tvGeoNote;
         LinearLayout layoutExpandedDetails, layoutGeoNote;
 
         EventViewHolder(@NonNull View itemView) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tv_event_name);
-            tvLocation = itemView.findViewById(R.id.tv_event_location);
-            tvDate = itemView.findViewById(R.id.tv_event_date);
             tvStatus = itemView.findViewById(R.id.tv_event_status);
             tvChevron = itemView.findViewById(R.id.tv_chevron);
             tvCategoryTag = itemView.findViewById(R.id.tv_category_tag);
@@ -217,8 +213,11 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             tvWaitlistCount = itemView.findViewById(R.id.tv_waitlist_count);
             layoutExpandedDetails = itemView.findViewById(R.id.layout_expanded_details);
             tvDescription = itemView.findViewById(R.id.tv_description);
+            tvDetailDate = itemView.findViewById(R.id.tv_detail_date);
+            tvDetailTime = itemView.findViewById(R.id.tv_detail_time);
+            tvDetailLocation = itemView.findViewById(R.id.tv_detail_location);
+            tvPrice = itemView.findViewById(R.id.tv_price);
             tvCapacity = itemView.findViewById(R.id.tv_capacity);
-            tvRegOpen = itemView.findViewById(R.id.tv_reg_open);
             tvRegClose = itemView.findViewById(R.id.tv_reg_close);
             layoutGeoNote = itemView.findViewById(R.id.layout_geo_note);
             tvGeoNote = itemView.findViewById(R.id.tv_geo_note);
