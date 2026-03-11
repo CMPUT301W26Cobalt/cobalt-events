@@ -273,7 +273,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
         });
         
         findViewById(R.id.nav_notifications).setOnClickListener(v -> {
-            // Navigate to notifications
+            startActivity(new Intent(this, NotificationsActivity.class));
         });
 
         findViewById(R.id.nav_my_events).setOnClickListener(v -> {

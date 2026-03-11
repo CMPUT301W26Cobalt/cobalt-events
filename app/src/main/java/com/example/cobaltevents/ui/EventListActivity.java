@@ -196,6 +196,13 @@ public class EventListActivity extends AppCompatActivity {
                 startActivity(intent);
             });
         }
+
+        View navNotifications = findViewById(R.id.nav_notifications);
+        if (navNotifications != null) {
+            navNotifications.setOnClickListener(v -> {
+                startActivity(new Intent(this, NotificationsActivity.class));
+            });
+        }
     }
 
     private void setEventsTabActive() {

@@ -46,6 +46,27 @@
     <color name="switch_track_off">#D1D5DB</color>
     <color name="divider_light">#F3F4F6</color>
 
+    <!-- Notifications screen -->
+    <color name="notif_page_bg">#F9FAFB</color>
+    <color name="notif_header_teal">#009689</color>
+    <color name="notif_title_dark">#1E2939</color>
+    <color name="notif_message">#4A5565</color>
+    <color name="notif_date">#99A1AF</color>
+    <color name="notif_icon_star_bg">#FEF9C2</color>
+    <color name="notif_icon_trophy_bg">#DCFCE7</color>
+    <color name="notif_icon_x_bg">#F3F4F6</color>
+    <color name="notif_star_stroke">#D08700</color>
+    <color name="notif_trophy_stroke">#00A63E</color>
+    <color name="notif_x_stroke">#4A5565</color>
+    <color name="notif_accepted_bg">#DCFCE7</color>
+    <color name="notif_accepted_text">#008236</color>
+    <color name="notif_declined_bg">#FFE2E2</color>
+    <color name="notif_declined_text">#C10007</color>
+    <color name="notif_accept_btn_start">#00A63E</color>
+    <color name="notif_accept_btn_end">#008236</color>
+    <color name="notif_decline_border">#D1D5DC</color>
+    <color name="notif_decline_text">#364153</color>
+
     <!-- Other -->
     <color name="tag_teal_background">#E0F2F1</color>
 </resources>

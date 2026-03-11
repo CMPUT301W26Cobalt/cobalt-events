@@ -10,6 +10,11 @@
 
     <!-- Notifications (US 01.04.01) -->
     <string name="notification_channel_name">Event Lottery Results</string>
+    <string name="notifications_title">Notifications</string>
+    <string name="notif_accept">Accept</string>
+    <string name="notif_decline">Decline</string>
+    <string name="notif_accepted">Accepted</string>
+    <string name="notif_declined">Declined</string>
     <string name="notification_selected_title">You\'ve been selected!</string>
     <string name="notification_selected_message">You have been chosen to attend %1$s.</string>
 

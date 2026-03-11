@@ -61,6 +61,7 @@
         <activity android:name="com.example.cobaltevents.ui.EventManageActivity" />
         <activity android:name="com.example.cobaltevents.ui.QRScanActivity" />
         <activity android:name="com.example.cobaltevents.ui.AccountSettingsActivity" />
+        <activity android:name="com.example.cobaltevents.ui.NotificationsActivity" />
         <activity android:name="com.example.cobaltevents.ui.admin.AdminActivity" />
         <activity android:name="com.example.cobaltevents.ui.admin.AdminEventListActivity" />
         <activity android:name="com.example.cobaltevents.ui.admin.AdminProfileListActivity" />

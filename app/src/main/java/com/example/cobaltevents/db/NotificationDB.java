@@ -68,13 +68,13 @@ public class NotificationDB {
     }
 
     /**
-     * Marks a notification as read.
+     * Updates the read status of a notification (accepted or rejected).
      */
-    public void markAsRead(String notificationId,
-                           OnSuccessListener<Void> onSuccess,
-                           OnFailureListener onFailure) {
+    public void updateReadStatus(String notificationId, String readStatus,
+                                 OnSuccessListener<Void> onSuccess,
+                                 OnFailureListener onFailure) {
         db.collection(COLLECTION).document(notificationId)
-                .update("read", true)
+                .update("read", readStatus)
                 .addOnSuccessListener(onSuccess)
                 .addOnFailureListener(onFailure);
     }
@@ -87,7 +87,7 @@ public class NotificationDB {
                                                        OnNotificationListener listener) {
         return db.collection(COLLECTION)
                 .whereEqualTo("recipientId", recipientId)
-                .whereEqualTo("read", false)
+                .whereEqualTo("read", "pending")
                 .addSnapshotListener((snapshots, error) -> {
                     if (error != null) {
                         listener.onError(error);

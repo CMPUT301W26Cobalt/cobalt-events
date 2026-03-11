@@ -1,9 +1,9 @@
 -- Merging decision tree log ---
 manifest
-ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:2:1-45:12
-INJECTED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:2:1-45:12
-INJECTED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:2:1-45:12
-INJECTED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:2:1-45:12
+ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:2:1-46:12
+INJECTED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:2:1-46:12
+INJECTED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:2:1-46:12
+INJECTED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:2:1-46:12
 MERGED from [com.google.android.material:material:1.11.0] C:\Users\MP\.gradle\caches\9.1.0\transforms\3ce838d8a408bb4fbc2728ab445ba5fa\workspace\transformed\material-1.11.0\AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] C:\Users\MP\.gradle\caches\9.1.0\transforms\5305723e642cdfba2428bf32037eb3b6\workspace\transformed\constraintlayout-2.1.4\AndroidManifest.xml:2:1-11:12
 MERGED from [androidx.appcompat:appcompat-resources:1.6.1] C:\Users\MP\.gradle\caches\9.1.0\transforms\30a2704348dbac3e82b997b6bfee19c6\workspace\transformed\jetified-appcompat-resources-1.6.1\AndroidManifest.xml:17:1-22:12
@@ -110,8 +110,8 @@ MERGED from [io.grpc:grpc-android:1.52.1] C:\Users\MP\.gradle\caches\9.1.0\trans
 	android:name
 		ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:8:22-76
 application
-ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:10:5-44:19
-INJECTED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:10:5-44:19
+ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:10:5-45:19
+INJECTED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:10:5-45:19
 MERGED from [com.google.android.material:material:1.11.0] C:\Users\MP\.gradle\caches\9.1.0\transforms\3ce838d8a408bb4fbc2728ab445ba5fa\workspace\transformed\material-1.11.0\AndroidManifest.xml:22:5-20
 MERGED from [com.google.android.material:material:1.11.0] C:\Users\MP\.gradle\caches\9.1.0\transforms\3ce838d8a408bb4fbc2728ab445ba5fa\workspace\transformed\material-1.11.0\AndroidManifest.xml:22:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.1.4] C:\Users\MP\.gradle\caches\9.1.0\transforms\5305723e642cdfba2428bf32037eb3b6\workspace\transformed\constraintlayout-2.1.4\AndroidManifest.xml:9:5-20
@@ -228,22 +228,26 @@ activity#com.example.cobaltevents.ui.AccountSettingsActivity
 ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:36:9-64
 	android:name
 		ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:36:19-61
+activity#com.example.cobaltevents.ui.NotificationsActivity
+ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:37:9-62
+	android:name
+		ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:37:19-59
 activity#com.example.cobaltevents.ui.admin.AdminActivity
-ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:37:9-60
+ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:38:9-60
 	android:name
-		ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:37:19-57
+		ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:38:19-57
 activity#com.example.cobaltevents.ui.admin.AdminEventListActivity
-ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:38:9-69
+ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:39:9-69
 	android:name
-		ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:38:19-66
+		ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:39:19-66
 activity#com.example.cobaltevents.ui.admin.AdminProfileListActivity
-ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:39:9-71
+ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:40:9-71
 	android:name
-		ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:39:19-68
+		ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:40:19-68
 activity#com.example.cobaltevents.ui.admin.AdminImageListActivity
-ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:40:9-69
+ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:41:9-69
 	android:name
-		ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:40:19-66
+		ADDED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml:41:19-66
 uses-sdk
 INJECTED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from C:\Users\MP\Downloads\cobalt-events\app\src\main\AndroidManifest.xml
