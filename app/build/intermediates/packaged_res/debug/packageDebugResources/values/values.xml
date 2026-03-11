@@ -56,6 +56,10 @@
     <color name="welcome_star_bg">#00897B</color>
     <color name="white">#FFFFFF</color>
     <string name="add_to_waitlist">Add to waitlist</string>
+    <string name="admin_dashboard_subtitle">System Administration</string>
+    <string name="admin_dashboard_title">Admin Dashboard</string>
+    <string name="admin_no_results">No results found</string>
+    <string name="admin_search_hint">Search…</string>
     <string name="app_name">Cobalt Events</string>
     <string name="brief_note">Brief description or note</string>
     <string name="confirm_join">Confirm and Join</string>
@@ -106,6 +110,12 @@
     <string name="num_participants">Number of participants</string>
     <string name="project_id" translatable="false">cmput301-cobalt-events</string>
     <string name="run_lottery">Run Lottery Draw</string>
+    <string name="section_events">Browse &amp; Manage Events</string>
+    <string name="tab_events">Events</string>
+    <string name="tab_images">Images</string>
+    <string name="tab_notifications">Notifications</string>
+    <string name="tab_organizers">Organizers</string>
+    <string name="tab_profiles">Profiles</string>
     <string name="upload_poster">Upload / Update Poster</string>
     <string name="validation_email_invalid">Invalid email format.</string>
     <string name="validation_email_required">Email is required.</string>
@@ -113,6 +123,19 @@
     <string name="validation_participants">Enter a valid number of participants (1 or more).</string>
     <string name="waitlist_fail">Failed to join waitlist.</string>
     <string name="waitlist_success">Successfully joined the waitlist!</string>
+    <style name="AdminTab">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#333333</item>
+        <item name="android:paddingLeft">14dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingRight">14dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:layout_marginEnd">10dp</item>
+        <item name="android:background">@drawable/bg_tab</item>
+        <item name="android:gravity">center</item>
+    </style>
     <style name="Theme.CobaltEvents" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">@color/primary_user</item>
         <item name="colorPrimaryDark">@color/primary_dark</item>

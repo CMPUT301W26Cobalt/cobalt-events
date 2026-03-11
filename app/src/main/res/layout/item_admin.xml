@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginStart="0dp"
+    android:layout_marginEnd="0dp"
     android:layout_marginBottom="10dp"
+    android:foreground="?attr/selectableItemBackground"
     app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
+    app:cardElevation="3dp"
     app:cardBackgroundColor="#FFFFFF">
 
     <LinearLayout
@@ -13,14 +17,14 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="14dp"
-        android:gravity="top">
+        android:gravity="center_vertical">
 
-        <!-- Avatar (Profiles/Organizers only) -->
+        <!-- Avatar -->
         <FrameLayout
             android:id="@+id/adminItemAvatarContainer"
             android:layout_width="46dp"
             android:layout_height="46dp"
-            android:layout_marginEnd="12dp"
+            android:layout_marginEnd="14dp"
             android:visibility="gone">
 
             <ImageView
@@ -28,19 +32,19 @@
                 android:layout_width="46dp"
                 android:layout_height="46dp"
                 android:scaleType="centerCrop"
-                android:visibility="gone"
-                android:contentDescription="Avatar" />
+                android:background="@drawable/bg_avatar_circle"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/adminItemInitials"
                 android:layout_width="46dp"
                 android:layout_height="46dp"
                 android:gravity="center"
+                android:textColor="#FFFFFF"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#FFFFFF"
-                android:background="@drawable/bg_avatar_circle" />
-
+                android:background="@drawable/bg_avatar_circle"
+                android:visibility="gone" />
         </FrameLayout>
 
         <!-- Content -->
@@ -50,119 +54,99 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <!-- Title row + buttons -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:id="@+id/adminItemTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Item Title"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="#0D1B2A"
-                    android:ellipsize="end"
-                    android:maxLines="2" />
-
-                <ImageButton
-                    android:id="@+id/adminItemViewButton"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:src="@drawable/ic_visibility"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="View"
-                    app:tint="#6B7280" />
-
-                <ImageButton
-                    android:id="@+id/adminItemDeleteButton"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:src="@drawable/ic_delete"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Delete"
-                    app:tint="#D32F2F"
-                    android:layout_marginStart="4dp" />
-
-            </LinearLayout>
-
-            <!-- Badge -->
+            <!-- Badge (on its own line) -->
             <TextView
                 android:id="@+id/adminItemBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"
                 android:paddingTop="2dp"
                 android:paddingBottom="2dp"
-                android:text="active"
-                android:textSize="11sp"
-                android:textColor="#2E7D32"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="#0D1B2A"
                 android:background="@drawable/bg_tag_teal"
+                android:layout_marginBottom="5dp"
                 android:visibility="gone" />
 
-            <!-- Subtitle -->
+            <TextView
+                android:id="@+id/adminItemTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#0D1B2A"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
             <TextView
                 android:id="@+id/adminItemSubtitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Item Subtitle"
                 android:textSize="13sp"
                 android:textColor="#6B7280"
-                android:layout_marginTop="4dp" />
+                android:layout_marginTop="2dp"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
-            <!-- Detail line -->
             <TextView
                 android:id="@+id/adminItemDetail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="12sp"
-                android:textColor="#9CA3AF"
-                android:layout_marginTop="4dp"
+                android:textColor="#4B5563"
+                android:layout_marginTop="3dp"
                 android:visibility="gone" />
 
-            <!-- Meta row -->
             <LinearLayout
                 android:id="@+id/adminItemMetaRow"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="4dp"
                 android:visibility="gone">
 
                 <TextView
                     android:id="@+id/adminItemMeta1"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
-                    android:textColor="#6B7280"
-                    android:layout_marginEnd="16dp" />
+                    android:layout_weight="1"
+                    android:textSize="11sp"
+                    android:textColor="#9CA3AF" />
 
                 <TextView
                     android:id="@+id/adminItemMeta2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="12sp"
-                    android:textColor="#6B7280" />
-
+                    android:textSize="11sp"
+                    android:textColor="#9CA3AF" />
             </LinearLayout>
-
-            <!-- Image thumbnail (Images tab only) -->
-            <ImageView
-                android:id="@+id/adminItemImage"
-                android:layout_width="match_parent"
-                android:layout_height="140dp"
-                android:scaleType="centerCrop"
-                android:layout_marginTop="10dp"
-                android:visibility="gone"
-                android:contentDescription="Event poster" />
-
         </LinearLayout>
+
+        <!-- Thumbnail (optional, for image tab) -->
+        <ImageView
+            android:id="@+id/adminItemImage"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="10dp"
+            android:scaleType="centerCrop"
+            android:background="@drawable/bg_card"
+            android:clipToOutline="true"
+            android:visibility="gone" />
+
+        <!-- Hidden buttons kept for code compatibility -->
+        <ImageButton
+            android:id="@+id/adminItemViewButton"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
+
+        <ImageButton
+            android:id="@+id/adminItemDeleteButton"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
 
     </LinearLayout>
 

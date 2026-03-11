@@ -4,7 +4,7 @@
             "outputFile": "com.example.cobaltevents.app-mergeDebugResources-36:/values-ldrtl-v17/values-ldrtl-v17.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\MP\\.gradle\\caches\\9.1.0\\transforms\\3ce838d8a408bb4fbc2728ab445ba5fa\\workspace\\transformed\\material-1.11.0\\res\\values-ldrtl-v17\\values-ldrtl-v17.xml",
+                    "source": "/Users/siam/.gradle/caches/9.1.0/transforms/3ce838d8a408bb4fbc2728ab445ba5fa/transformed/material-1.11.0/res/values-ldrtl-v17/values-ldrtl-v17.xml",
                     "from": {
                         "startLines": "2,3",
                         "startColumns": "4,4",

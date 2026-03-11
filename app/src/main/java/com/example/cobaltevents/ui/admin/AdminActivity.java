@@ -2,7 +2,13 @@ package com.example.cobaltevents.ui.admin;
 
 import android.app.AlertDialog;
 import android.content.res.ColorStateList;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.format.DateFormat;
@@ -16,7 +22,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -42,12 +50,15 @@ import java.util.List;
  */
 public class AdminActivity extends AppCompatActivity {
 
-    private TextView tabEvents, tabProfiles, tabImages, tabOrganizers, tabNotifications;
+    // Tabs (now LinearLayouts for underline support)
+    private LinearLayout tabEvents, tabProfiles, tabImages, tabOrganizers, tabNotifications;
+
     private TextView tvSectionTitle, tvSectionCount;
     private RecyclerView adminRecycler;
     private EditText searchBar;
     private HorizontalScrollView adminTabsScroll;
     private TextView emptyMessage;
+    private android.widget.ProgressBar loadingSpinner;
 
     private AdminAdapter adapter;
     private final List<AdminAdapter.AdminItem> allItems = new ArrayList<>();
@@ -57,6 +68,9 @@ public class AdminActivity extends AppCompatActivity {
     private AdminController adminController;
     private final java.util.Map<String, Event> eventDetailMap = new java.util.HashMap<>();
     private final java.util.Map<String, Entrant> profileDetailMap = new java.util.HashMap<>();
+    private final Handler searchHandler = new Handler(Looper.getMainLooper());
+    private Runnable searchRunnable;
+    private boolean isLoading = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,24 +79,40 @@ public class AdminActivity extends AppCompatActivity {
 
         adminController = new AdminController();
 
+        // Tabs
         tabEvents        = findViewById(R.id.tab_events);
         tabProfiles      = findViewById(R.id.tab_profiles);
         tabImages        = findViewById(R.id.tab_images);
         tabOrganizers    = findViewById(R.id.tab_organizers);
         tabNotifications = findViewById(R.id.tab_notifications);
+
+
+
         tvSectionTitle   = findViewById(R.id.tvSectionTitle);
         tvSectionCount   = findViewById(R.id.tvSectionCount);
         searchBar        = findViewById(R.id.etSearch);
         adminRecycler    = findViewById(R.id.adminRecycler);
         adminTabsScroll  = findViewById(R.id.adminTabsScroll);
         emptyMessage     = findViewById(R.id.emptyMessage);
+        loadingSpinner   = findViewById(R.id.loadingSpinner);
 
         adminRecycler.setLayoutManager(new LinearLayoutManager(this));
         adminRecycler.setHasFixedSize(true);
         adminRecycler.setItemViewCacheSize(20);
 
+        // Adapter — no remove listener needed on cards (swipe handles delete)
         adapter = new AdminAdapter(new ArrayList<>(), this::handleRemoveClick, this::handleViewClick);
         adminRecycler.setAdapter(adapter);
+
+        // Hide everything until first load
+        emptyMessage.setVisibility(View.GONE);
+        adminRecycler.setVisibility(View.GONE);
+
+        // Swipe left to delete
+        setupSwipeToDelete();
+
+        // Tap anywhere on card to view details (handled via adapter click)
+        adminRecycler.addOnItemTouchListener(new RecyclerView.SimpleOnItemTouchListener() {});
 
         tabEvents.setOnClickListener(v -> showEvents());
         tabProfiles.setOnClickListener(v -> showProfiles());
@@ -96,11 +126,84 @@ public class AdminActivity extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable s) {
                 currentQuery = s.toString().trim().toLowerCase();
-                filterCurrentList();
+                if (searchRunnable != null) searchHandler.removeCallbacks(searchRunnable);
+                searchRunnable = AdminActivity.this::filterCurrentList;
+                searchHandler.postDelayed(searchRunnable, 300);
             }
         });
 
         showEvents();
+    }
+
+    // ── Swipe to delete ───────────────────────────────────────────────────────
+
+    private void setupSwipeToDelete() {
+        ItemTouchHelper.SimpleCallback swipeCallback = new ItemTouchHelper.SimpleCallback(
+                0, ItemTouchHelper.LEFT) {
+
+            @Override
+            public boolean onMove(@NonNull RecyclerView rv,
+                                  @NonNull RecyclerView.ViewHolder vh,
+                                  @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int pos = viewHolder.getAdapterPosition();
+                if (pos < 0 || pos >= adapter.getItems().size()) return;
+                AdminAdapter.AdminItem item = adapter.getItems().get(pos);
+                // Notifications are read-only — snap back
+                if (currentTab.equals("Notifications")) {
+                    adapter.notifyItemChanged(pos);
+                    return;
+                }
+                handleRemoveClick(item);
+                // Snap back visually — actual removal happens after confirm
+                adapter.notifyItemChanged(pos);
+            }
+
+            @Override
+            public void onChildDraw(@NonNull Canvas c,
+                                    @NonNull RecyclerView recyclerView,
+                                    @NonNull RecyclerView.ViewHolder viewHolder,
+                                    float dX, float dY,
+                                    int actionState, boolean isCurrentlyActive) {
+                if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE && dX < 0) {
+                    View itemView = viewHolder.itemView;
+                    Paint paint = new Paint();
+                    paint.setColor(Color.parseColor("#D32F2F"));
+
+                    float cornerRadius = 12f * recyclerView.getContext()
+                            .getResources().getDisplayMetrics().density;
+                    RectF background = new RectF(
+                            itemView.getRight() + dX,
+                            itemView.getTop() + 8,
+                            itemView.getRight(),
+                            itemView.getBottom() - 8);
+                    c.drawRoundRect(background, cornerRadius, cornerRadius, paint);
+
+                    // Draw trash emoji label
+                    Paint textPaint = new Paint();
+                    textPaint.setColor(Color.WHITE);
+                    textPaint.setTextSize(14 * recyclerView.getContext()
+                            .getResources().getDisplayMetrics().density);
+                    textPaint.setTextAlign(Paint.Align.CENTER);
+                    float textX = itemView.getRight() - 50 * recyclerView.getContext()
+                            .getResources().getDisplayMetrics().density;
+                    float textY = itemView.getTop() + (itemView.getHeight() / 2f)
+                            - ((textPaint.descent() + textPaint.ascent()) / 2);
+                    c.drawText("🗑 Delete", textX, textY, textPaint);
+                }
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive);
+            }
+
+            @Override
+            public float getSwipeThreshold(@NonNull RecyclerView.ViewHolder viewHolder) {
+                return 0.4f;
+            }
+        };
+        new ItemTouchHelper(swipeCallback).attachToRecyclerView(adminRecycler);
     }
 
     // ── US 03.04.01 — Browse events ───────────────────────────────────────────
@@ -110,48 +213,37 @@ public class AdminActivity extends AppCompatActivity {
         resetSearch();
         setSelectedTab(tabEvents);
         tvSectionTitle.setText("Browse & Manage Events");
+        showLoading();
 
         adminController.getAllEvents(events -> {
-            allItems.clear();
+            List<AdminAdapter.AdminItem> newItems = new ArrayList<>();
             eventDetailMap.clear();
             if (events != null) {
                 for (Event e : events) {
                     String id = e.getEventId();
                     if (id == null || id.trim().isEmpty()) continue;
-
                     String title = e.getName() != null ? e.getName() : "Untitled Event";
                     String subtitle = e.getDescription() != null && !e.getDescription().trim().isEmpty()
                             ? e.getDescription() : "No description";
-
-                    // Detail: location
                     String detail = e.getLocation() != null && !e.getLocation().trim().isEmpty()
                             ? "📍 " + e.getLocation() : null;
-
-                    // Meta1: event date
                     String meta1 = null;
-                    if (e.getEventDate() != null) {
+                    if (e.getEventDate() != null)
                         meta1 = "📅 " + DateFormat.format("MMM d, yyyy", e.getEventDate().toDate()).toString();
-                    }
-
-                    // Meta2: confirmed attendees count
                     String meta2 = null;
-                    if (e.getConfirmedAttendeeIds() != null) {
+                    if (e.getConfirmedAttendeeIds() != null)
                         meta2 = "✅ " + e.getConfirmedAttendeeIds().size() + " confirmed";
-                    }
-
-                    // Badge: category
                     String badge = (e.getCategory() != null && !e.getCategory().trim().isEmpty())
                             ? e.getCategory().toUpperCase() : null;
-
-                    allItems.add(new AdminAdapter.AdminItem(
-                            id, title, subtitle,
-                            badge, "#2962FF",
-                            detail, meta1, meta2, null));
-
-                    // Store full event for detail dialog
+                    newItems.add(new AdminAdapter.AdminItem(
+                            id, title, subtitle, badge, "#2962FF",
+                            detail, meta1, meta2, e.getPosterImageUrl(),
+                            null, null, false, true));
                     eventDetailMap.put(id, e);
                 }
             }
+            allItems.clear();
+            allItems.addAll(newItems);
             filterCurrentList();
         }, e -> {
             Toast.makeText(this, "Failed to load events", Toast.LENGTH_SHORT).show();
@@ -167,36 +259,25 @@ public class AdminActivity extends AppCompatActivity {
         resetSearch();
         setSelectedTab(tabProfiles);
         tvSectionTitle.setText("Browse & Manage User Profiles");
+        showLoading();
 
         adminController.getAllProfiles(profiles -> {
-            allItems.clear();
+            List<AdminAdapter.AdminItem> newItems = new ArrayList<>();
             profileDetailMap.clear();
             if (profiles != null) {
                 for (Entrant p : profiles) {
                     String id = p.getDeviceId();
                     if (id == null || id.trim().isEmpty()) continue;
-
-                    String title = (p.getName() != null && !p.getName().trim().isEmpty())
-                            ? p.getName() : "Unnamed User";
-
-                    String subtitle = (p.getEmail() != null && !p.getEmail().trim().isEmpty())
-                            ? "✉ " + p.getEmail() : "No email";
-
-                    String detail = (p.getPhone() != null && !p.getPhone().trim().isEmpty())
-                            ? "📞 " + p.getPhone() : null;
-
-                    // Compute initials for avatar
+                    String title = (p.getName() != null && !p.getName().trim().isEmpty()) ? p.getName() : "Unnamed User";
+                    String subtitle = (p.getEmail() != null && !p.getEmail().trim().isEmpty()) ? "✉ " + p.getEmail() : "No email";
+                    String detail = (p.getPhone() != null && !p.getPhone().trim().isEmpty()) ? "📞 " + p.getPhone() : null;
                     String initials = getInitials(p.getName());
-
-                    allItems.add(new AdminAdapter.AdminItem(
-                            id, title, subtitle,
-                            null, null,
-                            detail, null, null, null,
-                            p.getProfilePictureUrl(), initials));
-
+                    newItems.add(new AdminAdapter.AdminItem(id, title, subtitle, null, null, detail, null, null, null, p.getProfilePictureUrl(), initials));
                     profileDetailMap.put(id, p);
                 }
             }
+            allItems.clear();
+            allItems.addAll(newItems);
             filterCurrentList();
         }, e -> {
             Toast.makeText(this, "Failed to load profiles", Toast.LENGTH_SHORT).show();
@@ -212,27 +293,28 @@ public class AdminActivity extends AppCompatActivity {
         resetSearch();
         setSelectedTab(tabImages);
         tvSectionTitle.setText("Browse & Manage Uploaded Images");
+        showLoading();
 
         adminController.getAllImagesFromEvents(events -> {
-            allItems.clear();
+            List<AdminAdapter.AdminItem> newItems = new ArrayList<>();
             if (events != null) {
                 for (Event e : events) {
                     String id = e.getEventId();
                     if (id == null || id.trim().isEmpty()) continue;
-
-                    String title = (e.getName() != null && !e.getName().trim().isEmpty())
-                            ? e.getName() : "Untitled Event";
-
-                    String subtitle = e.getLocation() != null && !e.getLocation().trim().isEmpty()
-                            ? "By: " + e.getLocation() : "Poster uploaded";
-
-                    allItems.add(new AdminAdapter.AdminItem(
-                            id, title, subtitle,
-                            null, null,
-                            null, null, null,
-                            e.getPosterImageUrl())); // shows thumbnail
+                    String title = (e.getName() != null && !e.getName().trim().isEmpty()) ? e.getName() : "Untitled Event";
+                    String organizerId = e.getOrganizerDeviceId();
+                    Entrant organizer = profileDetailMap.get(organizerId);
+                    String organizerName = (organizer != null && organizer.getName() != null)
+                            ? "By: " + organizer.getName()
+                            : (organizerId != null ? "By: " + organizerId : "By: Unknown");
+                    String date = "";
+                    if (e.getEventDate() != null)
+                        date = android.text.format.DateFormat.format("yyyy-MM-dd", e.getEventDate().toDate()).toString();
+                    newItems.add(new AdminAdapter.AdminItem(id, title, organizerName, null, null, date, null, null, e.getPosterImageUrl(), null, null, true));
                 }
             }
+            allItems.clear();
+            allItems.addAll(newItems);
             filterCurrentList();
         }, e -> {
             Toast.makeText(this, "Failed to load images", Toast.LENGTH_SHORT).show();
@@ -248,32 +330,24 @@ public class AdminActivity extends AppCompatActivity {
         resetSearch();
         setSelectedTab(tabOrganizers);
         tvSectionTitle.setText("Browse & Manage Organizers");
+        showLoading();
 
         adminController.getAllOrganizers(organizers -> {
-            allItems.clear();
+            List<AdminAdapter.AdminItem> newItems = new ArrayList<>();
             profileDetailMap.clear();
             if (organizers != null) {
                 for (Entrant o : organizers) {
                     String id = o.getDeviceId();
                     if (id == null || id.trim().isEmpty()) continue;
-
-                    String title = (o.getName() != null && !o.getName().trim().isEmpty())
-                            ? o.getName() : "Unnamed Organizer";
-
-                    String subtitle = (o.getEmail() != null && !o.getEmail().trim().isEmpty())
-                            ? "✉ " + o.getEmail() : "No email";
-
+                    String title = (o.getName() != null && !o.getName().trim().isEmpty()) ? o.getName() : "Unnamed Organizer";
+                    String subtitle = (o.getEmail() != null && !o.getEmail().trim().isEmpty()) ? "✉ " + o.getEmail() : "No email";
                     String initials = getInitials(o.getName());
-
-                    allItems.add(new AdminAdapter.AdminItem(
-                            id, title, subtitle,
-                            null, null,
-                            null, null, null, null,
-                            o.getProfilePictureUrl(), initials));
-
+                    newItems.add(new AdminAdapter.AdminItem(id, title, subtitle, null, null, null, null, null, null, o.getProfilePictureUrl(), initials));
                     profileDetailMap.put(id, o);
                 }
             }
+            allItems.clear();
+            allItems.addAll(newItems);
             filterCurrentList();
         }, e -> {
             Toast.makeText(this, "Failed to load organizers", Toast.LENGTH_SHORT).show();
@@ -289,45 +363,28 @@ public class AdminActivity extends AppCompatActivity {
         resetSearch();
         setSelectedTab(tabNotifications);
         tvSectionTitle.setText("Review Notification Logs");
+        showLoading();
 
         adminController.getAllNotifications(notifications -> {
-            allItems.clear();
+            List<AdminAdapter.AdminItem> newItems = new ArrayList<>();
             if (notifications != null) {
                 for (Notification n : notifications) {
                     String id = n.getId();
                     if (id == null || id.trim().isEmpty()) continue;
-
-                    String title = (n.getTitle() != null && !n.getTitle().trim().isEmpty())
-                            ? n.getTitle() : "Untitled Notification";
-
-                    // Message preview as subtitle
-                    String subtitle = (n.getMessage() != null && !n.getMessage().trim().isEmpty())
-                            ? n.getMessage() : "";
-
-                    // Notification type as badge
+                    String title = (n.getTitle() != null && !n.getTitle().trim().isEmpty()) ? n.getTitle() : "Untitled Notification";
+                    String subtitle = (n.getMessage() != null && !n.getMessage().trim().isEmpty()) ? n.getMessage() : "";
                     String type = n.getType() != null ? n.getType().toUpperCase() : null;
-                    String badgeColor = "#9C27B0"; // default purple
+                    String badgeColor = "#9C27B0";
                     if ("selected".equalsIgnoreCase(n.getType())) badgeColor = "#2E7D32";
-
-                    // Timestamp
                     String sentTime = n.getTimestamp() != null
-                            ? "🕐 " + DateFormat.format("MMM d, yyyy h:mm a",
-                            n.getTimestamp().getTime()).toString()
-                            : "";
-
-                    // Recipient info
-                    String meta1 = sentTime;
+                            ? "🕐 " + DateFormat.format("MMM d, yyyy h:mm a", n.getTimestamp().getTime()).toString() : "";
                     String meta2 = n.getRecipientId() != null
-                            ? "To: " + n.getRecipientId().substring(0,
-                            Math.min(8, n.getRecipientId().length())) + "..."
-                            : "";
-
-                    allItems.add(new AdminAdapter.AdminItem(
-                            id, title, subtitle,
-                            type, badgeColor,
-                            null, meta1, meta2, null));
+                            ? "To: " + n.getRecipientId().substring(0, Math.min(8, n.getRecipientId().length())) + "..." : "";
+                    newItems.add(new AdminAdapter.AdminItem(id, title, subtitle, type, badgeColor, null, sentTime, meta2, null));
                 }
             }
+            allItems.clear();
+            allItems.addAll(newItems);
             filterCurrentList();
         }, e -> {
             Toast.makeText(this, "Failed to load notifications", Toast.LENGTH_SHORT).show();
@@ -336,9 +393,24 @@ public class AdminActivity extends AppCompatActivity {
         });
     }
 
+    // ── Loading state ─────────────────────────────────────────────────────────
+
+    private void showLoading() {
+        isLoading = true;
+        loadingSpinner.setVisibility(View.VISIBLE);
+        emptyMessage.setVisibility(View.GONE);
+        adminRecycler.setVisibility(View.GONE);
+    }
+
+    private void hideLoading() {
+        isLoading = false;
+        loadingSpinner.setVisibility(View.GONE);
+    }
+
     // ── Filtering ─────────────────────────────────────────────────────────────
 
     private void filterCurrentList() {
+        hideLoading();
         List<AdminAdapter.AdminItem> filtered = new ArrayList<>();
         for (AdminAdapter.AdminItem item : allItems) {
             String title    = item.title    == null ? "" : item.title.toLowerCase();
@@ -357,8 +429,8 @@ public class AdminActivity extends AppCompatActivity {
         String countLabel = filtered.size() + " " + currentTab.toLowerCase();
         tvSectionCount.setText(countLabel);
 
-        emptyMessage.setVisibility(filtered.isEmpty() ? View.VISIBLE : View.GONE);
-        adminRecycler.setVisibility(filtered.isEmpty() ? View.GONE : View.VISIBLE);
+        emptyMessage.setVisibility(!isLoading && filtered.isEmpty() ? View.VISIBLE : View.GONE);
+        adminRecycler.setVisibility(!isLoading && !filtered.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
     // ── View click — show detail dialog ──────────────────────────────────────
@@ -372,6 +444,13 @@ public class AdminActivity extends AppCompatActivity {
     }
 
     private void handleViewClick(AdminAdapter.AdminItem item) {
+
+        // Images tab — show special image detail dialog
+        if (currentTab.equals("Images")) {
+            showImageDetailDialog(item);
+            return;
+        }
+
         View dialogView = LayoutInflater.from(this)
                 .inflate(R.layout.dialog_view_detail, null);
 
@@ -497,9 +576,80 @@ public class AdminActivity extends AppCompatActivity {
         }
     }
 
+    // ── Image detail dialog ───────────────────────────────────────────────────
+
+    private void showImageDetailDialog(AdminAdapter.AdminItem item) {
+        View dialogView = LayoutInflater.from(this)
+                .inflate(R.layout.dialog_view_image, null);
+
+        ImageView ivPoster       = dialogView.findViewById(R.id.ivImageDialogPoster);
+        TextView tvTitle         = dialogView.findViewById(R.id.tvImageDialogTitle);
+        TextView tvEvent         = dialogView.findViewById(R.id.tvImageDialogEvent);
+        TextView tvUploader      = dialogView.findViewById(R.id.tvImageDialogUploader);
+        TextView tvDate          = dialogView.findViewById(R.id.tvImageDialogDate);
+        Button btnClose          = dialogView.findViewById(R.id.btnImageDialogCloseBottom);
+
+        // Load poster
+        if (item.imageUrl != null && !item.imageUrl.isEmpty()) {
+            com.bumptech.glide.Glide.with(this)
+                    .load(item.imageUrl)
+                    .centerCrop()
+                    .into(ivPoster);
+        }
+
+        tvTitle.setText(item.title != null ? item.title : "");
+        tvEvent.setText(item.title != null ? item.title : "");
+        tvUploader.setText(item.subtitle != null ? item.subtitle.replace("By: ", "") : "Unknown");
+        tvDate.setText(item.detail != null && !item.detail.isEmpty() ? item.detail : "Unknown");
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create();
+
+        btnClose.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
+        if (dialog.getWindow() != null)
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+    }
+
     // ── Remove click — confirm dialog ─────────────────────────────────────────
 
     private void handleRemoveClick(AdminAdapter.AdminItem item) {
+        // Images tab — show two-option delete dialog
+        if (currentTab.equals("Images")) {
+            View dialogView = LayoutInflater.from(this)
+                    .inflate(R.layout.dialog_delete_image, null);
+
+            TextView tvTitle     = dialogView.findViewById(R.id.tvImageDeleteTitle);
+            Button btnImageOnly  = dialogView.findViewById(R.id.btnDeleteImageOnly);
+            Button btnImageEvent = dialogView.findViewById(R.id.btnDeleteImageAndEvent);
+            Button btnCancel     = dialogView.findViewById(R.id.btnImageDeleteCancel);
+
+            tvTitle.setText(item.title != null ? item.title : "");
+
+            AlertDialog dialog = new AlertDialog.Builder(this)
+                    .setView(dialogView)
+                    .create();
+
+            btnImageOnly.setOnClickListener(v -> {
+                dialog.dismiss();
+                adminController.removeEventImage(item.id,
+                        unused -> { Toast.makeText(this, "Image removed", Toast.LENGTH_SHORT).show(); showImages(); },
+                        e -> Toast.makeText(this, "Failed to remove image", Toast.LENGTH_SHORT).show());
+            });
+            btnImageEvent.setOnClickListener(v -> {
+                dialog.dismiss();
+                adminController.removeEvent(item.id,
+                        unused -> { Toast.makeText(this, "Event and image deleted", Toast.LENGTH_SHORT).show(); showImages(); },
+                        e -> Toast.makeText(this, "Failed to delete event", Toast.LENGTH_SHORT).show());
+            });
+            btnCancel.setOnClickListener(v -> dialog.dismiss());
+            dialog.show();
+            if (dialog.getWindow() != null)
+                dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            return;
+        }
+
         View dialogView = LayoutInflater.from(this)
                 .inflate(R.layout.dialog_delete_confirm, null);
 
@@ -570,23 +720,16 @@ public class AdminActivity extends AppCompatActivity {
         if (searchBar != null) searchBar.setText("");
     }
 
-    private void setSelectedTab(TextView selectedTab) {
-        resetTabStyles();
-        selectedTab.setBackgroundTintList(ColorStateList.valueOf(0xFF000000));
-        selectedTab.setTextColor(0xFFFFFFFF);
+    private void setSelectedTab(LinearLayout selectedTab) {
+        for (LinearLayout tab : new LinearLayout[]{
+                tabEvents, tabProfiles, tabImages, tabOrganizers, tabNotifications}) {
+            tab.setSelected(false);
+        }
+        selectedTab.setSelected(true);
         selectedTab.post(() -> {
             int scrollX = selectedTab.getLeft()
                     - (adminTabsScroll.getWidth() - selectedTab.getWidth()) / 2;
             adminTabsScroll.smoothScrollTo(scrollX, 0);
         });
-    }
-
-    private void resetTabStyles() {
-        for (TextView tab : new TextView[]{
-                tabEvents, tabProfiles, tabImages, tabOrganizers, tabNotifications}) {
-            tab.setBackgroundResource(R.drawable.bg_tab);
-            tab.setBackgroundTintList(ColorStateList.valueOf(0xFFFFFFFF));
-            tab.setTextColor(0xFF333333);
-        }
     }
 }

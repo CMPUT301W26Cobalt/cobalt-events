@@ -46,7 +46,6 @@
     <color name="switch_track_on">#1A2B3C</color>
     <color name="switch_track_off">#D1D5DB</color>
     <color name="divider_light">#F3F4F6</color>
-
     <!-- Notifications screen -->
     <color name="notif_page_bg">#F9FAFB</color>
     <color name="notif_header_teal">#009689</color>
