@@ -1,76 +1,465 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/page_background">
 
+    <!-- Header -->
     <LinearLayout
-        android:orientation="vertical"
-        android:padding="16dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:background="@color/organizer_blue"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="16dp">
 
-        <!-- Event Poster -->
         <ImageView
-            android:id="@+id/eventPoster"
-            android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:scaleType="centerCrop"
-            android:contentDescription="@string/event_poster"/>
+            android:id="@+id/btn_back"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="8dp"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/white" />
 
-        <!-- Upload / Update Poster -->
-        <Button
-            android:id="@+id/btn_upload_poster"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/upload_poster"
-            android:backgroundTint="@color/primary_blue"
-            android:textColor="@color/white"
-            android:layout_marginTop="12dp"/>
-
-        <!-- Event Name -->
         <TextView
-            android:id="@+id/eventName"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:layout_marginTop="16dp"/>
-
-        <!-- Location -->
-        <TextView
-            android:id="@+id/eventLocation"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"/>
-
-        <!-- Capacity -->
-        <TextView
-            android:id="@+id/eventCapacity"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"/>
-
-        <!-- Run Lottery -->
-        <Button
-            android:id="@+id/btn_run_lottery"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/run_lottery"
-            android:backgroundTint="@color/primary_blue"
+            android:layout_weight="1"
+            android:text="Manage Event"
             android:textColor="@color/white"
-            android:layout_marginTop="20dp"/>
-
-        <!-- Notify Invited -->
-        <Button
-            android:id="@+id/btn_notify_invited"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/notify_invited"
-            android:backgroundTint="@color/primary_blue_dark"
-            android:textColor="@color/white"
-            android:layout_marginTop="12dp"/>
+            android:textSize="20sp"
+            android:textStyle="bold" />
 
     </LinearLayout>
 
-</ScrollView>
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/iv_event_poster"
+                android:layout_width="match_parent"
+                android:layout_height="160dp"
+                android:scaleType="centerCrop"
+                android:background="@color/organizer_blue_light" />
+
+            <!-- Event info -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:background="@color/white">
+
+                <TextView
+                    android:id="@+id/tv_event_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="6dp">
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@android:drawable/ic_menu_mylocation"
+                        android:layout_marginEnd="4dp"
+                        app:tint="@color/text_secondary" />
+                    <TextView
+                        android:id="@+id/tv_event_location"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="4dp">
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_nav_calendar"
+                        android:layout_marginEnd="4dp"
+                        app:tint="@color/text_secondary" />
+                    <TextView
+                        android:id="@+id/tv_event_date"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="4dp">
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_user_group"
+                        android:layout_marginEnd="4dp"
+                        app:tint="@color/text_secondary" />
+                    <TextView
+                        android:id="@+id/tv_event_capacity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Stat chips -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="16dp"
+                android:background="@color/white"
+                android:layout_marginTop="1dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/bg_stat_chip"
+                    android:padding="8dp"
+                    android:layout_marginEnd="8dp">
+                    <TextView
+                        android:id="@+id/tv_count_waitlisted"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Waitlisted"
+                        android:textSize="11sp"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/bg_stat_chip"
+                    android:padding="8dp"
+                    android:layout_marginEnd="8dp">
+                    <TextView
+                        android:id="@+id/tv_count_invited"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Invited"
+                        android:textSize="11sp"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/bg_stat_chip"
+                    android:padding="8dp">
+                    <TextView
+                        android:id="@+id/tv_count_confirmed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Confirmed"
+                        android:textSize="11sp"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Run Lottery Draw (US 02.05.02) -->
+            <TextView
+                android:id="@+id/btn_run_lottery"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:gravity="center"
+                android:text="RUN LOTTERY DRAW"
+                android:textAllCaps="true"
+                android:textColor="@color/white"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:background="@color/organizer_blue"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="4dp" />
+
+            <!-- Action tabs: REPLACEMENT | QR CODE | MAP (stubs for future user stories) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="@color/white"
+                android:layout_marginTop="8dp">
+                <TextView
+                    android:id="@+id/tab_replacement"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="REPLACEMENT"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/grey_nav_inactive" />
+                <View android:layout_width="1dp" android:layout_height="match_parent" android:background="#E0E0E0" />
+                <TextView
+                    android:id="@+id/tab_qr_code"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="QR CODE"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/grey_nav_inactive" />
+                <View android:layout_width="1dp" android:layout_height="match_parent" android:background="#E0E0E0" />
+                <TextView
+                    android:id="@+id/tab_map"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="MAP"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/grey_nav_inactive" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E0E0E0" />
+
+            <!-- Require Geolocation (US 02.02.03) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:background="@color/white">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Require Geolocation"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Force users to share location when joining"
+                        android:textSize="12sp"
+                        android:textColor="@color/text_secondary" />
+                </LinearLayout>
+                <Switch
+                    android:id="@+id/switch_geolocation"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E0E0E0" />
+
+            <!-- Export Attendees CSV (TODO) -->
+            <LinearLayout
+                android:id="@+id/btn_export_csv"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:background="@color/white"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_nav_user"
+                    android:layout_marginEnd="8dp"
+                    app:tint="@color/text_secondary" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="EXPORT ATTENDEES CSV"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_secondary" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="8dp" android:background="@color/page_background" />
+
+            <!-- Status filter tabs (US 02.02.01) -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/white"
+                android:scrollbars="none">
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:id="@+id/tab_waitlisted"
+                        android:layout_width="wrap_content"
+                        android:layout_height="44dp"
+                        android:gravity="center"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:text="Waitlisted (0)"
+                        android:textSize="13sp"
+                        android:textColor="@color/organizer_blue" />
+                    <TextView
+                        android:id="@+id/tab_invited"
+                        android:layout_width="wrap_content"
+                        android:layout_height="44dp"
+                        android:gravity="center"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:text="Invited (0)"
+                        android:textSize="13sp"
+                        android:textColor="@color/grey_nav_inactive" />
+                    <TextView
+                        android:id="@+id/tab_confirmed"
+                        android:layout_width="wrap_content"
+                        android:layout_height="44dp"
+                        android:gravity="center"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:text="Confirmed (0)"
+                        android:textSize="13sp"
+                        android:textColor="@color/grey_nav_inactive" />
+                    <TextView
+                        android:id="@+id/tab_declined"
+                        android:layout_width="wrap_content"
+                        android:layout_height="44dp"
+                        android:gravity="center"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:text="Declined (0)"
+                        android:textSize="13sp"
+                        android:textColor="@color/grey_nav_inactive" />
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E0E0E0" />
+
+            <!-- Notify All Waitlisted (TODO) -->
+            <LinearLayout
+                android:id="@+id/btn_notify_all"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:padding="12dp"
+                android:background="@color/white"
+                android:clickable="true"
+                android:focusable="true">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_nav_bell"
+                    android:layout_marginEnd="8dp"
+                    app:tint="@color/organizer_blue" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="NOTIFY ALL WAITLISTED"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/organizer_blue" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#E0E0E0" />
+
+            <FrameLayout
+                android:id="@+id/loading_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:paddingTop="24dp"
+                android:paddingBottom="8dp">
+                <ProgressBar
+                    android:id="@+id/progress_bar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:visibility="gone" />
+                <TextView
+                    android:id="@+id/tv_empty"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:text="No entrants in this category"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_secondary"
+                    android:visibility="gone" />
+            </FrameLayout>
+
+            <!-- Entrant list (US 02.02.01) -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_entrants"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:background="@color/white" />
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+</LinearLayout>

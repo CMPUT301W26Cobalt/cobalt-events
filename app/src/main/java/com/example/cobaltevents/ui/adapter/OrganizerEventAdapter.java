@@ -17,13 +17,22 @@ import java.util.Locale;
 
 public class OrganizerEventAdapter extends RecyclerView.Adapter<OrganizerEventAdapter.ViewHolder> {
 
+    public interface OnManageClickListener {
+        void onManageClick(Event event);
+    }
+
     private List<Event> events;
+    private OnManageClickListener manageClickListener;
 
     private static final SimpleDateFormat DATE_FORMAT =
             new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
 
     public OrganizerEventAdapter(List<Event> events) {
         this.events = events;
+    }
+
+    public void setOnManageClickListener(OnManageClickListener listener) {
+        this.manageClickListener = listener;
     }
 
     public void updateEvents(List<Event> newEvents) {
@@ -46,6 +55,9 @@ public class OrganizerEventAdapter extends RecyclerView.Adapter<OrganizerEventAd
         holder.tvDate.setText(event.getEventDate() != null
                 ? DATE_FORMAT.format(event.getEventDate().toDate()) : "Date TBD");
         holder.tvLocation.setText(event.getLocation() != null ? event.getLocation() : "Location TBD");
+        holder.btnManage.setOnClickListener(v -> {
+            if (manageClickListener != null) manageClickListener.onManageClick(event);
+        });
     }
 
     @Override
@@ -54,13 +66,14 @@ public class OrganizerEventAdapter extends RecyclerView.Adapter<OrganizerEventAd
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvDate, tvLocation;
+        TextView tvName, tvDate, tvLocation, btnManage;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
             tvName = itemView.findViewById(R.id.tv_event_name);
             tvDate = itemView.findViewById(R.id.tv_event_date);
             tvLocation = itemView.findViewById(R.id.tv_event_location);
+            btnManage = itemView.findViewById(R.id.btn_manage);
         }
     }
 }
