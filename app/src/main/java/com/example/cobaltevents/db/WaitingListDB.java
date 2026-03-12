@@ -138,6 +138,24 @@ public class WaitingListDB {
                 .addOnFailureListener(onFailure);
     }
 
+    public void getEntrantsForEvent(String eventId,
+                                     OnSuccessListener<List<WaitingList>> onSuccess,
+                                     OnFailureListener onFailure) {
+        db.collection(COLLECTION_NAME)
+                .whereEqualTo("eventId", eventId)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    List<WaitingList> list = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                        WaitingList wl = doc.toObject(WaitingList.class);
+                        wl.setId(doc.getId());
+                        list.add(wl);
+                    }
+                    onSuccess.onSuccess(list);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
     public void removeUserFromAllWaitlists(String deviceId, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
         db.collectionGroup(SUBCOLLECTION_ENTRIES)
                 .whereEqualTo("deviceId", deviceId)

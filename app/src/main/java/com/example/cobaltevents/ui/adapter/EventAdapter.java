@@ -3,8 +3,11 @@ package com.example.cobaltevents.ui.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import com.bumptech.glide.Glide;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -110,6 +113,17 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         Integer count = (event.getEventId() != null && waitlistCountByEventId != null)
                 ? waitlistCountByEventId.get(event.getEventId())
                 : null;
+
+        String posterUrl = event.getPosterImageUrl();
+        if (posterUrl != null && !posterUrl.isEmpty()) {
+            Glide.with(holder.ivEventImage.getContext())
+                    .load(posterUrl)
+                    .centerCrop()
+                    .placeholder(android.R.drawable.ic_menu_gallery)
+                    .into(holder.ivEventImage);
+        } else {
+            holder.ivEventImage.setImageResource(android.R.drawable.ic_menu_gallery);
+        }
 
         holder.tvName.setText(event.getName());
 
@@ -231,6 +245,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     }
 
     static class EventViewHolder extends RecyclerView.ViewHolder {
+        ImageView ivEventImage;
         TextView tvName, tvStatus, tvChevron, tvCategoryTag;
         TextView btnJoin;
         TextView tvWaitlistCount;
@@ -240,6 +255,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
         EventViewHolder(@NonNull View itemView) {
             super(itemView);
+            ivEventImage = itemView.findViewById(R.id.iv_event_image);
             tvName = itemView.findViewById(R.id.tv_event_name);
             tvStatus = itemView.findViewById(R.id.tv_event_status);
             tvChevron = itemView.findViewById(R.id.tv_chevron);

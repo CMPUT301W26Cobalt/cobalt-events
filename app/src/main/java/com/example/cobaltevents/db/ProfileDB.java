@@ -4,9 +4,12 @@ import com.example.cobaltevents.model.Entrant;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.SetOptions;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Handles all Firestore database operations for Entrant (Profile) objects.
@@ -28,9 +31,30 @@ public class ProfileDB {
             onFailure.onFailure(new Exception("Device ID is null"));
             return;
         }
+        Map<String, Object> data = new HashMap<>();
+        data.put("deviceId", entrant.getDeviceId());
+        data.put("name", entrant.getName());
+        data.put("email", entrant.getEmail());
+        data.put("phone", entrant.getPhone());
+        data.put("profilePictureUrl", entrant.getProfilePictureUrl());
+        if (entrant.getOrganizerEnabled() != null) {
+            data.put("organizerEnabled", entrant.getOrganizerEnabled());
+        }
         db.collection(COLLECTION)
                 .document(entrant.getDeviceId())
-                .set(entrant)
+                .set(data, SetOptions.merge())
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
+    public void setOrganizerEnabled(String deviceId, boolean enabled,
+                                    OnSuccessListener<Void> onSuccess,
+                                    OnFailureListener onFailure) {
+        Map<String, Object> update = new HashMap<>();
+        update.put("organizerEnabled", enabled);
+        db.collection(COLLECTION)
+                .document(deviceId)
+                .update(update)
                 .addOnSuccessListener(onSuccess)
                 .addOnFailureListener(onFailure);
     }
