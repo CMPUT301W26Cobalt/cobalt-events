@@ -44,6 +44,7 @@ public class OrganizerActivity extends AppCompatActivity {
         tvEmpty = findViewById(R.id.tv_empty);
 
         adapter = new OrganizerEventAdapter(new ArrayList<>());
+        adapter.setOnManageClickListener(this::openManageEvent);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
