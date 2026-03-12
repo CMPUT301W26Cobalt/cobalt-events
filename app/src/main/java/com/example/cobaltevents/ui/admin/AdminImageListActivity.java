@@ -1,17 +1,21 @@
 package com.example.cobaltevents.ui.admin;
 
 import android.os.Bundle;
+import android.widget.TextView;
+
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
+import android.widget.TextView;
+
 import com.example.cobaltevents.R;
 
-/**
- * TODO: Implement AdminImageListActivity
- */
 public class AdminImageListActivity extends AppCompatActivity {
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // TODO: setContentView and initialize
+        setContentView(R.layout.activity_admin_list);
+
+        TextView title = findViewById(R.id.adminListTitle);
+        title.setText("Browse & Manage Images");
     }
 }

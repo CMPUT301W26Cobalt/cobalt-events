@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@android:color/white">
+
+    <!-- Colored header bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#0D1B2A"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/tvDetailType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="EVENT"
+            android:textColor="#9CA3AF"
+            android:textSize="11sp"
+            android:letterSpacing="0.15"
+            android:textAllCaps="true" />
+
+        <TextView
+            android:id="@+id/tvDetailTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginTop="4dp" />
+    </LinearLayout>
+
+    <!-- Detail rows -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+
+
+        <!-- Row: Subtitle -->
+        <LinearLayout
+            android:id="@+id/rowSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:id="@+id/tvDetailSubtitleLabel"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="Info"
+                android:textSize="12sp"
+                android:textColor="#9CA3AF"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvDetailSubtitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="13sp"
+                android:textColor="#374151" />
+        </LinearLayout>
+
+        <!-- Row: Detail -->
+        <LinearLayout
+            android:id="@+id/rowDetail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvDetailDetailLabel"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="Location"
+                android:textSize="12sp"
+                android:textColor="#9CA3AF"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvDetailDetail"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="13sp"
+                android:textColor="#374151" />
+        </LinearLayout>
+
+        <!-- Row: Meta -->
+        <LinearLayout
+            android:id="@+id/rowMeta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvDetailMetaLabel"
+                android:layout_width="80dp"
+                android:layout_height="wrap_content"
+                android:text="Details"
+                android:textSize="12sp"
+                android:textColor="#9CA3AF"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvDetailMeta1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="#374151" />
+
+                <TextView
+                    android:id="@+id/tvDetailMeta2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textColor="#374151"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Image preview -->
+        <ImageView
+            android:id="@+id/ivDetailImage"
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:scaleType="centerCrop"
+            android:layout_marginBottom="16dp"
+            android:visibility="gone"
+            android:contentDescription="Preview" />
+
+        <!-- Close button -->
+        <Button
+            android:id="@+id/btnDetailClose"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="CLOSE"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#0D1B2A"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+</LinearLayout>

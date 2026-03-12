@@ -1,116 +1,116 @@
 package com.example.cobaltevents.controller;
 
-import android.util.Log;
-
 import com.example.cobaltevents.db.EventDB;
+import com.example.cobaltevents.db.NotificationDB;
 import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Event;
+import com.example.cobaltevents.model.Notification;
 import com.example.cobaltevents.model.WaitingList;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
-/**
- * Runs the lottery draw for an event. Randomly selects entrants from the waiting list,
- * updates their statuses, then triggers notifications via NotificationController.
- * US 01.04.01: Triggers "selected" notifications for lottery winners.
- * US 01.04.02: Triggers "not_selected" notifications for non-winners.
- */
 public class LotteryController {
 
-    private static final String TAG = "LotteryController";
-
-    private final WaitingListDB waitingListDB;
     private final EventDB eventDB;
-    private final NotificationController notificationController;
+    private final WaitingListDB waitingListDB;
+    private final NotificationDB notificationDB;
 
     public LotteryController() {
-        this.waitingListDB = new WaitingListDB();
         this.eventDB = new EventDB();
-        this.notificationController = new NotificationController();
+        this.waitingListDB = new WaitingListDB();
+        this.notificationDB = new NotificationDB();
     }
 
     /**
-     * Draws the lottery for an event:
-     * 1. Fetch all "waiting" entries
-     * 2. Shuffle randomly
-     * 3. First N (maxEntrants) → "selected"
-     * 4. Remainder → "not_selected"
-     * 5. Batch update statuses in Firestore
-     * 6. Send notifications to all participants
-     * 7. Mark event.lotteryDrawn = true
+     * Accepts an invitation to an event.
      */
-    public void drawLottery(Event event, OnLotteryCompleteListener listener) {
-        waitingListDB.getWaitingListByEvent(event.getEventId(), entries -> {
-            // Filter to only "waiting" entries
-            List<WaitingList> waitingEntries = new ArrayList<>();
-            for (WaitingList entry : entries) {
-                if (WaitingList.STATUS_WAITING.equals(entry.getStatus())) {
-                    waitingEntries.add(entry);
-                }
+    public void acceptInvitation(String deviceId, String eventId,
+                                 OnSuccessListener<Void> onSuccess,
+                                 OnFailureListener onFailure) {
+        waitingListDB.getActiveRegistrationForEvent(eventId, deviceId, reg -> {
+            if (reg == null) {
+                onFailure.onFailure(new Exception("No active registration found"));
+                return;
             }
+            if (WaitingList.STATUS_ENROLLED.equals(reg.getStatus())) {
+                onFailure.onFailure(new Exception("Already enrolled"));
+                return;
+            }
+            
+            waitingListDB.updateStatus(reg.getId(), WaitingList.STATUS_ENROLLED, v -> {
+                eventDB.getEvent(eventId, event -> {
+                    if (event != null) {
+                        List<String> confirmed = event.getConfirmedAttendeeIds();
+                        if (confirmed == null) confirmed = new ArrayList<>();
+                        if (!confirmed.contains(deviceId)) {
+                            confirmed.add(deviceId);
+                            event.setConfirmedAttendeeIds(confirmed);
+                            eventDB.updateEvent(event, onSuccess, onFailure);
+                        } else {
+                            onSuccess.onSuccess(null);
+                        }
+                    } else {
+                        onSuccess.onSuccess(null);
+                    }
+                }, onFailure);
+            }, onFailure);
+        }, onFailure);
+    }
 
-            if (waitingEntries.isEmpty()) {
-                listener.onError(new Exception("No entrants in the waiting list"));
+    /**
+     * Declines an invitation to an event and triggers replacement logic.
+     */
+    public void declineInvitation(String deviceId, String eventId,
+                                  OnSuccessListener<Void> onSuccess,
+                                  OnFailureListener onFailure) {
+        waitingListDB.getActiveRegistrationForEvent(eventId, deviceId, reg -> {
+            if (reg == null) {
+                onFailure.onFailure(new Exception("No active registration found"));
+                return;
+            }
+            waitingListDB.updateStatus(reg.getId(), WaitingList.STATUS_DECLINED, v -> {
+                // Trigger replacement logic
+                drawReplacement(eventId, onSuccess, onFailure);
+            }, onFailure);
+        }, onFailure);
+    }
+
+    private void drawReplacement(String eventId, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
+        waitingListDB.getEntrantsForEvent(eventId, allRegs -> {
+            List<WaitingList> pending = allRegs.stream()
+                    .filter(r -> WaitingStatusPending(r))
+                    .collect(Collectors.toList());
+            
+            if (pending.isEmpty()) {
+                onSuccess.onSuccess(null);
                 return;
             }
 
-            // Randomly shuffle
-            Collections.shuffle(waitingEntries);
-
-            // Split into selected and not selected
-            int capacity = event.getWaitingListCapacity();
-            int selectCount = (capacity == 0) ? waitingEntries.size() : Math.min(waitingEntries.size(), capacity);
-            List<String> selectedIds = new ArrayList<>();
-            List<String> notSelectedIds = new ArrayList<>();
-            Map<String, String> statusUpdates = new HashMap<>();
-
-            for (int i = 0; i < waitingEntries.size(); i++) {
-                WaitingList entry = waitingEntries.get(i);
-                if (i < selectCount) {
-                    statusUpdates.put(entry.getId(), WaitingList.STATUS_SELECTED);
-                    selectedIds.add(entry.getEntrantId());
-                } else {
-                    statusUpdates.put(entry.getId(), WaitingList.STATUS_NOT_SELECTED);
-                    notSelectedIds.add(entry.getEntrantId());
-                }
-            }
-
-            // Batch update statuses in Firestore
-            waitingListDB.batchUpdateStatuses(statusUpdates,
-                    unused -> {
-                        // Mark event as drawn
-                        eventDB.markLotteryDrawn(event.getEventId(),
-                                unused2 -> Log.d(TAG, "Event marked as lottery drawn"),
-                                e -> Log.e(TAG, "Failed to mark lottery drawn", e)
-                        );
-
-                        // Send notifications to all participants
-                        for (String entrantId : selectedIds) {
-                            notificationController.sendSelectedNotification(entrantId, event.getEventId(), event.getName());
-                        }
-                        for (String entrantId : notSelectedIds) {
-                            notificationController.sendNotSelectedNotification(entrantId, event.getEventId(), event.getName());
-                        }
-
-                        listener.onComplete(selectedIds, notSelectedIds);
-                    },
-                    e -> {
-                        Log.e(TAG, "Failed to update waiting list statuses", e);
-                        listener.onError(e);
-                    }
-            );
-        }, e -> {
-            Log.e(TAG, "Failed to fetch waiting list", e);
-            listener.onError(e);
-        });
+            Collections.shuffle(pending);
+            WaitingList replacement = pending.get(0);
+            
+            waitingListDB.updateStatus(replacement.getId(), WaitingList.STATUS_SELECTED, v -> {
+                eventDB.getEvent(eventId, event -> {
+                    String eventName = (event != null) ? event.getName() : "the event";
+                    Notification notification = new Notification(
+                            replacement.getDeviceId(),
+                            eventId,
+                            "Replacement Selected: " + eventName,
+                            "Good news! Someone declined their spot and you've been selected as a replacement! Please respond within 24 hours.",
+                            Notification.TYPE_GOT_OFF_WAITLIST
+                    );
+                    notificationDB.saveNotification(notification, v2 -> onSuccess.onSuccess(null), onFailure);
+                }, onFailure);
+            }, onFailure);
+        }, onFailure);
     }
 
-    public interface OnLotteryCompleteListener {
-        void onComplete(List<String> selectedIds, List<String> notSelectedIds);
-        void onError(Exception e);
+    private boolean WaitingStatusPending(WaitingList r) {
+        return WaitingList.STATUS_PENDING.equals(r.getStatus());
     }
 }

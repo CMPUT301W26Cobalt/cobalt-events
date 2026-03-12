@@ -89,4 +89,21 @@
     <string name="delete_account_confirm_message">Are you sure you want to delete your account? This cannot be undone.</string>
     <string name="delete_account_confirm">Delete</string>
     <string name="delete_account_cancel">Cancel</string>
+
+
+
+
+    <!-- String Admin Patch -->
+
+
+    <string name="admin_dashboard_title">Admin Dashboard</string>
+    <string name="admin_dashboard_subtitle">System Administration</string>
+    <string name="admin_search_hint">Search…</string>
+    <string name="admin_no_results">No results found</string>
+    <string name="tab_events">Events</string>
+    <string name="tab_profiles">Profiles</string>
+    <string name="tab_images">Images</string>
+    <string name="tab_organizers">Organizers</string>
+    <string name="tab_notifications">Notifications</string>
+    <string name="section_events">Browse &amp; Manage Events</string>
 </resources>
