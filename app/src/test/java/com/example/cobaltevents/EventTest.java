@@ -44,6 +44,14 @@ public class EventTest {
     }
 
     @Test
+    public void testSetPosterImageUrl_replacesExistingPosterUrl() {
+        event.setPosterImageUrl("https://example.com/old.jpg");
+        event.setPosterImageUrl("https://example.com/new.jpg");
+
+        assertEquals("https://example.com/new.jpg", event.getPosterImageUrl());
+    }
+
+    @Test
     public void testConstructor_setsLocation() {
         assertEquals("Edmonton Convention Centre", event.getLocation());
     }
