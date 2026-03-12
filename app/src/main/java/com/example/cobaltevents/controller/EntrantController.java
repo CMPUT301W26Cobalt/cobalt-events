@@ -1,5 +1,6 @@
 package com.example.cobaltevents.controller;
 
+
 import com.example.cobaltevents.db.EntrantDB;
 import com.example.cobaltevents.db.ProfileDB;
 import com.example.cobaltevents.model.Entrant;

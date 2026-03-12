@@ -5,7 +5,6 @@ import com.google.firebase.Timestamp;
 public class WaitingList {
 
     public static final String STATUS_PENDING = "pending";
-    public static final String STATUS_WAITING = "pending";
     public static final String STATUS_SELECTED = "selected";
     public static final String STATUS_NOT_SELECTED = "not_selected";
     public static final String STATUS_CANCELLED = "cancelled";
@@ -50,22 +49,19 @@ public class WaitingList {
         this.phone = phone;
         this.notificationMethod = notificationMethod;
     }
-
+    
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
-
+    
     public String getEventId() { return eventId; }
     public void setEventId(String eventId) { this.eventId = eventId; }
-
+    
     public String getDeviceId() { return deviceId; }
     public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
-
-    public String getEntrantId() { return deviceId; }
-    public void setEntrantId(String entrantId) { this.deviceId = entrantId; }
-
+    
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
-
+    
     public Timestamp getRegisteredAt() { return registeredAt; }
     public void setRegisteredAt(Timestamp registeredAt) { this.registeredAt = registeredAt; }
 

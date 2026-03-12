@@ -31,7 +31,6 @@ public class Event {
         this.confirmedAttendeeIds = new ArrayList<>();
         this.geolocationRequired = false;
         this.waitingListCapacity = 0;
-        this.lotteryDrawn = false;
     }
 
     public Event(String name, String description, String location,
@@ -47,13 +46,10 @@ public class Event {
         this.confirmedAttendeeIds = new ArrayList<>();
         this.geolocationRequired = false;
         this.waitingListCapacity = 0;
-        this.lotteryDrawn = false;
     }
 
     public String getEventId() { return eventId; }
     public String getName() { return name; }
-    /** Alias for getName(), used by notification code. */
-    public String getTitle() { return name; }
     public String getDescription() { return description; }
     public String getLocation() { return location; }
     public String getPrice() { return price; }
@@ -72,7 +68,6 @@ public class Event {
 
     public void setEventId(String eventId) { this.eventId = eventId; }
     public void setName(String name) { this.name = name; }
-    public void setTitle(String title) { this.name = title; }
     public void setDescription(String description) { this.description = description; }
     public void setLocation(String location) { this.location = location; }
     public void setPrice(String price) { this.price = price; }

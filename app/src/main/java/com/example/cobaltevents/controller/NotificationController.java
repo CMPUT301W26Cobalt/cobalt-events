@@ -18,8 +18,6 @@ import com.example.cobaltevents.R;
 import com.example.cobaltevents.db.NotificationDB;
 import com.example.cobaltevents.model.Notification;
 import com.example.cobaltevents.ui.EventDetailActivity;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.HashSet;
@@ -79,29 +77,6 @@ public class NotificationController {
                 unused -> {},
                 e -> e.printStackTrace()
         );
-    }
-
-    public void sendNotSelectedNotification(String entrantId, String eventId, String eventName) {
-        Notification notification = new Notification(
-                entrantId,
-                eventId,
-                "Lottery Result",
-                "Unfortunately, you were not selected for " + eventName + ".",
-                Notification.TYPE_NOT_SELECTED
-        );
-
-        notificationDB.saveNotification(notification,
-                unused -> {},
-                e -> e.printStackTrace()
-        );
-    }
-
-    public void getNotifications(String deviceId, OnSuccessListener<List<Notification>> onSuccess, OnFailureListener onFailure) {
-        notificationDB.getNotificationsForRecipient(deviceId, onSuccess, onFailure);
-    }
-
-    public void markAsRead(String notificationId) {
-        notificationDB.updateReadStatus(notificationId, Notification.READ_ACCEPTED, unused -> {}, e -> e.printStackTrace());
     }
 
     public void startNotificationListener(Context context, String deviceId) {

@@ -8,7 +8,6 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,16 +37,6 @@ public class NotificationDB {
                                    OnFailureListener onFailure) {
         db.collection(COLLECTION).document(notificationId)
                 .delete()
-                .addOnSuccessListener(onSuccess)
-                .addOnFailureListener(onFailure);
-    }
-
-    public void saveNotifications(List<Notification> notifications, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
-        WriteBatch batch = db.batch();
-        for (Notification n : notifications) {
-            batch.set(db.collection(COLLECTION).document(), n);
-        }
-        batch.commit()
                 .addOnSuccessListener(onSuccess)
                 .addOnFailureListener(onFailure);
     }

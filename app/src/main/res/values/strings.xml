@@ -8,13 +8,7 @@
     <string name="notify_invited">Notify Invited Entrants</string>
     <string name="event_poster">Event poster image</string>
 
-    <!-- Navigation -->
-    <string name="btn_events">Events</string>
-    <string name="btn_profile">My Profile</string>
-    <string name="btn_notifications">Notifications</string>
-    <string name="btn_manage_event">Manage Event</string>
-
-    <!-- Notifications (US 01.04.01, US 01.04.02) -->
+    <!-- Notifications (US 01.04.01) -->
     <string name="notification_channel_name">Event Lottery Results</string>
     <string name="notifications_title">Notifications</string>
     <string name="notif_accept">Accept</string>
@@ -23,29 +17,6 @@
     <string name="notif_declined">Declined</string>
     <string name="notification_selected_title">You\'ve been selected!</string>
     <string name="notification_selected_message">You have been chosen to attend %1$s.</string>
-    <string name="notif_not_selected_title">Lottery Result</string>
-    <string name="notif_not_selected_message">Unfortunately, you were not selected for %s.</string>
-
-    <!-- Entrant profile (US 01.04.03) -->
-    <string name="enable_notifications">Enable Notifications</string>
-    <string name="btn_edit_profile">Edit Profile</string>
-
-    <!-- Event detail -->
-    <string name="btn_join_waiting_list">Join Waiting List</string>
-    <string name="event_detail_title">Event Details</string>
-
-    <!-- Event manage -->
-    <string name="btn_draw_lottery">Draw Lottery</string>
-    <string name="lottery_confirm_title">Confirm Lottery Draw</string>
-    <string name="lottery_confirm_message">Are you sure you want to draw the lottery? This cannot be undone.</string>
-
-    <!-- Notification list -->
-    <string name="notifications_title">Notifications</string>
-    <string name="no_notifications">No notifications yet</string>
-
-    <!-- General -->
-    <string name="loading">Loading…</string>
-    <string name="error_generic">Something went wrong. Please try again.</string>
 
     <!-- US 01.01.01 Join Waitlist -->
     <string name="add_to_waitlist">Add to waitlist</string>
