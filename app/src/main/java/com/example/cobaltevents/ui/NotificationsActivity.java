@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cobaltevents.R;
+import com.example.cobaltevents.controller.LotteryController;
 import com.example.cobaltevents.db.EntrantDB;
 import com.example.cobaltevents.db.NotificationDB;
 import com.example.cobaltevents.model.Notification;
@@ -23,6 +24,7 @@ import com.example.cobaltevents.ui.adapter.NotificationListAdapter;
 public class NotificationsActivity extends AppCompatActivity {
 
     private NotificationDB notificationDB;
+    private LotteryController lotteryController;
     private NotificationListAdapter adapter;
     private String deviceId;
 
@@ -32,6 +34,7 @@ public class NotificationsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_notifications);
 
         notificationDB = new NotificationDB();
+        lotteryController = new LotteryController();
         deviceId = new EntrantDB(this).getEntrant().getDeviceId();
 
         RecyclerView recycler = findViewById(R.id.recycler_notifications);
@@ -40,12 +43,12 @@ public class NotificationsActivity extends AppCompatActivity {
         adapter.setOnActionListener(new NotificationListAdapter.OnActionListener() {
             @Override
             public void onAccept(Notification notification) {
-                updateReadStatus(notification, Notification.READ_ACCEPTED);
+                acceptInvitation(notification);
             }
 
             @Override
             public void onDecline(Notification notification) {
-                updateReadStatus(notification, Notification.READ_REJECTED);
+                declineInvitation(notification);
             }
         });
         recycler.setAdapter(adapter);
@@ -73,6 +76,26 @@ public class NotificationsActivity extends AppCompatActivity {
             });
     }
 
+    private void acceptInvitation(Notification notification) {
+        if (notification.getEventId() == null) return;
+        lotteryController.acceptInvitation(deviceId, notification.getEventId(),
+            v -> {
+                updateReadStatus(notification, Notification.READ_ACCEPTED);
+                Toast.makeText(this, "Invitation Accepted", Toast.LENGTH_SHORT).show();
+            },
+            e -> Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
+    private void declineInvitation(Notification notification) {
+        if (notification.getEventId() == null) return;
+        lotteryController.declineInvitation(deviceId, notification.getEventId(),
+            v -> {
+                updateReadStatus(notification, Notification.READ_REJECTED);
+                Toast.makeText(this, "Invitation Declined", Toast.LENGTH_SHORT).show();
+            },
+            e -> Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+    }
+
     private void updateReadStatus(Notification notification, String status) {
         if (notification.getId() == null) return;
         notificationDB.updateReadStatus(notification.getId(), status,
@@ -80,7 +103,7 @@ public class NotificationsActivity extends AppCompatActivity {
                 notification.setRead(status);
                 adapter.updateNotification(notification);
             },
-            e -> Toast.makeText(this, "Failed to update", Toast.LENGTH_SHORT).show());
+            e -> Toast.makeText(this, "Failed to update notification status", Toast.LENGTH_SHORT).show());
     }
 
     private void setupBottomNavigation(boolean fromOrganizer) {
