@@ -22,6 +22,7 @@ public class Entrant {
     private String email;
     private String phone;
     private String profilePictureUrl;
+    private Boolean organizerEnabled;
 
     /** No-arg constructor required by Firestore deserialization. */
     public Entrant() {}
@@ -79,6 +80,9 @@ public class Entrant {
 
     public String getProfilePictureUrl() { return profilePictureUrl; }
     public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
+
+    public Boolean getOrganizerEnabled() { return organizerEnabled; }
+    public void setOrganizerEnabled(Boolean organizerEnabled) { this.organizerEnabled = organizerEnabled; }
 
     public String getInitials() {
         if (name == null || name.trim().isEmpty()) {
