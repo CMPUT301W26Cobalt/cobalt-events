@@ -7,6 +7,9 @@ public class WaitingList {
     public static final String STATUS_PENDING = "pending";
     public static final String STATUS_ACCEPTED = "accepted";
     public static final String STATUS_REJECTED = "rejected";
+    public static final String STATUS_SELECTED = "selected";
+    public static final String STATUS_NOT_SELECTED = "not_selected";
+    public static final String STATUS_CANCELLED = "cancelled";
 
     public static final String NOTIFY_EMAIL = "email";
     public static final String NOTIFY_PHONE = "phone";

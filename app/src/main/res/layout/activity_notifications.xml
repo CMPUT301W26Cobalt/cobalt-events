@@ -20,29 +20,13 @@
 
         <TextView
             android:id="@+id/title_notifications"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:text="@string/notifications_title"
             android:textColor="@color/white"
             android:textSize="24sp"
             android:textStyle="bold"
             android:letterSpacing="0.02" />
-
-        <TextView
-            android:id="@+id/btn_push_sample"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/push_sample_notifications"
-            android:textColor="@color/white"
-            android:textSize="14sp"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="8dp"
-            android:background="?attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
