@@ -15,6 +15,7 @@
     <color name="user_green">#00A859</color>
     <color name="user_green_light">#E0F5EB</color>
     <color name="organizer_blue">#2962FF</color>
+
     <color name="organizer_blue_light">#E3F2FD</color>
     <color name="welcome_star_bg">#00897B</color>
     
@@ -45,7 +46,6 @@
     <color name="switch_track_on">#1A2B3C</color>
     <color name="switch_track_off">#D1D5DB</color>
     <color name="divider_light">#F3F4F6</color>
-
     <!-- Notifications screen -->
     <color name="notif_page_bg">#F9FAFB</color>
     <color name="notif_header_teal">#009689</color>

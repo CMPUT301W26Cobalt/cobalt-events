@@ -50,6 +50,14 @@ public class Notification {
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
 
+    public String getRead() { return read; }
+    public void setRead(String read) { this.read = read; }
+    
+    public boolean isPending() { return read == null || read.isEmpty() || READ_PENDING.equals(read); }
+    public void setPending(boolean pending) {
+        // Dummy setter for Firestore deserialization if needed, though it's a computed property
+    }
+
     public Date getTimestamp() { return timestamp; }
     public void setTimestamp(Date timestamp) { this.timestamp = timestamp; }
 }

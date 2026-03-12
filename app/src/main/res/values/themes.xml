@@ -14,4 +14,18 @@
         <item name="android:minWidth">56dp</item>
         <item name="android:minHeight">28dp</item>
     </style>
+
+    <style name="AdminTab">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#333333</item>
+        <item name="android:paddingLeft">14dp</item>
+        <item name="android:paddingTop">10dp</item>
+        <item name="android:paddingRight">14dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:layout_marginEnd">10dp</item>
+        <item name="android:background">@drawable/bg_tab</item>
+        <item name="android:gravity">center</item>
+    </style>
 </resources>

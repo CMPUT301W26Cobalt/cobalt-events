@@ -22,12 +22,21 @@ public class NotificationDB {
     }
 
     public void saveNotification(Notification notification,
-                                 OnSuccessListener<Void> onSuccess,
+                                 OnSuccessListener<String> onSuccess,
                                  OnFailureListener onFailure) {
         String docId = db.collection(COLLECTION).document().getId();
         notification.setId(docId);
         db.collection(COLLECTION).document(docId)
                 .set(notification)
+                .addOnSuccessListener(v -> onSuccess.onSuccess(docId))
+                .addOnFailureListener(onFailure);
+    }
+
+    public void deleteNotification(String notificationId,
+                                   OnSuccessListener<Void> onSuccess,
+                                   OnFailureListener onFailure) {
+        db.collection(COLLECTION).document(notificationId)
+                .delete()
                 .addOnSuccessListener(onSuccess)
                 .addOnFailureListener(onFailure);
     }
