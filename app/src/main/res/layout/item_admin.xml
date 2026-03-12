@@ -1,16 +1,153 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- TODO: Implement item_admin layout -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center">
+    android:layout_height="wrap_content"
+    android:layout_marginStart="0dp"
+    android:layout_marginEnd="0dp"
+    android:layout_marginBottom="10dp"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="3dp"
+    app:cardBackgroundColor="#FFFFFF">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="item_admin"
-        android:textSize="16sp"
-        android:textColor="@color/grey_medium" />
+        android:orientation="horizontal"
+        android:padding="14dp"
+        android:gravity="center_vertical">
 
-</LinearLayout>
+        <!-- Avatar -->
+        <FrameLayout
+            android:id="@+id/adminItemAvatarContainer"
+            android:layout_width="46dp"
+            android:layout_height="46dp"
+            android:layout_marginEnd="14dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/adminItemAvatar"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
+                android:scaleType="centerCrop"
+                android:background="@drawable/bg_avatar_circle"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/adminItemInitials"
+                android:layout_width="46dp"
+                android:layout_height="46dp"
+                android:gravity="center"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_avatar_circle"
+                android:visibility="gone" />
+        </FrameLayout>
+
+        <!-- Content -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <!-- Badge (on its own line) -->
+            <TextView
+                android:id="@+id/adminItemBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="#0D1B2A"
+                android:background="@drawable/bg_tag_teal"
+                android:layout_marginBottom="5dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/adminItemTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#0D1B2A"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/adminItemSubtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="13sp"
+                android:textColor="#6B7280"
+                android:layout_marginTop="2dp"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/adminItemDetail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="#4B5563"
+                android:layout_marginTop="3dp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/adminItemMetaRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/adminItemMeta1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="11sp"
+                    android:textColor="#9CA3AF" />
+
+                <TextView
+                    android:id="@+id/adminItemMeta2"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp"
+                    android:textColor="#9CA3AF" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Thumbnail (optional, for image tab) -->
+        <ImageView
+            android:id="@+id/adminItemImage"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="10dp"
+            android:scaleType="centerCrop"
+            android:background="@drawable/bg_card"
+            android:clipToOutline="true"
+            android:visibility="gone" />
+
+        <!-- Hidden buttons kept for code compatibility -->
+        <ImageButton
+            android:id="@+id/adminItemViewButton"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
+
+        <ImageButton
+            android:id="@+id/adminItemDeleteButton"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

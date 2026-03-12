@@ -30,7 +30,7 @@ public class QRCodeController {
         try {
             QRCodeWriter writer = new QRCodeWriter();
             BitMatrix bitMatrix = writer.encode(eventId, BarcodeFormat.QR_CODE, QR_CODE_SIZE, QR_CODE_SIZE);
-            
+
             Bitmap bitmap = Bitmap.createBitmap(QR_CODE_SIZE, QR_CODE_SIZE, Bitmap.Config.RGB_565);
             for (int x = 0; x < QR_CODE_SIZE; x++) {
                 for (int y = 0; y < QR_CODE_SIZE; y++) {

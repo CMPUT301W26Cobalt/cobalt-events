@@ -2,6 +2,7 @@ package com.example.cobaltevents.ui;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -30,7 +31,7 @@ public class EntrantActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        android.util.Log.d("ADMIN_DEVICE_ID", Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID));
         entrantDB = new EntrantDB(this);
         controller = new EntrantController(entrantDB);
         currentEntrant = entrantDB.getEntrant();
