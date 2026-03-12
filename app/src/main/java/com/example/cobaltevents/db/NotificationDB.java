@@ -13,11 +13,6 @@ import com.google.firebase.firestore.WriteBatch;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Handles Firestore operations for the "notifications" collection.
- * US 01.04.01 — stores "selected" notifications.
- * US 01.04.02 — stores "not_selected" notifications.
- */
 public class NotificationDB {
 
     private static final String COLLECTION = "notifications";
@@ -27,9 +22,6 @@ public class NotificationDB {
         this.db = FirebaseFirestore.getInstance();
     }
 
-    /**
-     * Saves a notification document to Firestore.
-     */
     public void saveNotification(Notification notification,
                                  OnSuccessListener<Void> onSuccess,
                                  OnFailureListener onFailure) {
@@ -41,7 +33,6 @@ public class NotificationDB {
                 .addOnFailureListener(onFailure);
     }
 
-    /** Batch write multiple notifications (used after lottery draw). */
     public void saveNotifications(List<Notification> notifications, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
         WriteBatch batch = db.batch();
         for (Notification n : notifications) {
@@ -52,9 +43,6 @@ public class NotificationDB {
                 .addOnFailureListener(onFailure);
     }
 
-    /**
-     * Fetches all notifications for a given recipient, ordered by timestamp descending.
-     */
     public void getNotificationsForRecipient(String recipientId,
                                              OnSuccessListener<List<Notification>> onSuccess,
                                              OnFailureListener onFailure) {
@@ -76,26 +64,20 @@ public class NotificationDB {
                 .addOnFailureListener(onFailure);
     }
 
-    /**
-     * Marks a notification as read.
-     */
-    public void markAsRead(String notificationId,
-                           OnSuccessListener<Void> onSuccess,
-                           OnFailureListener onFailure) {
+    public void updateReadStatus(String notificationId, String readStatus,
+                                 OnSuccessListener<Void> onSuccess,
+                                 OnFailureListener onFailure) {
         db.collection(COLLECTION).document(notificationId)
-                .update("read", true)
+                .update("read", readStatus)
                 .addOnSuccessListener(onSuccess)
                 .addOnFailureListener(onFailure);
     }
 
-    /**
-     * Starts a real-time listener for new unread notifications for a recipient.
-     */
     public ListenerRegistration listenForNotifications(String recipientId,
                                                        OnNotificationListener listener) {
         return db.collection(COLLECTION)
                 .whereEqualTo("recipientId", recipientId)
-                .whereEqualTo("read", false)
+                .whereEqualTo("read", "pending")
                 .addSnapshotListener((snapshots, error) -> {
                     if (error != null) {
                         listener.onError(error);

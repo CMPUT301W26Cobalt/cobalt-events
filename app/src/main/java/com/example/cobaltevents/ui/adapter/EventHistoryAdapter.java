@@ -1,12 +1,12 @@
 package com.example.cobaltevents.ui.adapter;
 
-import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cobaltevents.R;
@@ -52,7 +52,7 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
         
         String status = history.getStatus();
         holder.tvStatus.setText(getStatusText(status));
-        holder.tvStatus.setTextColor(getStatusColor(status));
+        holder.tvStatus.setTextColor(getStatusColor(holder.itemView, status));
         
         holder.itemView.setOnClickListener(v -> listener.onHistoryClick(history));
     }
@@ -78,14 +78,14 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
         }
     }
     
-    private int getStatusColor(String status) {
+    private int getStatusColor(View itemView, String status) {
         switch (status) {
-            case "selected": return Color.parseColor("#4CAF50");
-            case "not_selected": return Color.parseColor("#F44336");
-            case "pending": return Color.parseColor("#FF9800");
-            case "cancelled": return Color.parseColor("#9E9E9E");
-            case "withdrawn": return Color.parseColor("#757575");
-            default: return Color.parseColor("#000000");
+            case "selected": return ContextCompat.getColor(itemView.getContext(), R.color.accent);
+            case "not_selected": return ContextCompat.getColor(itemView.getContext(), R.color.alert_red);
+            case "pending": return ContextCompat.getColor(itemView.getContext(), R.color.status_warning_orange);
+            case "cancelled": return ContextCompat.getColor(itemView.getContext(), R.color.grey_nav_inactive);
+            case "withdrawn": return ContextCompat.getColor(itemView.getContext(), R.color.grey_medium);
+            default: return ContextCompat.getColor(itemView.getContext(), R.color.black);
         }
     }
     

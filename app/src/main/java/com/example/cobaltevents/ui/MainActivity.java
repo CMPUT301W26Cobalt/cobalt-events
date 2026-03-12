@@ -9,10 +9,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.controller.NotificationController;
 
-/**
- * App entry point. Initializes the notification system for US 01.04.01,
- * then redirects to EventListActivity.
- */
 public class MainActivity extends AppCompatActivity {
 
     private NotificationController notificationController;
@@ -22,16 +18,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        // Get this device's unique ID (used as recipientId for notifications)
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-
-        // Initialize notification system
         notificationController = new NotificationController();
         notificationController.createNotificationChannel(this);
         notificationController.requestNotificationPermission(this);
-
-        // Navigate to event list
         Intent intent = new Intent(this, EventListActivity.class);
         startActivity(intent);
     }
@@ -39,7 +29,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Start listening for new notifications in Firestore
         if (notificationController != null && deviceId != null) {
             notificationController.startNotificationListener(this, deviceId);
         }
@@ -48,7 +37,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        // Stop the listener to avoid background updates
         if (notificationController != null) {
             notificationController.stopNotificationListener();
         }

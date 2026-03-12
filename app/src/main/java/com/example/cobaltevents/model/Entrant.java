@@ -1,17 +1,8 @@
 package com.example.cobaltevents.model;
 
 import android.util.Patterns;
+import com.google.firebase.firestore.Exclude;
 
-/**
- * Data model for an entrant (user who enters event lotteries).
- *
- * Fields:
- * - deviceId: unique device identifier (Settings.Secure.ANDROID_ID), used as
- *   the Firestore document ID and as the recipientId for notifications.
- * - name, email, phone: profile information.
- * - notificationsEnabled: opt-out preference (US 01.04.03).
- * - Validation methods for profile fields.
- */
 public class Entrant {
 
     private String deviceId;
@@ -21,7 +12,6 @@ public class Entrant {
     private String profilePictureUrl;
     private boolean notificationsEnabled;
 
-    /** No-arg constructor required by Firestore deserialization. */
     public Entrant() {
         this.notificationsEnabled = true;
     }
@@ -78,12 +68,17 @@ public class Entrant {
     public void setProfilePictureUrl(String profilePictureUrl) { this.profilePictureUrl = profilePictureUrl; }
 
     public String getInitials() {
-        if (name == null || name.trim().isEmpty()) return "?";
-        String[] parts = name.trim().split("\\s+");
-        if (parts.length >= 2) {
-            return ("" + parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+        if (name == null || name.trim().isEmpty()) {
+            return "?";
         }
-        return ("" + parts[0].charAt(0)).toUpperCase();
+        String[] parts = name.trim().split("\\s+");
+        if (parts.length == 0) return "?";
+        StringBuilder initials = new StringBuilder();
+        initials.append(parts[0].substring(0, 1).toUpperCase());
+        if (parts.length > 1) {
+            initials.append(parts[parts.length - 1].substring(0, 1).toUpperCase());
+        }
+        return initials.toString();
     }
 
     public boolean isNotificationsEnabled() { return notificationsEnabled; }
