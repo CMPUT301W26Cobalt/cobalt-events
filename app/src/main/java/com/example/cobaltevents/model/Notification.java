@@ -8,9 +8,10 @@ public class Notification {
     public static final String TYPE_SELECT = "select";
     public static final String TYPE_GOT_OFF_WAITLIST = "got-off-waitlist";
     public static final String TYPE_NOT_SELECTED = "not-selected";
-    public static final String READ_PENDING = "pending";
-    public static final String READ_ACCEPTED = "accepted";
-    public static final String READ_REJECTED = "rejected";
+    /** Status values aligned with waitlist entry status (used for UI only). */
+    public static final String STATUS_PENDING = "pending";
+    public static final String STATUS_ACCEPTED = "accepted";
+    public static final String STATUS_REJECTED = "rejected";
 
     private String id;
     private String recipientId;
@@ -18,7 +19,6 @@ public class Notification {
     private String title;
     private String message;
     private String type;
-    private String read;
     private Date timestamp;
 
     public Notification() {}
@@ -29,7 +29,6 @@ public class Notification {
         this.title = title;
         this.message = message;
         this.type = type;
-        this.read = READ_PENDING;
         this.timestamp = new Date();
     }
 
@@ -50,10 +49,6 @@ public class Notification {
 
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
-
-    public String getRead() { return read; }
-    public void setRead(String read) { this.read = read; }
-    public boolean isPending() { return read == null || read.isEmpty() || READ_PENDING.equals(read); }
 
     public Date getTimestamp() { return timestamp; }
     public void setTimestamp(Date timestamp) { this.timestamp = timestamp; }

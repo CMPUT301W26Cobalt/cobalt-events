@@ -1389,6 +1389,9 @@ color background_floating_material_light
 color background_material_dark
 color background_material_light
 color black
+color brand_mint
+color brand_mint_text
+color brand_teal
 color bright_foreground_disabled_material_dark
 color bright_foreground_disabled_material_light
 color bright_foreground_inverse_material_dark
@@ -1460,6 +1463,7 @@ color error_color_material_light
 color filter_button
 color foreground_material_dark
 color foreground_material_light
+color grey_400
 color grey_border
 color grey_border_light
 color grey_hint_text
@@ -2178,6 +2182,7 @@ color switch_thumb_normal_material_light
 color switch_track_off
 color switch_track_on
 color switch_track_selector
+color switch_track_tint
 color tag_teal_background
 color text_primary
 color text_secondary
@@ -3075,6 +3080,7 @@ drawable bg_button_primary_account
 drawable bg_button_red_8dp
 drawable bg_button_red_pill
 drawable bg_card_event
+drawable bg_criteria_mint
 drawable bg_delete_confirm_panel
 drawable bg_dialog_rounded
 drawable bg_divider_horizontal
@@ -3132,6 +3138,7 @@ drawable googleg_standard_color_18
 drawable ic_arrow_back
 drawable ic_arrow_back_black_24
 drawable ic_avatar_person
+drawable ic_bell_notifications
 drawable ic_clear_black_24
 drawable ic_clock_black_24dp
 drawable ic_edit_pencil
@@ -3358,6 +3365,7 @@ id btn_join
 id btn_join_leave
 id btn_leave
 id btn_notify_invited
+id btn_push_sample
 id btn_run_lottery
 id btn_save_changes
 id btn_upload_picture
@@ -3443,7 +3451,6 @@ id east
 id edge
 id edit_email
 id edit_name
-id edit_note
 id edit_participants
 id edit_phone
 id edit_profile_image
@@ -3521,15 +3528,16 @@ id iv_nav_account
 id iv_nav_events
 id iv_nav_my_events
 id iv_nav_notifications
+id iv_notifications_bell
 id jumpToEnd
 id jumpToStart
 id labeled
 id layout
+id layout_criteria_box
 id layout_email
 id layout_event_notifications
 id layout_expanded_details
 id layout_geo_note
-id layout_note
 id layout_notifications_enabled
 id layout_participants
 id layout_phone
@@ -3813,6 +3821,7 @@ id triangle
 id tv_capacity
 id tv_category_tag
 id tv_chevron
+id tv_criteria_description
 id tv_description
 id tv_detail_date
 id tv_detail_location
@@ -3831,6 +3840,8 @@ id tv_nav_account
 id tv_nav_events
 id tv_nav_my_events
 id tv_nav_notifications
+id tv_notifications_subtitle
+id tv_notifications_title
 id tv_phone
 id tv_price
 id tv_reg_close
@@ -4303,6 +4314,7 @@ string path_password_eye_mask_strike_through
 string path_password_eye_mask_visible
 string path_password_strike_through
 string project_id
+string push_sample_notifications
 string run_lottery
 string search_menu_title
 string searchbar_scrolling_view_behavior

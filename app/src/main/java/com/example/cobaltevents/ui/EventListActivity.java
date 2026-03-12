@@ -26,9 +26,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.controller.EventController;
+import com.example.cobaltevents.db.EntrantDB;
 import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.WaitingList;
+import com.example.cobaltevents.model.Entrant;
 import com.example.cobaltevents.ui.adapter.EventAdapter;
 import com.google.firebase.Timestamp;
 
@@ -59,6 +61,7 @@ public class EventListActivity extends AppCompatActivity {
     private String deviceId;
     private EventController eventController;
     private WaitingListDB waitingListDB;
+    private EntrantDB entrantDB;
     private final Map<String, WaitingList> activeRegistrationsByEventId = new HashMap<>();
     private final Map<String, Integer> waitlistCountByEventId = new HashMap<>();
 
@@ -77,12 +80,22 @@ public class EventListActivity extends AppCompatActivity {
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         eventController = new EventController();
         waitingListDB = new WaitingListDB();
+        entrantDB = new EntrantDB(this);
 
         recyclerView = findViewById(R.id.recycler_events);
         progressBar = findViewById(R.id.progress_bar);
         tvEmpty = findViewById(R.id.tv_empty);
 
         adapter = new EventAdapter(new ArrayList<>(), this::handleJoinOrLeave);
+        adapter.setDeviceId(deviceId);
+        adapter.setOnNotificationsToggleListener((eventId, devId, notificationsAllowed) -> {
+            waitingListDB.updateNotificationsAllowed(eventId, devId, notificationsAllowed,
+                    v -> adapter.updateNotificationsAllowedForEvent(eventId, notificationsAllowed),
+                    e -> {
+                        Toast.makeText(this, "Failed to update notification setting", Toast.LENGTH_SHORT).show();
+                        loadActiveRegistrationsThenApplyFilters();
+                    });
+        });
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
@@ -124,27 +137,35 @@ public class EventListActivity extends AppCompatActivity {
 
     private void loadActiveRegistrationsThenApplyFilters() {
         activeRegistrationsByEventId.clear();
-        waitingListDB.getEntrantHistory(deviceId, registrations -> {
-            if (registrations != null) {
-                for (WaitingList r : registrations) {
-                    if (r == null) continue;
-                    String status = r.getStatus();
-                    boolean isActive = status == null
-                            || (!WaitingList.STATUS_WITHDRAWN.equals(status)
-                            && !WaitingList.STATUS_CANCELLED.equals(status));
-                    if (isActive && r.getEventId() != null) {
-                        activeRegistrationsByEventId.put(r.getEventId(), r);
-                    }
-                }
+        if (allEvents == null || allEvents.isEmpty()) {
+            adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+            loadWaitlistCountsThenApplyFilters();
+            applyFilters();
+            return;
+        }
+        // Load "am I on waitlist?" per event so we don't depend on collection-group index (getEntrantHistory can fail without it).
+        java.util.concurrent.atomic.AtomicInteger pending = new java.util.concurrent.atomic.AtomicInteger(allEvents.size());
+        for (Event event : allEvents) {
+            if (event == null || event.getEventId() == null) {
+                if (pending.decrementAndGet() == 0) finishLoadingRegistrations();
+                continue;
             }
-            adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
-            loadWaitlistCountsThenApplyFilters();
-            applyFilters();
-        }, e -> {
-            adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
-            loadWaitlistCountsThenApplyFilters();
-            applyFilters();
-        });
+            String eventId = event.getEventId();
+            waitingListDB.getActiveRegistrationForEvent(eventId, deviceId,
+                    reg -> {
+                        if (reg != null) activeRegistrationsByEventId.put(eventId, reg);
+                        if (pending.decrementAndGet() == 0) finishLoadingRegistrations();
+                    },
+                    e -> {
+                        if (pending.decrementAndGet() == 0) finishLoadingRegistrations();
+                    });
+        }
+    }
+
+    private void finishLoadingRegistrations() {
+        adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+        loadWaitlistCountsThenApplyFilters();
+        applyFilters();
     }
 
     private void loadWaitlistCountsThenApplyFilters() {
@@ -395,12 +416,27 @@ public class EventListActivity extends AppCompatActivity {
             Toast.makeText(this, getString(R.string.waitlist_fail) + " No internet connection.", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        WaitingList registration = new WaitingList(event.getEventId(), deviceId, WaitingList.STATUS_PENDING);
+        Entrant entrant = entrantDB.getEntrant();
+        if (!entrant.isValidName() || !entrant.isValidEmail()) {
+            Toast.makeText(this, "Please complete your name and email in Account settings before joining a waitlist.", Toast.LENGTH_LONG).show();
+            startActivity(new Intent(this, AccountSettingsActivity.class));
+            return;
+        }
+        WaitingList registration = new WaitingList(
+                event.getEventId(),
+                deviceId,
+                1,
+                entrant.getName(),
+                entrant.getEmail(),
+                entrant.getPhone(),
+                WaitingList.NOTIFY_EMAIL
+        );
         waitingListDB.addRegistration(registration,
                 id -> {
                     Toast.makeText(this, R.string.waitlist_success, Toast.LENGTH_SHORT).show();
-                    loadActiveRegistrationsThenApplyFilters();
+                    activeRegistrationsByEventId.put(event.getEventId(), registration);
+                    adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+                    loadWaitlistCountsThenApplyFilters();
                 },
                 e -> Toast.makeText(this, getString(R.string.waitlist_fail) + " " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
@@ -411,7 +447,7 @@ public class EventListActivity extends AppCompatActivity {
             return;
         }
         WaitingList reg = activeRegistrationsByEventId.get(event.getEventId());
-        if (reg == null || reg.getId() == null) {
+        if (reg == null || reg.getDeviceId() == null) {
             Toast.makeText(this, "Could not find your registration.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -431,7 +467,7 @@ public class EventListActivity extends AppCompatActivity {
         btnCancel.setOnClickListener(v -> dialog.dismiss());
         btnLeave.setOnClickListener(v -> {
             dialog.dismiss();
-            waitingListDB.updateStatus(reg.getId(), WaitingList.STATUS_WITHDRAWN,
+            waitingListDB.deleteRegistration(event.getEventId(), reg.getDeviceId(),
                     unused -> {
                         Toast.makeText(this, "Left waitlist for " + event.getName(), Toast.LENGTH_SHORT).show();
                         loadActiveRegistrationsThenApplyFilters();

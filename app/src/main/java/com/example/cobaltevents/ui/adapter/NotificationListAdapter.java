@@ -17,12 +17,15 @@ import com.example.cobaltevents.model.Notification;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class NotificationListAdapter extends RecyclerView.Adapter<NotificationListAdapter.ViewHolder> {
 
     private final List<Notification> items = new ArrayList<>();
+    private final Map<String, String> statusByEventId = new HashMap<>();
     private OnActionListener onActionListener;
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd h:mm a", Locale.getDefault());
 
@@ -35,10 +38,17 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
         this.onActionListener = listener;
     }
 
-    public void setItems(List<Notification> newItems) {
+    public void setItems(List<Notification> newItems, Map<String, String> statusByEventId) {
         items.clear();
+        this.statusByEventId.clear();
         if (newItems != null) items.addAll(newItems);
+        if (statusByEventId != null) this.statusByEventId.putAll(statusByEventId);
         notifyDataSetChanged();
+    }
+
+    /** For empty list (e.g. no device ID). */
+    public void setItems(List<Notification> newItems) {
+        setItems(newItems, new HashMap<>());
     }
 
     @NonNull
@@ -71,10 +81,13 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
         holder.iconContainer.setBackgroundResource(iconBgRes);
         holder.icon.setImageResource(iconRes);
 
+        String status = statusByEventId.get(n.getEventId());
+        if (status == null) status = Notification.STATUS_PENDING;
         boolean isNotSelected = Notification.TYPE_NOT_SELECTED.equals(type);
-        boolean showButtons = !isNotSelected && n.isPending();
-        boolean showAccepted = Notification.READ_ACCEPTED.equals(n.getRead());
-        boolean showDeclined = isNotSelected || Notification.READ_REJECTED.equals(n.getRead());
+        boolean isPending = Notification.STATUS_PENDING.equals(status);
+        boolean showButtons = !isNotSelected && isPending;
+        boolean showAccepted = Notification.STATUS_ACCEPTED.equals(status);
+        boolean showDeclined = isNotSelected || Notification.STATUS_REJECTED.equals(status);
         holder.buttonsRow.setVisibility(showButtons ? View.VISIBLE : View.GONE);
         holder.badgeAccepted.setVisibility(showAccepted ? View.VISIBLE : View.GONE);
         holder.badgeDeclined.setVisibility(showDeclined ? View.VISIBLE : View.GONE);
@@ -92,10 +105,11 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
         return items.size();
     }
 
-    public void updateNotification(Notification updated) {
+    public void updateNotification(Notification notification, String newStatus) {
+        if (notification.getEventId() == null) return;
+        statusByEventId.put(notification.getEventId(), newStatus);
         for (int i = 0; i < items.size(); i++) {
-            if (updated.getId() != null && updated.getId().equals(items.get(i).getId())) {
-                items.set(i, updated);
+            if (notification.getId() != null && notification.getId().equals(items.get(i).getId())) {
                 notifyItemChanged(i);
                 break;
             }

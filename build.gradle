@@ -8,3 +8,10 @@ buildscript {
 plugins {
     id 'com.android.application' version '8.13.2' apply false
 }
+
+tasks.register('deployFirestoreIndexes', Exec) {
+    group = 'firebase'
+    description = 'Deploy Firestore indexes (firestore.indexes.json). Requires Firebase CLI in PATH.'
+    commandLine 'firebase', 'deploy', '--only', 'firestore:indexes'
+    workingDir rootProject.projectDir
+}

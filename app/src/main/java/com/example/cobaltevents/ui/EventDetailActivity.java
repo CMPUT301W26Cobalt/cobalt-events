@@ -1,6 +1,7 @@
 package com.example.cobaltevents.ui;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -14,10 +15,12 @@ import androidx.appcompat.widget.SwitchCompat;
 
 import com.bumptech.glide.Glide;
 import com.example.cobaltevents.R;
+import com.example.cobaltevents.db.EntrantDB;
 import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.WaitingList;
+import com.example.cobaltevents.model.Entrant;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -38,6 +41,7 @@ public class EventDetailActivity extends AppCompatActivity {
 
     private EventDB eventDB;
     private WaitingListDB waitingListDB;
+    private EntrantDB entrantDB;
     private Event currentEvent;
     private WaitingList activeRegistration;
     private String deviceId;
@@ -60,6 +64,7 @@ public class EventDetailActivity extends AppCompatActivity {
 
         eventDB = new EventDB();
         waitingListDB = new WaitingListDB();
+        entrantDB = new EntrantDB(this);
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         prefs = getSharedPreferences("cobalt_prefs", MODE_PRIVATE);
 
@@ -176,18 +181,33 @@ public class EventDetailActivity extends AppCompatActivity {
             Toast.makeText(this, getString(R.string.waitlist_fail) + " No internet connection.", Toast.LENGTH_SHORT).show();
             return;
         }
-        WaitingList registration = new WaitingList(eventId, deviceId, WaitingList.STATUS_PENDING);
+        Entrant entrant = entrantDB.getEntrant();
+        if (!entrant.isValidName() || !entrant.isValidEmail()) {
+            Toast.makeText(this, "Please complete your name and email in Account settings before joining a waitlist.", Toast.LENGTH_LONG).show();
+            startActivity(new Intent(this, AccountSettingsActivity.class));
+            return;
+        }
+        WaitingList registration = new WaitingList(
+                eventId,
+                deviceId,
+                1,
+                entrant.getName(),
+                entrant.getEmail(),
+                entrant.getPhone(),
+                WaitingList.NOTIFY_EMAIL
+        );
         waitingListDB.addRegistration(registration,
                 id -> {
                     Toast.makeText(this, R.string.waitlist_success, Toast.LENGTH_SHORT).show();
+                    activeRegistration = registration;
+                    applyJoinLeaveUi();
                     refreshWaitlistCount();
-                    refreshRegistrationState();
                 },
                 e -> Toast.makeText(this, getString(R.string.waitlist_fail) + " " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
     private void showLeaveConfirmDialog() {
-        if (activeRegistration == null || activeRegistration.getId() == null) return;
+        if (activeRegistration == null || activeRegistration.getDeviceId() == null) return;
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_leave_waitlist_confirm, null);
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setView(dialogView)
@@ -205,12 +225,12 @@ public class EventDetailActivity extends AppCompatActivity {
     }
 
     private void leaveWaitlist() {
-        if (activeRegistration == null || activeRegistration.getId() == null) return;
+        if (activeRegistration == null || activeRegistration.getDeviceId() == null) return;
         if (!isNetworkAvailable()) {
             Toast.makeText(this, "Failed to leave waitlist: No internet connection.", Toast.LENGTH_SHORT).show();
             return;
         }
-        waitingListDB.updateStatus(activeRegistration.getId(), WaitingList.STATUS_WITHDRAWN,
+        waitingListDB.deleteRegistration(currentEvent.getEventId(), activeRegistration.getDeviceId(),
                 unused -> {
                     Toast.makeText(this, "Left waitlist.", Toast.LENGTH_SHORT).show();
                     refreshWaitlistCount();

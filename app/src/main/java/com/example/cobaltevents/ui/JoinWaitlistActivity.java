@@ -23,13 +23,13 @@ import com.google.android.material.textfield.TextInputLayout;
 
 /**
  * US 01.01.01 — Join waitlist form.
- * Allows entrant to enter note, num participants, contact info, notification method,
+ * Allows entrant to enter num participants, contact info, notification method,
  * and confirm joining the waiting list for the selected event.
  */
 public class JoinWaitlistActivity extends AppCompatActivity {
 
-    private TextInputLayout layoutNote, layoutParticipants, layoutEmail, layoutPhone;
-    private TextInputEditText editNote, editParticipants, editEmail, editPhone;
+    private TextInputLayout layoutParticipants, layoutEmail, layoutPhone;
+    private TextInputEditText editParticipants, editEmail, editPhone;
     private RadioGroup radioNotification;
     private Button btnConfirmJoin;
 
@@ -53,11 +53,9 @@ public class JoinWaitlistActivity extends AppCompatActivity {
         TextView tvEventName = findViewById(R.id.tv_event_name);
         tvEventName.setText(eventName != null ? eventName : "Event");
 
-        layoutNote = findViewById(R.id.layout_note);
         layoutParticipants = findViewById(R.id.layout_participants);
         layoutEmail = findViewById(R.id.layout_email);
         layoutPhone = findViewById(R.id.layout_phone);
-        editNote = findViewById(R.id.edit_note);
         editParticipants = findViewById(R.id.edit_participants);
         editEmail = findViewById(R.id.edit_email);
         editPhone = findViewById(R.id.edit_phone);
@@ -81,7 +79,6 @@ public class JoinWaitlistActivity extends AppCompatActivity {
     private void confirmJoin() {
         clearErrors();
 
-        String note = safe(editNote);
         String participantsStr = safe(editParticipants);
         String email = safe(editEmail);
         String phone = safe(editPhone);
@@ -128,6 +125,17 @@ public class JoinWaitlistActivity extends AppCompatActivity {
             return;
         }
 
+        Entrant entrant = entrantDB.getEntrant();
+        if (entrant == null || !entrant.isValidName()) {
+            Toast.makeText(this, "Please set your name in Account settings before joining.", Toast.LENGTH_LONG).show();
+            hasError = true;
+        }
+        if (entrant == null || !entrant.isValidEmail()) {
+            layoutEmail.setError(getString(R.string.validation_email_required));
+            hasError = true;
+        }
+        if (hasError) return;
+
         if (!isNetworkAvailable()) {
             Toast.makeText(this, getString(R.string.waitlist_fail) + " No internet connection.",
                     Toast.LENGTH_SHORT).show();
@@ -137,8 +145,8 @@ public class JoinWaitlistActivity extends AppCompatActivity {
         WaitingList registration = new WaitingList(
                 eventId,
                 deviceId,
-                note.isEmpty() ? null : note,
                 numParticipants,
+                entrant.getName(),
                 email,
                 phone.isEmpty() ? null : phone,
                 notificationMethod
@@ -155,7 +163,6 @@ public class JoinWaitlistActivity extends AppCompatActivity {
     }
 
     private void clearErrors() {
-        layoutNote.setError(null);
         layoutParticipants.setError(null);
         layoutEmail.setError(null);
         layoutPhone.setError(null);

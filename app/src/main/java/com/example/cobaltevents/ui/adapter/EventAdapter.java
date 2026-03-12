@@ -28,11 +28,17 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         void onEventClick(Event event, boolean isJoined);
     }
 
+    public interface OnNotificationsToggleListener {
+        void onNotificationsToggle(String eventId, String deviceId, boolean notificationsAllowed);
+    }
+
     private List<Event> events;
     private final OnEventClickListener listener;
+    private OnNotificationsToggleListener notificationsToggleListener;
     private final Set<String> expandedIds = new HashSet<>();
     private Map<String, WaitingList> activeRegistrationsByEventId;
     private Map<String, Integer> waitlistCountByEventId;
+    private String deviceId;
 
     private static final SimpleDateFormat DATE_FORMAT =
             new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
@@ -59,6 +65,30 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     public void setWaitlistCountByEventId(Map<String, Integer> map) {
         this.waitlistCountByEventId = map;
         notifyDataSetChanged();
+    }
+
+    public void setDeviceId(String deviceId) {
+        this.deviceId = deviceId;
+    }
+
+    public void setOnNotificationsToggleListener(OnNotificationsToggleListener listener) {
+        this.notificationsToggleListener = listener;
+    }
+
+    /** Call after updating notificationsAllowed in Firestore so the card reflects the new value. */
+    public void updateNotificationsAllowedForEvent(String eventId, boolean enabled) {
+        if (activeRegistrationsByEventId != null) {
+            WaitingList reg = activeRegistrationsByEventId.get(eventId);
+            if (reg != null) {
+                reg.setNotificationsAllowed(enabled);
+                for (int i = 0; i < events.size(); i++) {
+                    if (eventId.equals(events.get(i).getEventId())) {
+                        notifyItemChanged(i);
+                        break;
+                    }
+                }
+            }
+        }
     }
 
     @NonNull
@@ -151,10 +181,23 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 holder.tvRegClose.setText("TBD");
             }
 
-            if (event.isGeolocationRequired()) {
-                holder.layoutGeoNote.setVisibility(View.VISIBLE);
-            } else {
-                holder.layoutGeoNote.setVisibility(View.GONE);
+            // Criteria text from event model
+            String criteriaText = (event.getCriteria() != null && !event.getCriteria().isEmpty())
+                    ? event.getCriteria()
+                    : "No special criteria.";
+            holder.tvCriteriaDescription.setText(criteriaText);
+            holder.layoutGeoNote.setVisibility(View.GONE);
+            holder.layoutEventNotifications.setVisibility(isJoined ? View.VISIBLE : View.GONE);
+            if (isJoined) {
+                WaitingList reg = activeRegistrationsByEventId != null ? activeRegistrationsByEventId.get(event.getEventId()) : null;
+                boolean enabled = reg != null && reg.isNotificationsAllowed();
+                holder.switchEventNotifications.setOnCheckedChangeListener(null);
+                holder.switchEventNotifications.setChecked(enabled);
+                holder.switchEventNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    if (notificationsToggleListener != null && deviceId != null && event.getEventId() != null) {
+                        notificationsToggleListener.onNotificationsToggle(event.getEventId(), deviceId, isChecked);
+                    }
+                });
             }
         }
 
@@ -191,8 +234,9 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         TextView tvName, tvStatus, tvChevron, tvCategoryTag;
         TextView btnJoin;
         TextView tvWaitlistCount;
-        TextView tvDescription, tvDetailDate, tvDetailTime, tvDetailLocation, tvPrice, tvCapacity, tvRegClose, tvGeoNote;
-        LinearLayout layoutExpandedDetails, layoutGeoNote;
+        TextView tvDescription, tvDetailDate, tvDetailTime, tvDetailLocation, tvPrice, tvCapacity, tvRegClose, tvGeoNote, tvCriteriaDescription;
+        LinearLayout layoutExpandedDetails, layoutGeoNote, layoutEventNotifications;
+        androidx.appcompat.widget.SwitchCompat switchEventNotifications;
 
         EventViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -212,6 +256,9 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             tvRegClose = itemView.findViewById(R.id.tv_reg_close);
             layoutGeoNote = itemView.findViewById(R.id.layout_geo_note);
             tvGeoNote = itemView.findViewById(R.id.tv_geo_note);
+            tvCriteriaDescription = itemView.findViewById(R.id.tv_criteria_description);
+            layoutEventNotifications = itemView.findViewById(R.id.layout_event_notifications);
+            switchEventNotifications = itemView.findViewById(R.id.switch_event_notifications);
         }
     }
 }

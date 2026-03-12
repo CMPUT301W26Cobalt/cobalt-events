@@ -4,8 +4,12 @@ color accent
 color alert_red
 color background
 color black
+color brand_mint
+color brand_mint_text
+color brand_teal
 color divider_light
 color filter_button
+color grey_400
 color grey_border
 color grey_border_light
 color grey_hint_text
@@ -49,6 +53,7 @@ color status_warning_orange
 color switch_track_off
 color switch_track_on
 color switch_track_selector
+color switch_track_tint
 color tag_teal_background
 color text_primary
 color text_secondary
@@ -67,6 +72,7 @@ drawable bg_button_primary_account
 drawable bg_button_red_8dp
 drawable bg_button_red_pill
 drawable bg_card_event
+drawable bg_criteria_mint
 drawable bg_delete_confirm_panel
 drawable bg_dialog_rounded
 drawable bg_divider_horizontal
@@ -89,6 +95,7 @@ drawable bg_welcome_card
 drawable bg_welcome_logo
 drawable ic_arrow_back
 drawable ic_avatar_person
+drawable ic_bell_notifications
 drawable ic_edit_pencil
 drawable ic_filter_sliders
 drawable ic_launcher_foreground
@@ -130,6 +137,7 @@ id btn_join
 id btn_join_leave
 id btn_leave
 id btn_notify_invited
+id btn_push_sample
 id btn_run_lottery
 id btn_save_changes
 id btn_upload_picture
@@ -141,7 +149,6 @@ id divider
 id divider_after_waitlist
 id edit_email
 id edit_name
-id edit_note
 id edit_participants
 id edit_phone
 id edit_profile_image
@@ -161,11 +168,12 @@ id iv_nav_account
 id iv_nav_events
 id iv_nav_my_events
 id iv_nav_notifications
+id iv_notifications_bell
+id layout_criteria_box
 id layout_email
 id layout_event_notifications
 id layout_expanded_details
 id layout_geo_note
-id layout_note
 id layout_notifications_enabled
 id layout_participants
 id layout_phone
@@ -206,6 +214,7 @@ id title_notifications
 id tv_capacity
 id tv_category_tag
 id tv_chevron
+id tv_criteria_description
 id tv_description
 id tv_detail_date
 id tv_detail_location
@@ -224,6 +233,8 @@ id tv_nav_account
 id tv_nav_events
 id tv_nav_my_events
 id tv_nav_notifications
+id tv_notifications_subtitle
+id tv_notifications_title
 id tv_phone
 id tv_price
 id tv_reg_close
@@ -308,6 +319,7 @@ string notifications_title
 string notify_invited
 string num_participants
 string project_id
+string push_sample_notifications
 string run_lottery
 string upload_poster
 string validation_email_invalid

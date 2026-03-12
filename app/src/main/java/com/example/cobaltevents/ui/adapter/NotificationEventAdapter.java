@@ -45,6 +45,22 @@ public class NotificationEventAdapter extends RecyclerView.Adapter<NotificationE
         notifyDataSetChanged();
     }
 
+    /** Set notifications on/off for all listed events (e.g. master switch). Updates UI immediately. */
+    public void setAllEnabled(boolean enabled) {
+        for (Item item : items) {
+            item.enabled = enabled;
+        }
+        notifyDataSetChanged();
+    }
+
+    public List<String> getEventIds() {
+        List<String> ids = new ArrayList<>(items.size());
+        for (Item item : items) {
+            ids.add(item.eventId);
+        }
+        return ids;
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {

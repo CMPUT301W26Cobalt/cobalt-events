@@ -1,137 +1,231 @@
 package com.example.cobaltevents.db;
 
 import com.example.cobaltevents.model.WaitingList;
+import com.example.cobaltevents.model.WaitlistEntryInfo;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-
 public class WaitingListDB {
-    
+
     private final FirebaseFirestore db;
-    private static final String COLLECTION_NAME = "waiting_lists";
-    
+    private static final String COLLECTION_WAITLISTS = "waitlists";
+    private static final String SUBCOLLECTION_ENTRIES = "entries";
+
     public WaitingListDB() {
         this.db = FirebaseFirestore.getInstance();
     }
-    
+
     public void getEntrantHistory(String deviceId, OnSuccessListener<List<WaitingList>> onSuccess, OnFailureListener onFailure) {
-        db.collection(COLLECTION_NAME)
-            .whereEqualTo("deviceId", deviceId)
-            .get()
-            .addOnSuccessListener(querySnapshot -> {
-                List<WaitingList> registrations = new ArrayList<>();
-                for (QueryDocumentSnapshot doc : querySnapshot) {
-                    WaitingList registration = doc.toObject(WaitingList.class);
-                    registration.setId(doc.getId());
-                    registrations.add(registration);
-                }
-                onSuccess.onSuccess(registrations);
-            })
-            .addOnFailureListener(onFailure);
-    }
-    
-    public void addRegistration(WaitingList registration, OnSuccessListener<String> onSuccess, OnFailureListener onFailure) {
-        db.collection(COLLECTION_NAME)
-            .add(registration)
-            .addOnSuccessListener(docRef -> onSuccess.onSuccess(docRef.getId()))
-            .addOnFailureListener(onFailure);
-    }
-    
-    public void getActiveRegistrationForEvent(String eventId,
-                                              String deviceId,
-                                              OnSuccessListener<WaitingList> onSuccess,
-                                              OnFailureListener onFailure) {
-        db.collection(COLLECTION_NAME)
-                .whereEqualTo("eventId", eventId)
+        db.collectionGroup(SUBCOLLECTION_ENTRIES)
                 .whereEqualTo("deviceId", deviceId)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
-                    WaitingList active = null;
+                    List<WaitingList> registrations = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : querySnapshot) {
                         WaitingList reg = doc.toObject(WaitingList.class);
                         if (reg == null) continue;
-                        reg.setId(doc.getId());
-                        String status = reg.getStatus();
-                        boolean isActive = status == null
-                                || (!WaitingList.STATUS_WITHDRAWN.equals(status)
-                                && !WaitingList.STATUS_CANCELLED.equals(status));
-                        if (isActive) {
-                            active = reg;
-                            break;
-                        }
+                        String eventId = doc.getReference().getParent().getId();
+                        reg.setEventId(eventId);
+                        registrations.add(reg);
                     }
-                    onSuccess.onSuccess(active);
+                    onSuccess.onSuccess(registrations);
                 })
                 .addOnFailureListener(onFailure);
     }
 
-    public void updateStatus(String registrationId, String status, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
-        db.collection(COLLECTION_NAME)
-            .document(registrationId)
-            .update("status", status)
-            .addOnSuccessListener(onSuccess)
-            .addOnFailureListener(onFailure);
+    public void addRegistration(WaitingList registration, OnSuccessListener<String> onSuccess, OnFailureListener onFailure) {
+        String eventId = registration.getEventId();
+        String deviceId = registration.getDeviceId();
+        if (eventId == null || eventId.isEmpty() || deviceId == null || deviceId.isEmpty()) {
+            if (onFailure != null) onFailure.onFailure(new IllegalArgumentException("eventId and deviceId required"));
+            return;
+        }
+        db.collection(COLLECTION_WAITLISTS)
+                .document(eventId)
+                .collection(SUBCOLLECTION_ENTRIES)
+                .document(deviceId)
+                .set(registration)
+                .addOnSuccessListener(aVoid -> onSuccess.onSuccess(deviceId))
+                .addOnFailureListener(onFailure);
+    }
+
+    public void getActiveRegistrationForEvent(String eventId,
+                                              String deviceId,
+                                              OnSuccessListener<WaitingList> onSuccess,
+                                              OnFailureListener onFailure) {
+        db.collection(COLLECTION_WAITLISTS)
+                .document(eventId)
+                .collection(SUBCOLLECTION_ENTRIES)
+                .document(deviceId)
+                .get()
+                .addOnSuccessListener(docSnapshot -> {
+                    if (docSnapshot == null || !docSnapshot.exists()) {
+                        onSuccess.onSuccess(null);
+                        return;
+                    }
+                    WaitingList reg = docSnapshot.toObject(WaitingList.class);
+                    if (reg == null) {
+                        onSuccess.onSuccess(null);
+                        return;
+                    }
+                    reg.setEventId(eventId);
+                    String status = reg.getStatus();
+                    boolean isActive = isEntryActive(status);
+                    onSuccess.onSuccess(isActive ? reg : null);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
+    public void updateStatus(String eventId, String registrationId, String status, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
+        db.collection(COLLECTION_WAITLISTS)
+                .document(eventId)
+                .collection(SUBCOLLECTION_ENTRIES)
+                .document(registrationId)
+                .update("status", status)
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
+    public void updateNotificationsAllowed(String eventId, String deviceId, boolean notificationsAllowed,
+                                           OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
+        db.collection(COLLECTION_WAITLISTS)
+                .document(eventId)
+                .collection(SUBCOLLECTION_ENTRIES)
+                .document(deviceId)
+                .update("notificationsAllowed", notificationsAllowed)
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
+    public void deleteRegistration(String eventId, String deviceId, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
+        db.collection(COLLECTION_WAITLISTS)
+                .document(eventId)
+                .collection(SUBCOLLECTION_ENTRIES)
+                .document(deviceId)
+                .delete()
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
     }
 
     public void getActiveCountForEvent(String eventId,
                                        OnSuccessListener<Integer> onSuccess,
                                        OnFailureListener onFailure) {
-        db.collection(COLLECTION_NAME)
-                .whereEqualTo("eventId", eventId)
+        db.collection(COLLECTION_WAITLISTS)
+                .document(eventId)
+                .collection(SUBCOLLECTION_ENTRIES)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
-                    AtomicInteger count = new AtomicInteger(0);
+                    int count = 0;
                     for (QueryDocumentSnapshot doc : querySnapshot) {
                         WaitingList reg = doc.toObject(WaitingList.class);
                         if (reg == null) continue;
                         String status = reg.getStatus();
-                        boolean isActive = status == null
-                                || (!WaitingList.STATUS_WITHDRAWN.equals(status)
-                                && !WaitingList.STATUS_CANCELLED.equals(status));
-                        if (isActive) count.incrementAndGet();
+                        if (!isEntryActive(status)) continue;
+                        count++;
                     }
-                    onSuccess.onSuccess(count.get());
+                    onSuccess.onSuccess(count);
                 })
                 .addOnFailureListener(onFailure);
     }
 
     public void removeUserFromAllWaitlists(String deviceId, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
-        db.collection(COLLECTION_NAME)
-            .whereEqualTo("deviceId", deviceId)
-            .get()
-            .addOnSuccessListener(querySnapshot -> {
-                if (querySnapshot.isEmpty()) {
-                    onSuccess.onSuccess(null);
-                    return;
-                }
-                AtomicInteger pending = new AtomicInteger(querySnapshot.size());
-                AtomicReference<Exception> firstError = new java.util.concurrent.atomic.AtomicReference<>(null);
-                for (QueryDocumentSnapshot doc : querySnapshot) {
-                    doc.getReference().delete()
-                        .addOnSuccessListener(v -> {
-                            if (pending.decrementAndGet() == 0) {
-                                if (firstError.get() != null) {
-                                    onFailure.onFailure(firstError.get());
-                                } else {
-                                    onSuccess.onSuccess(null);
-                                }
-                            }
-                        })
-                        .addOnFailureListener(e -> {
-                            firstError.compareAndSet(null, e);
-                            if (pending.decrementAndGet() == 0) {
-                                onFailure.onFailure(firstError.get() != null ? firstError.get() : e);
-                            }
-                        });
-                }
-            })
-            .addOnFailureListener(onFailure);
+        db.collectionGroup(SUBCOLLECTION_ENTRIES)
+                .whereEqualTo("deviceId", deviceId)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) {
+                        onSuccess.onSuccess(null);
+                        return;
+                    }
+                    AtomicInteger pending = new AtomicInteger(querySnapshot.size());
+                    AtomicReference<Exception> firstError = new AtomicReference<>(null);
+                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                        doc.getReference().delete()
+                                .addOnSuccessListener(v -> {
+                                    if (pending.decrementAndGet() == 0) {
+                                        if (firstError.get() != null) {
+                                            onFailure.onFailure(firstError.get());
+                                        } else {
+                                            onSuccess.onSuccess(null);
+                                        }
+                                    }
+                                })
+                                .addOnFailureListener(e -> {
+                                    firstError.compareAndSet(null, e);
+                                    if (pending.decrementAndGet() == 0) {
+                                        onFailure.onFailure(firstError.get() != null ? firstError.get() : e);
+                                    }
+                                });
+                    }
+                })
+                .addOnFailureListener(onFailure);
+    }
+
+    /**
+     * Returns a map of eventId -> (status, notificationsAllowed) for all waitlist entries for the given device.
+     * Used to decide whether to show/pop notifications (only when notificationsAllowed is true).
+     */
+    public void getWaitlistInfoForDevice(String deviceId,
+                                         OnSuccessListener<Map<String, WaitlistEntryInfo>> onSuccess,
+                                         OnFailureListener onFailure) {
+        db.collectionGroup(SUBCOLLECTION_ENTRIES)
+                .whereEqualTo("deviceId", deviceId)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    Map<String, WaitlistEntryInfo> map = new HashMap<>();
+                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                        String eventId = doc.getReference().getParent().getId();
+                        if (eventId == null) continue;
+                        String status = doc.getString("status");
+                        if (status == null) status = WaitingList.STATUS_PENDING;
+                        boolean notificationsAllowed = doc.contains("notificationsAllowed")
+                                ? Boolean.TRUE.equals(doc.getBoolean("notificationsAllowed"))
+                                : true;
+                        map.put(eventId, new WaitlistEntryInfo(status, notificationsAllowed));
+                    }
+                    onSuccess.onSuccess(map);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
+    /**
+     * Returns a map of eventId -> status for all waitlist entries for the given device.
+     * Used to merge with notifications so UI can show pending/accepted/rejected from waitlist.
+     */
+    public void getWaitlistStatusesForDevice(String deviceId,
+                                             OnSuccessListener<Map<String, String>> onSuccess,
+                                             OnFailureListener onFailure) {
+        db.collectionGroup(SUBCOLLECTION_ENTRIES)
+                .whereEqualTo("deviceId", deviceId)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    Map<String, String> eventIdToStatus = new HashMap<>();
+                    for (QueryDocumentSnapshot doc : querySnapshot) {
+                        String eventId = doc.getReference().getParent().getId();
+                        String status = doc.getString("status");
+                        if (eventId != null) {
+                            eventIdToStatus.put(eventId, status != null ? status : WaitingList.STATUS_PENDING);
+                        }
+                    }
+                    onSuccess.onSuccess(eventIdToStatus);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
+    private static boolean isEntryActive(String status) {
+        if (status == null) return true;
+        return WaitingList.STATUS_PENDING.equals(status)
+                || WaitingList.STATUS_ACCEPTED.equals(status)
+                || WaitingList.STATUS_REJECTED.equals(status);
     }
 }

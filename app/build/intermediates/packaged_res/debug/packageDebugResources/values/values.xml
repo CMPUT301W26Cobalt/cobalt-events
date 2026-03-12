@@ -4,8 +4,12 @@
     <color name="alert_red">#F44336</color>
     <color name="background">#F5F7FA</color>
     <color name="black">#000000</color>
+    <color name="brand_mint">#A3E4D7</color>
+    <color name="brand_mint_text">#2d6a5f</color>
+    <color name="brand_teal">#1B9A8B</color>
     <color name="divider_light">#F3F4F6</color>
     <color name="filter_button">#33aba1</color>
+    <color name="grey_400">#9CA3AF</color>
     <color name="grey_border">#E0E0E0</color>
     <color name="grey_border_light">#E9ECEF</color>
     <color name="grey_hint_text">#BBBBBB</color>
@@ -105,6 +109,7 @@
     <string name="notify_invited">Notify Invited Entrants</string>
     <string name="num_participants">Number of participants</string>
     <string name="project_id" translatable="false">cmput301-cobalt-events</string>
+    <string name="push_sample_notifications">Push sample</string>
     <string name="run_lottery">Run Lottery Draw</string>
     <string name="upload_poster">Upload / Update Poster</string>
     <string name="validation_email_invalid">Invalid email format.</string>

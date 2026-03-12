@@ -26,6 +26,7 @@ public class Event {
     private List<String> confirmedAttendeeIds;
     private String category;
     private String ageGroup;
+    private String criteria;
 
     public Event() {
         this.confirmedAttendeeIds = new ArrayList<>();
@@ -65,6 +66,7 @@ public class Event {
     public List<String> getConfirmedAttendeeIds() { return confirmedAttendeeIds; }
     public String getCategory() { return category; }
     public String getAgeGroup() { return ageGroup; }
+    public String getCriteria() { return criteria; }
 
     public void setEventId(String eventId) { this.eventId = eventId; }
     public void setName(String name) { this.name = name; }
@@ -83,4 +85,5 @@ public class Event {
     public void setConfirmedAttendeeIds(List<String> confirmedAttendeeIds) { this.confirmedAttendeeIds = confirmedAttendeeIds; }
     public void setCategory(String category) { this.category = category; }
     public void setAgeGroup(String ageGroup) { this.ageGroup = ageGroup; }
+    public void setCriteria(String criteria) { this.criteria = criteria; }
 }

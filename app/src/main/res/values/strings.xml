@@ -11,6 +11,7 @@
     <!-- Notifications (US 01.04.01) -->
     <string name="notification_channel_name">Event Lottery Results</string>
     <string name="notifications_title">Notifications</string>
+    <string name="push_sample_notifications">Push sample</string>
     <string name="notif_accept">Accept</string>
     <string name="notif_decline">Decline</string>
     <string name="notif_accepted">Accepted</string>

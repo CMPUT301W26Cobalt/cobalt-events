@@ -53,20 +53,15 @@ public class NotificationDB {
                 .addOnFailureListener(onFailure);
     }
 
-    public void updateReadStatus(String notificationId, String readStatus,
-                                 OnSuccessListener<Void> onSuccess,
-                                 OnFailureListener onFailure) {
-        db.collection(COLLECTION).document(notificationId)
-                .update("read", readStatus)
-                .addOnSuccessListener(onSuccess)
-                .addOnFailureListener(onFailure);
-    }
-
+    /**
+     * Listen for all notifications for a recipient. Status (pending/accepted/rejected) is
+     * sourced from waitlist entry status; merge with WaitingListDB.getWaitlistStatusesForDevice when displaying.
+     */
     public ListenerRegistration listenForNotifications(String recipientId,
                                                        OnNotificationListener listener) {
         return db.collection(COLLECTION)
                 .whereEqualTo("recipientId", recipientId)
-                .whereEqualTo("read", "pending")
+                .orderBy("timestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((snapshots, error) -> {
                     if (error != null) {
                         listener.onError(error);
