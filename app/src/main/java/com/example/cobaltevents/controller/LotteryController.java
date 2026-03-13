@@ -104,16 +104,12 @@ public class LotteryController {
 
         WaitingList winner = winners.get(index);
 
-        waitingListDB.updateStatus(winner.getId(), WaitingList.STATUS_SELECTED, v -> {
+        waitingListDB.updateStatus(eventId, winner.getDeviceId(), WaitingList.STATUS_SELECTED, v -> {
             String eventName = event != null && event.getName() != null
                     ? event.getName()
                     : "the event";
 
-            notificationController.sendSelectedNotification(
-                    winner.getDeviceId(),
-                    eventId,
-                    eventName
-            );
+            // Event-specific notification sending removed per requirements.
 
             updateWinnersSequentially(winners, eventId, event, index + 1, onSuccess, onFailure);
         }, onFailure);
@@ -135,7 +131,7 @@ public class LotteryController {
                 return;
             }
 
-            waitingListDB.updateStatus(reg.getId(), WaitingList.STATUS_ENROLLED, v -> {
+            waitingListDB.updateStatus(eventId, reg.getDeviceId(), WaitingList.STATUS_ENROLLED, v -> {
                 eventDB.getEvent(eventId, event -> {
                     if (event != null) {
                         List<String> confirmed = event.getConfirmedAttendeeIds();
@@ -166,7 +162,7 @@ public class LotteryController {
                 onFailure.onFailure(new Exception("No active registration found"));
                 return;
             }
-            waitingListDB.updateStatus(reg.getId(), WaitingList.STATUS_DECLINED, v -> {
+            waitingListDB.updateStatus(eventId, reg.getDeviceId(), WaitingList.STATUS_DECLINED, v -> {
                 drawReplacement(eventId, onSuccess, onFailure);
             }, onFailure);
         }, onFailure);
@@ -186,17 +182,10 @@ public class LotteryController {
             Collections.shuffle(pending);
             WaitingList replacement = pending.get(0);
 
-            waitingListDB.updateStatus(replacement.getId(), WaitingList.STATUS_SELECTED, v -> {
+            waitingListDB.updateStatus(eventId, replacement.getDeviceId(), WaitingList.STATUS_SELECTED, v -> {
                 eventDB.getEvent(eventId, event -> {
-                    String eventName = (event != null) ? event.getName() : "the event";
-                    Notification notification = new Notification(
-                            replacement.getDeviceId(),
-                            eventId,
-                            "Replacement Selected: " + eventName,
-                            "Good news! Someone declined their spot and you've been selected as a replacement! Please respond within 24 hours.",
-                            Notification.TYPE_GOT_OFF_WAITLIST
-                    );
-                    notificationDB.saveNotification(notification, v2 -> onSuccess.onSuccess(null), onFailure);
+                    // Event-specific notifications removed; simply complete successfully.
+                    onSuccess.onSuccess(null);
                 }, onFailure);
             }, onFailure);
         }, onFailure);

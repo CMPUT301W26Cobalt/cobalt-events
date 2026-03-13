@@ -286,6 +286,8 @@ ui.EntrantActivity ..> ctl.EntrantController
 ui.EntrantEditActivity ..> ctl.EntrantController
 ui.OrganizerActivity ..> ctl.EventController
 ui.AccountSettingsActivity ..> db.ProfileDB
+ui.AccountSettingsActivity ..> db.EntrantDB : local profile save
+ui.AccountSettingsActivity ..> db.WaitingListDB : toggle notificationsAllowed
 ui.AdminActivity ..> ctl.AdminController
 ui.AdminEventListActivity ..> ctl.AdminController
 ui.AdminProfileListActivity ..> ctl.AdminController
@@ -317,6 +319,15 @@ end note
 
 model.Event .. N1
 ctl.NotificationController .. N2
+
+note as N3
+  Account Settings flows:
+  - Change account info: EntrantDB (local) + ProfileDB (remote)
+  - Mute notifications: WaitingListDB.updateNotificationsAllowed(eventId, deviceId, false)
+  - Delete account: ProfileDB.deleteProfile(deviceId)
+end note
+
+ui.AccountSettingsActivity .. N3
 
 @enduml
 

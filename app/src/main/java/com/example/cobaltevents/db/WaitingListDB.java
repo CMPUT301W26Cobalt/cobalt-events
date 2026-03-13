@@ -279,8 +279,12 @@ public class WaitingListDB {
 
     private static boolean isEntryActive(String status) {
         if (status == null) return true;
+        // Active entries: still participating in the flow
+        // Pending → awaiting draw/response
+        // Selected → invited, awaiting response
+        // Enrolled → accepted and enrolled (still an active participant)
         return WaitingList.STATUS_PENDING.equals(status)
-                || WaitingList.STATUS_ACCEPTED.equals(status)
-                || WaitingList.STATUS_REJECTED.equals(status);
+                || WaitingList.STATUS_SELECTED.equals(status)
+                || WaitingList.STATUS_ENROLLED.equals(status);
     }
 }
