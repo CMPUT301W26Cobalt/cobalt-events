@@ -17,7 +17,7 @@ import androidx.core.app.NotificationManagerCompat;
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.db.NotificationDB;
 import com.example.cobaltevents.model.Notification;
-import com.example.cobaltevents.ui.EventDetailActivity;
+import com.example.cobaltevents.ui.NotificationsActivity;
 import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.HashSet;
@@ -109,8 +109,8 @@ public class NotificationController {
     }
 
     private void showSystemNotification(Context context, Notification notification) {
-        Intent intent = new Intent(context, EventDetailActivity.class);
-        intent.putExtra("eventId", notification.getEventId());
+        // Open the notifications list screen; no event-specific deep link.
+        Intent intent = new Intent(context, NotificationsActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(

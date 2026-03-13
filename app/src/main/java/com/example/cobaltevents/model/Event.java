@@ -25,7 +25,8 @@ public class Event {
     private String qrCodeData;
     private List<String> confirmedAttendeeIds;
     private String category;
-    private String selectionCriteria;
+    private String ageGroup;
+    private String criteria;
 
     public Event() {
         this.confirmedAttendeeIds = new ArrayList<>();
@@ -64,7 +65,8 @@ public class Event {
     public String getQrCodeData() { return qrCodeData; }
     public List<String> getConfirmedAttendeeIds() { return confirmedAttendeeIds; }
     public String getCategory() { return category; }
-    public String getSelectionCriteria() { return selectionCriteria; }
+    public String getAgeGroup() { return ageGroup; }
+    public String getCriteria() { return criteria; }
 
     public void setEventId(String eventId) { this.eventId = eventId; }
     public void setName(String name) { this.name = name; }
@@ -82,5 +84,6 @@ public class Event {
     public void setQrCodeData(String qrCodeData) { this.qrCodeData = qrCodeData; }
     public void setConfirmedAttendeeIds(List<String> confirmedAttendeeIds) { this.confirmedAttendeeIds = confirmedAttendeeIds; }
     public void setCategory(String category) { this.category = category; }
-    public void setSelectionCriteria(String selectionCriteria) { this.selectionCriteria = selectionCriteria; }
+    public void setAgeGroup(String ageGroup) { this.ageGroup = ageGroup; }
+    public void setCriteria(String criteria) { this.criteria = criteria; }
 }

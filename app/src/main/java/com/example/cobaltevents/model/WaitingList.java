@@ -2,10 +2,6 @@ package com.example.cobaltevents.model;
 
 import com.google.firebase.Timestamp;
 
-/**
- * Model class for registrations on an event's waiting list.
- * This class tracks the status of an entrant's entry into the event lottery.
- */
 public class WaitingList {
 
     public static final String STATUS_PENDING = "pending";
@@ -27,9 +23,11 @@ public class WaitingList {
     private Timestamp registeredAt;
     private String note;
     private int numParticipants;
+    private String name;
     private String email;
     private String phone;
     private String notificationMethod;
+    private boolean notificationsAllowed = true;
 
     /**
      * Default constructor for WaitingList. Required for Firestore.
@@ -48,51 +46,44 @@ public class WaitingList {
         this.status = status;
         this.registeredAt = Timestamp.now();
         this.numParticipants = 1;
+        this.notificationsAllowed = true;
     }
 
-    /**
-     * Constructs a WaitingList entry with full registration details.
-     * @param eventId ID of the event.
-     * @param deviceId ID of the entrant's device.
-     * @param note Registration note.
-     * @param numParticipants Number of participants registered.
-     * @param email Email for contact.
-     * @param phone Phone for contact.
-     * @param notificationMethod Preferred notification method.
-     */
-    public WaitingList(String eventId, String deviceId, String note, int numParticipants,
-                       String email, String phone, String notificationMethod) {
+    public WaitingList(String eventId, String deviceId, int numParticipants,
+                       String name, String email, String phone, String notificationMethod) {
         this.eventId = eventId;
         this.deviceId = deviceId;
         this.status = STATUS_PENDING;
         this.registeredAt = Timestamp.now();
         this.note = note;
         this.numParticipants = numParticipants;
+        this.name = name;
         this.email = email;
-        this.phone = phone;
-        this.notificationMethod = notificationMethod;
+        this.phone = (phone != null && !phone.isEmpty()) ? phone : null;
+        this.notificationMethod = (this.phone != null) ? NOTIFY_PHONE : (notificationMethod != null ? notificationMethod : NOTIFY_EMAIL);
+        this.notificationsAllowed = true;
     }
     
     /** @return The unique identifier of this registration. */
     public String getId() { return id; }
     /** @param id Unique identifier to set. */
     public void setId(String id) { this.id = id; }
-    
+
     /** @return The ID of the associated event. */
     public String getEventId() { return eventId; }
     /** @param eventId Event ID to set. */
     public void setEventId(String eventId) { this.eventId = eventId; }
-    
+
     /** @return The ID of the registrant's device. */
     public String getDeviceId() { return deviceId; }
     /** @param deviceId Device ID to set. */
     public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
-    
+
     /** @return The current status (e.g., "pending", "selected"). */
     public String getStatus() { return status; }
     /** @param status Status to set. */
     public void setStatus(String status) { this.status = status; }
-    
+
     /** @return The timestamp when the entry was registered. */
     public Timestamp getRegisteredAt() { return registeredAt; }
     /** @param registeredAt Registration timestamp to set. */
@@ -108,6 +99,9 @@ public class WaitingList {
     /** @param numParticipants Number of participants to set. */
     public void setNumParticipants(int numParticipants) { this.numParticipants = numParticipants; }
 
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
     /** @return The contact email for this registration. */
     public String getEmail() { return email; }
     /** @param email Email to set. */
@@ -122,4 +116,7 @@ public class WaitingList {
     public String getNotificationMethod() { return notificationMethod; }
     /** @param notificationMethod Notification method to set. */
     public void setNotificationMethod(String notificationMethod) { this.notificationMethod = notificationMethod; }
+
+    public boolean isNotificationsAllowed() { return notificationsAllowed; }
+    public void setNotificationsAllowed(boolean notificationsAllowed) { this.notificationsAllowed = notificationsAllowed; }
 }

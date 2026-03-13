@@ -12,9 +12,14 @@ public class Notification {
     public static final String TYPE_SELECT = "select";
     public static final String TYPE_GOT_OFF_WAITLIST = "got-off-waitlist";
     public static final String TYPE_NOT_SELECTED = "not-selected";
-    public static final String READ_PENDING = "pending";
-    public static final String READ_ACCEPTED = "accepted";
-    public static final String READ_REJECTED = "rejected";
+    /** Status values aligned with waitlist entry status (used for UI only). */
+    public static final String STATUS_PENDING = "pending";
+    public static final String STATUS_ACCEPTED = "accepted";
+    public static final String STATUS_REJECTED = "rejected";
+    /** Read status mirrors STATUS_* for simplicity and UI reuse. */
+    public static final String READ_PENDING = STATUS_PENDING;
+    public static final String READ_ACCEPTED = STATUS_ACCEPTED;
+    public static final String READ_REJECTED = STATUS_REJECTED;
 
     private String id;
     private String recipientId;

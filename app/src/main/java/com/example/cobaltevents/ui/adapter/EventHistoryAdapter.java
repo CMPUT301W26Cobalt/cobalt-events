@@ -72,16 +72,20 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
             case "selected": return "Selected";
             case "not_selected": return "Not Selected";
             case "pending": return "Pending";
+            case "accepted": return "Accepted";
+            case "rejected": return "Rejected";
             case "cancelled": return "Cancelled";
             case "withdrawn": return "Withdrawn";
             default: return "Unknown";
         }
     }
-    
+
     private int getStatusColor(View itemView, String status) {
         switch (status) {
             case "selected": return ContextCompat.getColor(itemView.getContext(), R.color.accent);
+            case "accepted": return ContextCompat.getColor(itemView.getContext(), R.color.accent);
             case "not_selected": return ContextCompat.getColor(itemView.getContext(), R.color.alert_red);
+            case "rejected": return ContextCompat.getColor(itemView.getContext(), R.color.alert_red);
             case "pending": return ContextCompat.getColor(itemView.getContext(), R.color.status_warning_orange);
             case "cancelled": return ContextCompat.getColor(itemView.getContext(), R.color.grey_nav_inactive);
             case "withdrawn": return ContextCompat.getColor(itemView.getContext(), R.color.grey_medium);

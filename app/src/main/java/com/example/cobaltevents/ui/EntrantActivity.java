@@ -26,7 +26,6 @@ public class EntrantActivity extends AppCompatActivity {
     private EntrantController controller;
     private EntrantDB entrantDB;
     private Entrant currentEntrant;
-    private boolean isOrganizer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,9 +34,6 @@ public class EntrantActivity extends AppCompatActivity {
         entrantDB = new EntrantDB(this);
         controller = new EntrantController(entrantDB);
         currentEntrant = entrantDB.getEntrant();
-        isOrganizer = getIntent().getBooleanExtra("isOrganizer", false);
-
-        // If profile is already complete, go straight to the appropriate screen
         if (currentEntrant.isValid()) {
             navigateToMain();
             return;
@@ -95,7 +91,6 @@ public class EntrantActivity extends AppCompatActivity {
 
         if (!hasError) {
             Entrant entrant = new Entrant(name, email, phone, currentEntrant.getProfilePictureUrl());
-            entrant.setOrganizerEnabled(true);
             if (controller.saveEntrant(entrant)) {
                 navigateToMain();
             } else {
@@ -105,7 +100,7 @@ public class EntrantActivity extends AppCompatActivity {
     }
 
     private void navigateToMain() {
-        Intent intent = new Intent(this, isOrganizer ? OrganizerActivity.class : EventListActivity.class);
+        Intent intent = new Intent(this, EventListActivity.class);
         startActivity(intent);
         finish();
     }

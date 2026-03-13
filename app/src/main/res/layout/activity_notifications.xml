@@ -7,22 +7,26 @@
     android:orientation="vertical">
 
     <LinearLayout
-        android:id="@+id/header_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/notif_header_teal"
         android:elevation="6dp"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="40dp"
+        android:paddingBottom="16dp">
 
         <TextView
             android:id="@+id/title_notifications"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/notifications_title"
             android:textColor="@color/white"
-            android:textSize="20sp"
-            android:textStyle="bold" />
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.02" />
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -37,8 +41,5 @@
         android:paddingTop="20dp"
         android:paddingBottom="96dp" />
 
-    <FrameLayout
-        android:id="@+id/nav_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+    <include layout="@layout/partial_bottom_nav" />
 </LinearLayout>

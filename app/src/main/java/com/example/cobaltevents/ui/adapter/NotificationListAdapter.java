@@ -23,17 +23,7 @@ import java.util.Locale;
 public class NotificationListAdapter extends RecyclerView.Adapter<NotificationListAdapter.ViewHolder> {
 
     private final List<Notification> items = new ArrayList<>();
-    private OnActionListener onActionListener;
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd h:mm a", Locale.getDefault());
-
-    public interface OnActionListener {
-        void onAccept(Notification notification);
-        void onDecline(Notification notification);
-    }
-
-    public void setOnActionListener(OnActionListener listener) {
-        this.onActionListener = listener;
-    }
 
     public void setItems(List<Notification> newItems) {
         items.clear();
@@ -71,35 +61,15 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
         holder.iconContainer.setBackgroundResource(iconBgRes);
         holder.icon.setImageResource(iconRes);
 
-        boolean isNotSelected = Notification.TYPE_NOT_SELECTED.equals(type);
-        boolean showButtons = !isNotSelected && n.isPending();
-        boolean showAccepted = Notification.READ_ACCEPTED.equals(n.getRead());
-        boolean showDeclined = isNotSelected || Notification.READ_REJECTED.equals(n.getRead());
-        holder.buttonsRow.setVisibility(showButtons ? View.VISIBLE : View.GONE);
-        holder.badgeAccepted.setVisibility(showAccepted ? View.VISIBLE : View.GONE);
-        holder.badgeDeclined.setVisibility(showDeclined ? View.VISIBLE : View.GONE);
-
-        holder.btnAccept.setOnClickListener(v -> {
-            if (onActionListener != null) onActionListener.onAccept(n);
-        });
-        holder.btnDecline.setOnClickListener(v -> {
-            if (onActionListener != null) onActionListener.onDecline(n);
-        });
+        // Event-specific actions and badges removed; notifications are informational only.
+        holder.buttonsRow.setVisibility(View.GONE);
+        holder.badgeAccepted.setVisibility(View.GONE);
+        holder.badgeDeclined.setVisibility(View.GONE);
     }
 
     @Override
     public int getItemCount() {
         return items.size();
-    }
-
-    public void updateNotification(Notification updated) {
-        for (int i = 0; i < items.size(); i++) {
-            if (updated.getId() != null && updated.getId().equals(items.get(i).getId())) {
-                items.set(i, updated);
-                notifyItemChanged(i);
-                break;
-            }
-        }
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {

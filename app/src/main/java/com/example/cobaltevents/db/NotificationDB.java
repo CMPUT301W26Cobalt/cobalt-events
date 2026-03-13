@@ -62,20 +62,15 @@ public class NotificationDB {
                 .addOnFailureListener(onFailure);
     }
 
-    public void updateReadStatus(String notificationId, String readStatus,
-                                 OnSuccessListener<Void> onSuccess,
-                                 OnFailureListener onFailure) {
-        db.collection(COLLECTION).document(notificationId)
-                .update("read", readStatus)
-                .addOnSuccessListener(onSuccess)
-                .addOnFailureListener(onFailure);
-    }
-
+    /**
+     * Listen for all notifications for a recipient. Status (pending/accepted/rejected) is
+     * sourced from waitlist entry status; merge with WaitingListDB.getWaitlistStatusesForDevice when displaying.
+     */
     public ListenerRegistration listenForNotifications(String recipientId,
                                                        OnNotificationListener listener) {
         return db.collection(COLLECTION)
                 .whereEqualTo("recipientId", recipientId)
-                .whereEqualTo("read", "pending")
+                .orderBy("timestamp", Query.Direction.DESCENDING)
                 .addSnapshotListener((snapshots, error) -> {
                     if (error != null) {
                         listener.onError(error);
@@ -98,5 +93,23 @@ public class NotificationDB {
     public interface OnNotificationListener {
         void onNotifications(List<Notification> notifications);
         void onError(Exception e);
+    }
+
+    /**
+     * Update the read status of a notification document.
+     */
+    public void updateReadStatus(String notificationId,
+                                 String readStatus,
+                                 OnSuccessListener<Void> onSuccess,
+                                 OnFailureListener onFailure) {
+        if (notificationId == null || notificationId.isEmpty()) {
+            if (onFailure != null) onFailure.onFailure(new IllegalArgumentException("notificationId required"));
+            return;
+        }
+        db.collection(COLLECTION)
+                .document(notificationId)
+                .update("read", readStatus)
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
     }
 }

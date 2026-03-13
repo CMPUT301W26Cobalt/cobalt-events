@@ -2,7 +2,6 @@ package com.example.cobaltevents.ui;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.widget.Button;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -10,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.controller.AdminController;
 import com.example.cobaltevents.ui.admin.AdminActivity;
+import android.provider.Settings;
 
 /**
  * WelcomeActivity — the first screen shown when the app launches.

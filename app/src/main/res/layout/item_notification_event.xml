@@ -56,10 +56,9 @@
 
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/switch_event_notification"
+            style="@style/Widget.CobaltEvents.Switch"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:minWidth="48dp"
-            android:minHeight="28dp" />
+            android:layout_height="wrap_content" />
     </LinearLayout>
 
     <View

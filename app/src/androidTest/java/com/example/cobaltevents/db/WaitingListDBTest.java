@@ -154,6 +154,7 @@ public class WaitingListDBTest {
         AtomicBoolean updateSuccess = new AtomicBoolean(false);
 
         waitingListDB.updateStatus(
+                TEST_EVENT_ID,
                 registrationId.get(),
                 "selected",
                 aVoid -> {
@@ -177,6 +178,7 @@ public class WaitingListDBTest {
         String testRegistrationId = "test_registration_id";
 
         waitingListDB.updateStatus(
+                TEST_EVENT_ID,
                 testRegistrationId,
                 "selected",
                 aVoid -> {
@@ -199,6 +201,7 @@ public class WaitingListDBTest {
         String testRegistrationId = "test_registration_id";
 
         waitingListDB.updateStatus(
+                TEST_EVENT_ID,
                 testRegistrationId,
                 "not_selected",
                 aVoid -> {
@@ -219,6 +222,7 @@ public class WaitingListDBTest {
         String testRegistrationId = "test_registration_id";
 
         waitingListDB.updateStatus(
+                TEST_EVENT_ID,
                 testRegistrationId,
                 "cancelled",
                 aVoid -> {

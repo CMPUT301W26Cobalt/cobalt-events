@@ -8,7 +8,6 @@
 
     <!-- Header bar -->
     <LinearLayout
-        android:id="@+id/header_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/header_teal"
@@ -316,139 +315,6 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Account Mode Card -->
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="12dp"
-                        android:text="Account Mode"
-                        android:textColor="@color/text_primary"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <!-- User Mode option -->
-                    <LinearLayout
-                        android:id="@+id/btn_user_mode"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/bg_mode_option"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:padding="14dp"
-                        android:clickable="true"
-                        android:focusable="true">
-
-                        <ImageView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:background="@drawable/bg_icon_user"
-                            android:padding="8dp"
-                            android:src="@drawable/ic_user_group"
-                            app:tint="@color/user_green" />
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:id="@+id/tv_user_mode_label"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="User Mode"
-                                android:textColor="@color/text_primary"
-                                android:textSize="15sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Browse and join events"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-
-                        <View
-                            android:id="@+id/radio_user_mode"
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:background="@drawable/bg_mode_option"
-                            android:visibility="gone" />
-
-                    </LinearLayout>
-
-                    <!-- Organizer Mode option -->
-                    <LinearLayout
-                        android:id="@+id/btn_organizer_mode"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/bg_mode_option"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:padding="14dp"
-                        android:clickable="true"
-                        android:focusable="true">
-
-                        <ImageView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:background="@drawable/bg_icon_organizer"
-                            android:padding="8dp"
-                            android:src="@drawable/ic_organizer_building"
-                            app:tint="@color/organizer_blue" />
-
-                        <LinearLayout
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <TextView
-                                android:id="@+id/tv_organizer_mode_label"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Organizer Mode"
-                                android:textColor="@color/text_primary"
-                                android:textSize="15sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Create and manage events"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-
-                        <View
-                            android:id="@+id/radio_organizer_mode"
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
-                            android:background="@drawable/bg_mode_option"
-                            android:visibility="gone" />
-
-                    </LinearLayout>
-
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
             <!-- Notification Settings Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
@@ -521,9 +387,7 @@
                             android:id="@+id/switch_general"
                             style="@style/Widget.CobaltEvents.Switch"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="48dp"
-                            android:minHeight="28dp" />
+                            android:layout_height="wrap_content" />
                     </LinearLayout>
 
                     <View
@@ -567,9 +431,7 @@
                             android:id="@+id/switch_event_updates"
                             style="@style/Widget.CobaltEvents.Switch"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:minWidth="48dp"
-                            android:minHeight="28dp" />
+                            android:layout_height="wrap_content" />
                     </LinearLayout>
 
                     <View
@@ -598,10 +460,7 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Bottom Navigation (inflated dynamically based on account mode) -->
-    <FrameLayout
-        android:id="@+id/nav_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+    <!-- Bottom Navigation Copy -->
+    <include layout="@layout/partial_bottom_nav" />
 
 </LinearLayout>
