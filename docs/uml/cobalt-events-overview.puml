@@ -1,0 +1,322 @@
+@startuml
+title Cobalt Events - Architecture Overview
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam defaultTextAlignment left
+
+' ------------------------------------------------------------------------------
+' Legend
+' ------------------------------------------------------------------------------
+legend left
+  + public    # protected    - private
+  Dependencies show high-level "uses" relationships only (not every call).
+  Comments explain intent, constraints, and noteworthy design decisions.
+endlegend
+
+' ==============================================================================
+' Packages
+' ==============================================================================
+package "com.example.cobaltevents.model" as model {
+  ' Firestore-serializable POJOs used across DB and UI layers.
+  class Event {
+    +eventId: String
+    +name: String
+    +description: String
+    +location: String
+    +price: String
+    +eventDate: Timestamp
+    +registrationOpen: Timestamp
+    +registrationClose: Timestamp
+    +organizerDeviceId: String
+    +waitingListId: String
+    +posterImageUrl: String
+    +geolocationRequired: boolean
+    +waitingListCapacity: int
+    +qrCodeData: String
+    +confirmedAttendeeIds: List<String>
+    +category: String
+    +ageGroup: String
+    +criteria: String
+  }
+
+  class WaitingList {
+    +eventId: String
+    +deviceId: String
+    +status: String
+    +registeredAt: Timestamp
+    +numParticipants: int
+    +name: String
+    +email: String
+    +phone: String
+    +notificationMethod: String
+    +notificationsAllowed: boolean
+    --
+    +STATUS_PENDING
+    +STATUS_ACCEPTED
+    +STATUS_REJECTED
+    +STATUS_SELECTED
+    +STATUS_NOT_SELECTED
+    +STATUS_CANCELLED
+    +STATUS_WITHDRAWN
+    +STATUS_ENROLLED
+    +STATUS_DECLINED
+  }
+
+  class WaitlistEntryInfo {
+    +status: String
+    +notificationsAllowed: boolean
+  }
+
+  class Notification {
+    +id: String
+    +recipientId: String
+    +eventId: String
+    +title: String
+    +message: String
+    +type: String
+    +read: String
+    +timestamp: Date
+    --
+    +TYPE_SELECTED
+    +TYPE_SELECT
+    +TYPE_GOT_OFF_WAITLIST
+    +TYPE_NOT_SELECTED
+    +STATUS_PENDING
+    +STATUS_ACCEPTED
+    +STATUS_REJECTED
+    +READ_PENDING
+    +READ_ACCEPTED
+    +READ_REJECTED
+  }
+
+  class Entrant {
+    +deviceId: String
+    +name: String
+    +email: String
+    +phone: String
+    +profilePictureUrl: String
+    +organizerEnabled: Boolean
+  }
+
+  class Organizer {
+    ..stub..
+  }
+}
+
+package "com.example.cobaltevents.db" as db {
+  ' Firestore/Storage access. No UI logic; async callbacks only.
+  class EventDB {
+    +createEvent(event, onSuccess, onFailure)
+    +getEvent(eventId, onSuccess, onFailure)
+    +getAllEvents(onSuccess, onFailure)
+    +getEventsByOrganizer(organizerDeviceId, onSuccess, onFailure)
+    +updateEvent(event, onSuccess, onFailure)
+    +deleteEvent(eventId, onSuccess, onFailure)
+  }
+  class WaitingListDB {
+    +getEntrantsForEvent(eventId, onSuccess, onFailure)
+    +getEntrantHistory(deviceId, onSuccess, onFailure)
+    +addRegistration(registration, onSuccess, onFailure)
+    +getActiveRegistrationForEvent(eventId, deviceId, onSuccess, onFailure)
+    +updateStatus(eventId, registrationId, status, onSuccess, onFailure)
+    +updateNotificationsAllowed(eventId, deviceId, allowed, onSuccess, onFailure)
+    +deleteRegistration(eventId, deviceId, onSuccess, onFailure)
+    +getActiveCountForEvent(eventId, onSuccess, onFailure)
+    +removeUserFromAllWaitlists(deviceId, onSuccess, onFailure)
+    +getWaitlistInfoForEvents(deviceId, eventIds, onSuccess, onFailure)
+    +getWaitlistInfoForDevice(deviceId, onSuccess, onFailure)
+    +getWaitlistStatusesForDevice(deviceId, onSuccess, onFailure)
+  }
+  class NotificationDB {
+    +saveNotification(notification, onSuccess, onFailure)
+    +deleteNotification(notificationId, onSuccess, onFailure)
+    +getNotificationsForRecipient(recipientId, onSuccess, onFailure)
+    +listenForNotifications(recipientId, listener)
+    +updateReadStatus(notificationId, readStatus, onSuccess, onFailure)
+  }
+  class ProfileDB {
+    +saveProfile(entrant, onSuccess, onFailure)
+    +setOrganizerEnabled(deviceId, enabled, onSuccess, onFailure)
+    +getProfile(deviceId, onSuccess, onFailure)
+    +getAllProfiles(onSuccess, onFailure)
+    +deleteProfile(deviceId, onSuccess, onFailure)
+  }
+  class ImageDB {
+    +uploadProfileImage(imageUri, onSuccess, onFailure)
+    +uploadPoster(imageUri, eventId, onSuccess, onFailure)
+    +deleteImageByUrl(imageUrl, onSuccess, onFailure)
+  }
+  class EventDBConnector {
+    +getInstance(): EventDBConnector
+    +getFirestore(): FirebaseFirestore
+  }
+  class EntrantDB {
+    +saveEntrant(entrant)
+    +getEntrant(): Entrant
+    +clearEntrant()
+  }
+}
+
+package "com.example.cobaltevents.controller" as ctl {
+  ' Orchestration and domain logic; coordinates DB operations for UI.
+  class EventController {
+    +createEvent(event, onSuccess, onFailure)
+    +getAllEvents(onSuccess, onFailure)
+    +getEvent(eventId, onSuccess, onFailure)
+    +getEventsByOrganizer(organizerDeviceId, onSuccess, onFailure)
+    +updateEvent(event, onSuccess, onFailure)
+    +deleteEvent(eventId, onSuccess, onFailure)
+  }
+  class EntrantController {
+    +validateName(name): String?
+    +validateEmail(email): String?
+    +validatePhone(phone): String?
+    +saveEntrant(entrant): boolean
+  }
+  class AdminController {
+    +getAllEvents(onSuccess, onFailure)
+    +removeEvent(eventId, onSuccess, onFailure)
+    +getAllProfiles(onSuccess, onFailure)
+    +removeProfile(deviceId, onSuccess, onFailure)
+    +getAllImagesFromEvents(onSuccess, onFailure)
+    +removeEventImage(eventId, onSuccess, onFailure)
+    +getAllOrganizers(onSuccess, onFailure)
+    +removeOrganizer(organizerDeviceId, onSuccess, onFailure)
+    +getAllNotifications(onSuccess, onFailure)
+    --
+    ..keeps simple in-memory caches (events, profiles)..
+  }
+  class LotteryController {
+    +acceptInvitation(deviceId, eventId, onSuccess, onFailure)
+    +declineInvitation(deviceId, eventId, onSuccess, onFailure)
+    --
+    ..drawReplacement() updates waitlist to SELECTED; event-specific\n   notification sending removed per requirements..
+  }
+  class NotificationController {
+    +createNotificationChannel(context)
+    +requestNotificationPermission(activity)
+    +sendSelectedNotification(entrantId, eventId, eventName)
+    +startNotificationListener(context, deviceId)
+    +stopNotificationListener()
+    --
+    ..shows system notifications; tap opens NotificationsActivity..
+  }
+  class QRCodeController {
+    +generateQRCode(eventId): Bitmap
+    +generateQRCodeData(eventId): String
+  }
+  class ImageController {
+    +uploadPoster(imageUri, event, onSuccess, onFailure)
+  }
+  class OrganizerController { ..stub.. }
+  class GeolocationController { ..stub.. }
+}
+
+package "com.example.cobaltevents.ui" as ui {
+  ' Android Activities (screens). Kept brief; they delegate to controllers.
+  class MainActivity
+  class WelcomeActivity
+  class EventListActivity
+  class EventDetailActivity
+  class EventCreateActivity
+  class EventManageActivity
+  class EventHistoryActivity
+  class JoinWaitlistActivity
+  class QRScanActivity
+  class EntrantActivity
+  class EntrantEditActivity
+  class OrganizerActivity
+  class AccountSettingsActivity
+  class AdminActivity
+  class AdminEventListActivity
+  class AdminProfileListActivity
+  class AdminImageListActivity
+  class NotificationsActivity
+}
+
+package "com.example.cobaltevents.ui.adapter" as adapter {
+  class EventAdapter
+  class OrganizerEventAdapter
+  class EventHistoryAdapter
+  class WaitlistEntrantAdapter
+  class NotificationEventAdapter
+  class NotificationListAdapter
+}
+
+' ==============================================================================
+' Relationships (high-level)
+' ==============================================================================
+db.EventDBConnector --> db.EventDB : provides Firestore
+ctl.EventController --> db.EventDB
+ctl.EntrantController --> db.EntrantDB
+ctl.EntrantController --> db.ProfileDB
+ctl.AdminController --> db.EventDB
+ctl.AdminController --> db.ProfileDB
+ctl.AdminController ..> model.Event : caches
+ctl.AdminController ..> model.Entrant : caches
+ctl.ImageController --> db.ImageDB
+ctl.ImageController --> db.EventDB
+ctl.LotteryController --> db.WaitingListDB
+ctl.LotteryController --> db.EventDB
+ctl.LotteryController --> db.NotificationDB
+ctl.NotificationController --> db.NotificationDB
+ctl.QRCodeController ..> model.Event : generates QR from eventId
+
+db.EventDB --> model.Event
+db.WaitingListDB --> model.WaitingList
+db.WaitingListDB ..> model.WaitlistEntryInfo
+db.NotificationDB --> model.Notification
+db.ProfileDB --> model.Entrant
+db.ImageDB ..> model.Event : persists poster URL
+db.EntrantDB --> model.Entrant
+
+ui.MainActivity ..> ctl.NotificationController : start/stop listener
+ui.EventListActivity ..> ctl.EventController
+ui.EventDetailActivity ..> ctl.EventController
+ui.EventCreateActivity ..> ctl.EventController
+ui.EventManageActivity ..> ctl.EventController
+ui.EventManageActivity ..> ctl.ImageController
+ui.EventHistoryActivity ..> ctl.EventController
+ui.JoinWaitlistActivity ..> db.WaitingListDB
+ui.QRScanActivity ..> ctl.QRCodeController
+ui.EntrantActivity ..> ctl.EntrantController
+ui.EntrantEditActivity ..> ctl.EntrantController
+ui.OrganizerActivity ..> ctl.EventController
+ui.AccountSettingsActivity ..> db.ProfileDB
+ui.AdminActivity ..> ctl.AdminController
+ui.AdminEventListActivity ..> ctl.AdminController
+ui.AdminProfileListActivity ..> ctl.AdminController
+ui.AdminImageListActivity ..> ctl.AdminController
+ui.NotificationsActivity ..> db.NotificationDB
+
+adapter.EventAdapter ..> model.Event
+adapter.OrganizerEventAdapter ..> model.Event
+adapter.EventHistoryAdapter ..> model.Event
+adapter.WaitlistEntrantAdapter ..> model.WaitingList
+adapter.NotificationEventAdapter ..> model.Notification
+adapter.NotificationListAdapter ..> model.Notification
+
+' ==============================================================================
+' Notes on design choices
+' ==============================================================================
+note as N1
+  Models are plain Java objects aligned with Firestore's serialization rules
+  (no-arg constructors, public fields via getters/setters). Controllers keep
+  UI free of persistence details and consolidate validation + orchestration.
+end note
+
+note as N2
+  Notification flow is informational-only per latest changes:
+  - Waitlist status is updated in WaitingListDB by domain actions
+  - NotificationDB.updateReadStatus() toggles only the Notification.read field
+  - NotificationController listener opens NotificationsActivity (no event deep link)
+end note
+
+model.Event .. N1
+ctl.NotificationController .. N2
+
+@enduml
+

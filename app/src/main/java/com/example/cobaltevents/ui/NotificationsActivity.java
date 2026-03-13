@@ -13,19 +13,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cobaltevents.R;
-import com.example.cobaltevents.controller.LotteryController;
 import com.example.cobaltevents.db.EntrantDB;
 import com.example.cobaltevents.db.NotificationDB;
-import com.example.cobaltevents.db.WaitingListDB;
-import com.example.cobaltevents.model.Notification;
-import com.example.cobaltevents.model.WaitlistEntryInfo;
 import com.example.cobaltevents.ui.adapter.NotificationListAdapter;
 
 public class NotificationsActivity extends AppCompatActivity {
 
     private NotificationDB notificationDB;
-    private WaitingListDB waitingListDB;
-    private LotteryController lotteryController;
     private NotificationListAdapter adapter;
     private String deviceId;
 
@@ -35,24 +29,11 @@ public class NotificationsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_notifications);
 
         notificationDB = new NotificationDB();
-        waitingListDB = new WaitingListDB();
-        lotteryController = new LotteryController();
         deviceId = new EntrantDB(this).getEntrant().getDeviceId();
 
         RecyclerView recycler = findViewById(R.id.recycler_notifications);
         recycler.setLayoutManager(new LinearLayoutManager(this));
         adapter = new NotificationListAdapter();
-        adapter.setOnActionListener(new NotificationListAdapter.OnActionListener() {
-            @Override
-            public void onAccept(Notification notification) {
-                acceptInvitation(notification);
-            }
-
-            @Override
-            public void onDecline(Notification notification) {
-                declineInvitation(notification);
-            }
-        });
         recycler.setAdapter(adapter);
 
         setupBottomNavigation();
@@ -73,78 +54,18 @@ public class NotificationsActivity extends AppCompatActivity {
         }
         notificationDB.getNotificationsForRecipient(deviceId,
             list -> {
-                if (list == null) {
-                    adapter.setItems(new java.util.ArrayList<>());
-                    return;
-                }
-                java.util.Set<String> eventIds = new java.util.LinkedHashSet<>();
-                for (Notification n : list) {
-                    if (n.getEventId() != null) eventIds.add(n.getEventId());
-                }
-                waitingListDB.getWaitlistInfoForEvents(deviceId, new java.util.ArrayList<>(eventIds),
-                    infoMap -> {
-                        if (infoMap == null) infoMap = new java.util.HashMap<>();
-                        java.util.List<Notification> filtered = new java.util.ArrayList<>();
-                        java.util.Map<String, String> statusByEventId = new java.util.HashMap<>();
-                        for (Notification n : list) {
-                            if (n.getEventId() == null) continue;
-                            WaitlistEntryInfo info = infoMap.get(n.getEventId());
-                            if (info == null) {
-                                filtered.add(n);
-                                statusByEventId.put(n.getEventId(), Notification.STATUS_PENDING);
-                            } else if (info.isNotificationsAllowed()) {
-                                filtered.add(n);
-                                statusByEventId.put(n.getEventId(), info.getStatus());
-                            }
-                        }
-                        adapter.setItems(filtered, statusByEventId);
-                    },
-                    e -> {
-                        Log.w("NotificationsActivity", "Waitlist info failed", e);
-                        adapter.setItems(list, new java.util.HashMap<>());
-                    });
+                if (list == null) list = new java.util.ArrayList<>();
+                adapter.setItems(list);
             },
             e -> {
                 Log.e("NotificationsActivity", "Load notifications failed", e);
                 String msg = e.getMessage() != null ? e.getMessage() : "Failed to load notifications";
-                if (msg.contains("index") || msg.contains("INDEX")) {
-                    Toast.makeText(this, "Notifications index required. Check Logcat for the index link.", Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
-                }
+                Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
                 adapter.setItems(new java.util.ArrayList<>());
             });
     }
 
-    private void acceptInvitation(Notification notification) {
-        if (notification.getEventId() == null) return;
-        lotteryController.acceptInvitation(deviceId, notification.getEventId(),
-            v -> {
-                updateReadStatus(notification, Notification.READ_ACCEPTED);
-                Toast.makeText(this, "Invitation Accepted", Toast.LENGTH_SHORT).show();
-            },
-            e -> Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-    }
-
-    private void declineInvitation(Notification notification) {
-        if (notification.getEventId() == null) return;
-        lotteryController.declineInvitation(deviceId, notification.getEventId(),
-            v -> {
-                updateReadStatus(notification, Notification.READ_REJECTED);
-                Toast.makeText(this, "Invitation Declined", Toast.LENGTH_SHORT).show();
-            },
-            e -> Toast.makeText(this, "Error: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-    }
-
-    private void updateReadStatus(Notification notification, String status) {
-        if (notification.getId() == null) return;
-        notificationDB.updateReadStatus(notification.getId(), status,
-            v -> {
-                notification.setRead(status);
-                adapter.updateNotification(notification, status);
-            },
-            e -> Toast.makeText(this, "Failed to update notification status", Toast.LENGTH_SHORT).show());
-    }
+    // No event-specific actions (accept/decline); notifications are informational only.
 
     private void setupBottomNavigation() {
         findViewById(R.id.nav_events).setOnClickListener(v -> {

@@ -16,10 +16,8 @@ import androidx.core.app.NotificationManagerCompat;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.db.NotificationDB;
-import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Notification;
-import com.example.cobaltevents.model.WaitlistEntryInfo;
-import com.example.cobaltevents.ui.EventDetailActivity;
+import com.example.cobaltevents.ui.NotificationsActivity;
 import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.HashSet;
@@ -32,13 +30,11 @@ public class NotificationController {
     private static final int PERMISSION_REQUEST_CODE = 1001;
 
     private final NotificationDB notificationDB;
-    private final WaitingListDB waitingListDB;
     private ListenerRegistration listenerRegistration;
     private final Set<String> shownNotificationIds = new HashSet<>();
 
     public NotificationController() {
         this.notificationDB = new NotificationDB();
-        this.waitingListDB = new WaitingListDB();
     }
 
     public void createNotificationChannel(Context context) {
@@ -90,19 +86,12 @@ public class NotificationController {
                 new NotificationDB.OnNotificationListener() {
                     @Override
                     public void onNotifications(List<Notification> notifications) {
-                        waitingListDB.getWaitlistInfoForDevice(deviceId,
-                                infoMap -> {
-                                    for (Notification n : notifications) {
-                                        WaitlistEntryInfo info = infoMap.get(n.getEventId());
-                                        if (info == null) continue;
-                                        boolean pending = Notification.STATUS_PENDING.equals(info.getStatus());
-                                        if (pending && info.isNotificationsAllowed() && n.getId() != null && !shownNotificationIds.contains(n.getId())) {
-                                            shownNotificationIds.add(n.getId());
-                                            showSystemNotification(context, n);
-                                        }
-                                    }
-                                },
-                                e -> e.printStackTrace());
+                        for (Notification n : notifications) {
+                            if (n.getId() != null && !shownNotificationIds.contains(n.getId())) {
+                                shownNotificationIds.add(n.getId());
+                                showSystemNotification(context, n);
+                            }
+                        }
                     }
 
                     @Override
@@ -120,8 +109,8 @@ public class NotificationController {
     }
 
     private void showSystemNotification(Context context, Notification notification) {
-        Intent intent = new Intent(context, EventDetailActivity.class);
-        intent.putExtra("eventId", notification.getEventId());
+        // Open the notifications list screen; no event-specific deep link.
+        Intent intent = new Intent(context, NotificationsActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 
         PendingIntent pendingIntent = PendingIntent.getActivity(
