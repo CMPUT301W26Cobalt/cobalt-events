@@ -5,7 +5,6 @@ import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.*;
 import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
 
 import android.content.Context;
 import android.provider.Settings;
@@ -37,6 +36,15 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * UI tests for the Lottery Invitation system.
+ * This class tests the functionality of accepting and declining event invitations
+ * within the Notifications tab of the Cobalt Events application.
+ *
+ * US 01.04.01: As an entrant, I want to receive a notification when I am chosen from the waiting list.
+ * US 01.05.01: As an entrant, I want to accept my invitation to register.
+ * US 01.05.02: As an entrant, I want to decline an invitation.
+ */
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class LotteryInvitationTest {
@@ -47,20 +55,31 @@ public class LotteryInvitationTest {
     private final NotificationDB notificationDB = new NotificationDB();
     private final List<String> notificationIdsToDelete = new ArrayList<>();
 
+    /**
+     * Rule to launch the NotificationsActivity for each test.
+     */
     @Rule
     public ActivityScenarioRule<NotificationsActivity> activityRule =
             new ActivityScenarioRule<>(NotificationsActivity.class);
 
+    /**
+     * Sets up the test environment by initializing the device ID and clearing old notifications.
+     * @throws InterruptedException if the thread is interrupted during setup.
+     */
     @Before
     public void setUp() throws InterruptedException {
         Context context = ApplicationProvider.getApplicationContext();
         deviceId = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
         notificationIdsToDelete.clear();
         
-        // Clean slate for the test device
+        // Clean start: clear any pre-existing notifications for this device to avoid AmbiguousViewMatcherException
         clearOldNotifications();
     }
 
+    /**
+     * Helper method to clear all notifications for the current device from Firestore.
+     * @throws InterruptedException if the thread is interrupted while waiting for deletion.
+     */
     private void clearOldNotifications() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         notificationDB.getNotificationsForRecipient(deviceId, list -> {
@@ -72,6 +91,7 @@ public class LotteryInvitationTest {
             for (Notification n : list) {
                 notificationDB.deleteNotification(n.getId(), v -> delLatch.countDown(), e -> delLatch.countDown());
             }
+            // Use a separate thread to wait for deletion so we don't block the UI thread if called from there
             new Thread(() -> {
                 try {
                     delLatch.await(10, TimeUnit.SECONDS);
@@ -80,9 +100,14 @@ public class LotteryInvitationTest {
             }).start();
         }, e -> latch.countDown());
         latch.await(15, TimeUnit.SECONDS);
-        Thread.sleep(1000);
+        Thread.sleep(1000); // Buffer for Firestore consistency
     }
 
+    /**
+     * Prepares test data in Firestore, including an event, a waiting list entry, and a notification.
+     * @param title The unique title for the test notification.
+     * @throws InterruptedException if the thread is interrupted while waiting for Firestore operations.
+     */
     private void prepareTestData(String title) throws InterruptedException {
         String eventId = UUID.randomUUID().toString();
         Event event = new Event(title, "Description", "Location",
@@ -103,11 +128,21 @@ public class LotteryInvitationTest {
         }, e -> latch.countDown());
 
         latch.await(15, TimeUnit.SECONDS);
+        
+        // Ensure Firestore has indexed the new data
         Thread.sleep(2000);
+        
+        // Recreate activity to fetch fresh notifications
         activityRule.getScenario().onActivity(NotificationsActivity::recreate);
+        
+        // Give the UI time to render the RecyclerView items
         Thread.sleep(3000);
     }
 
+    /**
+     * Cleans up test data by deleting notifications created during the test.
+     * @throws InterruptedException if the thread is interrupted during cleanup.
+     */
     @After
     public void tearDown() throws InterruptedException {
         if (notificationIdsToDelete.isEmpty()) return;
@@ -118,36 +153,49 @@ public class LotteryInvitationTest {
         latch.await(10, TimeUnit.SECONDS);
     }
 
+    /**
+     * Tests the "Accept" invitation flow.
+     * Verifies that clicking the Accept button updates the UI to show the "Accepted" badge.
+     * @throws InterruptedException if the thread is interrupted during the test.
+     */
     @Test
     public void testAcceptInvitation() throws InterruptedException {
         String testTitle = "Accept Test " + UUID.randomUUID().toString().substring(0, 8);
         prepareTestData(testTitle);
 
+        // Verify the unique notification is displayed
         onView(withText(testTitle)).check(matches(isDisplayed()));
         
-        // Scope the button click to the specific CardView containing our unique title
+        // Target the Accept button specifically inside the card containing our testTitle
+        // We use withId(R.id.notification_card_root) which is the root CardView of the item layout
         onView(allOf(
                 withId(R.id.btn_accept),
                 isDescendantOfA(allOf(
-                        hasDescendant(withText(testTitle)),
-                        withClassName(containsString("CardView"))
+                        withId(R.id.notification_card_root),
+                        hasDescendant(withText(testTitle))
                 )),
                 isDisplayed()
         )).perform(click());
 
+        // Wait for the status update to be processed and badge to show
         Thread.sleep(3000);
         
-        // Verify accepted badge inside the same specific CardView
+        // Verify the "Accepted" badge appears in the correct card
         onView(allOf(
                 withText("Accepted"),
                 isDescendantOfA(allOf(
-                        hasDescendant(withText(testTitle)),
-                        withClassName(containsString("CardView"))
+                        withId(R.id.notification_card_root),
+                        hasDescendant(withText(testTitle))
                 )),
                 isDisplayed()
         )).check(matches(isDisplayed()));
     }
 
+    /**
+     * Tests the "Decline" invitation flow.
+     * Verifies that clicking the Decline button updates the UI to show the "Declined" badge.
+     * @throws InterruptedException if the thread is interrupted during the test.
+     */
     @Test
     public void testDeclineInvitation() throws InterruptedException {
         String testTitle = "Decline Test " + UUID.randomUUID().toString().substring(0, 8);
@@ -155,24 +203,25 @@ public class LotteryInvitationTest {
 
         onView(withText(testTitle)).check(matches(isDisplayed()));
 
-        // Scope the button click to the specific CardView containing our unique title
+        // Target the Decline button specifically inside the card containing our testTitle
         onView(allOf(
                 withId(R.id.btn_decline),
                 isDescendantOfA(allOf(
-                        hasDescendant(withText(testTitle)),
-                        withClassName(containsString("CardView"))
+                        withId(R.id.notification_card_root),
+                        hasDescendant(withText(testTitle))
                 )),
                 isDisplayed()
         )).perform(click());
 
+        // Wait for the status update to be processed and badge to show
         Thread.sleep(3000);
 
-        // Verify declined badge inside the same specific CardView
+        // Verify the "Declined" badge appears in the correct card
         onView(allOf(
                 withText("Declined"),
                 isDescendantOfA(allOf(
-                        hasDescendant(withText(testTitle)),
-                        withClassName(containsString("CardView"))
+                        withId(R.id.notification_card_root),
+                        hasDescendant(withText(testTitle))
                 )),
                 isDisplayed()
         )).check(matches(isDisplayed()));

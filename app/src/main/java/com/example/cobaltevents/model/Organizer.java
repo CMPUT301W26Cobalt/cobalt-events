@@ -1,13 +1,14 @@
 package com.example.cobaltevents.model;
 
 /**
- * TODO: Implement Organizer model
+ * Model class for event organizers.
+ * This class stores details about users who create and manage events.
  */
 public class Organizer {
 
-    // TODO: Add fields
-
+    /**
+     * Default constructor for Organizer.
+     */
     public Organizer() {}
 
-    // TODO: Add getters and setters
 }
