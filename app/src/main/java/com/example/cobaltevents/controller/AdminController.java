@@ -19,7 +19,7 @@ import java.util.Set;
 /**
  * Controller for all Admin operations.
  *
- * Performance optimisations:
+ * Performance optimizations:
  *  - In-memory cache for events and profiles (invalidated on mutation)
  *  - Images reuse the event cache instead of a second Firestore fetch
  *  - Organizers reuse both caches — zero extra Firestore fetches
@@ -40,8 +40,6 @@ public class AdminController {
     private final EventDB eventDB;
     private final ProfileDB profileDB;
     private final FirebaseFirestore db;
-
-    // In-memory caches — invalidated on any mutation
     private List<Event>   cachedEvents   = null;
     private List<Entrant> cachedProfiles = null;
 
@@ -51,12 +49,11 @@ public class AdminController {
         this.db          = FirebaseFirestore.getInstance();
     }
 
-    // ── Cache invalidation ────────────────────────────────────────────────────
 
     private void invalidateEvents()   { cachedEvents   = null; }
     private void invalidateProfiles() { cachedProfiles = null; }
 
-    // ── US 03.04.01 — Browse events ──────────────────────────────────────────
+    // US 03.04.01 — Browse events
 
     public void getAllEvents(OnSuccessListener<List<Event>> onSuccess,
                              OnFailureListener onFailure) {
@@ -82,7 +79,7 @@ public class AdminController {
                 .addOnFailureListener(onFailure);
     }
 
-    // ── US 03.01.01 — Remove events ──────────────────────────────────────────
+    // US 03.01.01 — Remove events
 
     public void removeEvent(String eventId,
                             OnSuccessListener<Void> onSuccess,
@@ -93,7 +90,7 @@ public class AdminController {
         }, onFailure);
     }
 
-    // ── US 03.05.01 — Browse profiles ────────────────────────────────────────
+    //  US 03.05.01 — Browse profiles
 
     public void getAllProfiles(OnSuccessListener<List<Entrant>> onSuccess,
                                OnFailureListener onFailure) {
@@ -119,7 +116,7 @@ public class AdminController {
                 .addOnFailureListener(onFailure);
     }
 
-    // ── US 03.02.01 — Remove profiles ────────────────────────────────────────
+    // US 03.02.01 — Remove profiles
     // Also deletes any events this profile created as an organizer.
 
     public void removeProfile(String deviceId,
@@ -166,7 +163,7 @@ public class AdminController {
         }, onFailure);
     }
 
-    // ── US 03.03.01 — Remove images ──────────────────────────────────────────
+    //  US 03.03.01 — Remove images
 
     public void removeEventImage(String eventId,
                                  OnSuccessListener<Void> onSuccess,
@@ -181,7 +178,7 @@ public class AdminController {
                 .addOnFailureListener(onFailure);
     }
 
-    // ── US 03.07.01 — Browse organizers ──────────────────────────────────────
+    // US 03.07.01 — Browse organizers
     // Reuses both caches — no Firestore fetch if data already loaded.
 
     public void getAllOrganizers(OnSuccessListener<List<Entrant>> onSuccess,
@@ -207,8 +204,7 @@ public class AdminController {
         }, onFailure);
     }
 
-    // ── US 03.07.01 — Remove organizer ───────────────────────────────────────
-    // Targeted query + batch delete instead of full event scan.
+    //  US 03.07.01  Remove organizer
 
     public void removeOrganizer(String organizerDeviceId,
                                 OnSuccessListener<Void> onSuccess,
@@ -238,7 +234,7 @@ public class AdminController {
         }, onFailure);
     }
 
-    // ── US 03.08.01 — Review notification logs ───────────────────────────────
+    //  US 03.08.01 — Review notification logs
 
     public void getAllNotifications(OnSuccessListener<List<Notification>> onSuccess,
                                     OnFailureListener onFailure) {
