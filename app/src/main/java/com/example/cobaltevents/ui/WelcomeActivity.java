@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.ui.admin.AdminActivity;
+import android.provider.Settings;
 
 /**
  * Welcome screen shown to new/returning users.

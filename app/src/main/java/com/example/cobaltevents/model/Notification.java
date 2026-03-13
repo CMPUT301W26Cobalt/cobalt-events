@@ -12,6 +12,10 @@ public class Notification {
     public static final String STATUS_PENDING = "pending";
     public static final String STATUS_ACCEPTED = "accepted";
     public static final String STATUS_REJECTED = "rejected";
+    /** Read status mirrors STATUS_* for simplicity and UI reuse. */
+    public static final String READ_PENDING = STATUS_PENDING;
+    public static final String READ_ACCEPTED = STATUS_ACCEPTED;
+    public static final String READ_REJECTED = STATUS_REJECTED;
 
     private String id;
     private String recipientId;
@@ -19,6 +23,7 @@ public class Notification {
     private String title;
     private String message;
     private String type;
+    private String read;
     private Date timestamp;
 
     public Notification() {}
@@ -29,6 +34,7 @@ public class Notification {
         this.title = title;
         this.message = message;
         this.type = type;
+        this.read = READ_PENDING;
         this.timestamp = new Date();
     }
 

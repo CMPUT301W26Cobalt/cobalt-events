@@ -42,7 +42,7 @@ public class LotteryController {
                 return;
             }
             
-            waitingListDB.updateStatus(reg.getId(), WaitingList.STATUS_ENROLLED, v -> {
+            waitingListDB.updateStatus(eventId, reg.getDeviceId(), WaitingList.STATUS_ENROLLED, v -> {
                 eventDB.getEvent(eventId, event -> {
                     if (event != null) {
                         List<String> confirmed = event.getConfirmedAttendeeIds();
@@ -73,7 +73,7 @@ public class LotteryController {
                 onFailure.onFailure(new Exception("No active registration found"));
                 return;
             }
-            waitingListDB.updateStatus(reg.getId(), WaitingList.STATUS_DECLINED, v -> {
+            waitingListDB.updateStatus(eventId, reg.getDeviceId(), WaitingList.STATUS_DECLINED, v -> {
                 // Trigger replacement logic
                 drawReplacement(eventId, onSuccess, onFailure);
             }, onFailure);
@@ -94,7 +94,7 @@ public class LotteryController {
             Collections.shuffle(pending);
             WaitingList replacement = pending.get(0);
             
-            waitingListDB.updateStatus(replacement.getId(), WaitingList.STATUS_SELECTED, v -> {
+            waitingListDB.updateStatus(eventId, replacement.getDeviceId(), WaitingList.STATUS_SELECTED, v -> {
                 eventDB.getEvent(eventId, event -> {
                     String eventName = (event != null) ? event.getName() : "the event";
                     Notification notification = new Notification(

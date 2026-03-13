@@ -141,7 +141,7 @@ public class NotificationsActivity extends AppCompatActivity {
         notificationDB.updateReadStatus(notification.getId(), status,
             v -> {
                 notification.setRead(status);
-                adapter.updateNotification(notification);
+                adapter.updateNotification(notification, status);
             },
             e -> Toast.makeText(this, "Failed to update notification status", Toast.LENGTH_SHORT).show());
     }
