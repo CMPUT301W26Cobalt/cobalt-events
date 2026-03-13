@@ -51,6 +51,25 @@
                 android:scaleType="centerCrop"
                 android:background="@color/organizer_blue_light" />
 
+            <TextView
+                android:id="@+id/btn_update_poster"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="16dp"
+                android:background="@color/organizer_blue"
+                android:paddingStart="14dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="8dp"
+                android:text="@string/upload_poster"
+                android:textAllCaps="true"
+                android:textColor="@color/white"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+
             <!-- Event info -->
             <LinearLayout
                 android:layout_width="match_parent"

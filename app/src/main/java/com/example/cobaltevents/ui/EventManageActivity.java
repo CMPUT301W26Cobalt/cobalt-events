@@ -1,5 +1,6 @@
 package com.example.cobaltevents.ui;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
@@ -9,6 +10,8 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -16,12 +19,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 
 import com.example.cobaltevents.R;
+import com.example.cobaltevents.controller.ImageController;
 import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.db.ProfileDB;
 import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.WaitingList;
 import com.example.cobaltevents.ui.adapter.WaitlistEntrantAdapter;
+import com.example.cobaltevents.controller.LotteryController;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -40,9 +45,12 @@ public class EventManageActivity extends AppCompatActivity {
     private EventDB eventDB;
     private WaitingListDB waitingListDB;
     private ProfileDB profileDB;
+    private ImageController imageController;
     private WaitlistEntrantAdapter adapter;
+    private LotteryController lotteryController;
 
     private String eventId;
+    private Event currentEvent;
     private List<WaitingList> allEntrants = new ArrayList<>();
     private String currentTab = WaitingList.STATUS_PENDING;
 
@@ -52,9 +60,30 @@ public class EventManageActivity extends AppCompatActivity {
     private FrameLayout loadingContainer;
     private ProgressBar progressBar;
     private TextView tvEmpty;
+    private ImageView ivEventPoster;
+    private TextView btnUpdatePoster;
 
     private static final SimpleDateFormat DATE_FORMAT =
             new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
+
+    private final ActivityResultLauncher<String> pickPosterLauncher =
+            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
+                if (uri != null && currentEvent != null) {
+                    imageController.uploadPoster(
+                            uri,
+                            currentEvent,
+                            unused -> runOnUiThread(() -> {
+                                Glide.with(this)
+                                        .load(currentEvent.getPosterImageUrl())
+                                        .centerCrop()
+                                        .into(ivEventPoster);
+                                Toast.makeText(this, "Poster updated", Toast.LENGTH_SHORT).show();
+                            }),
+                            e -> runOnUiThread(() ->
+                                    Toast.makeText(this, "Failed to update poster", Toast.LENGTH_SHORT).show())
+                    );
+                }
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +94,8 @@ public class EventManageActivity extends AppCompatActivity {
         eventDB = new EventDB();
         waitingListDB = new WaitingListDB();
         profileDB = new ProfileDB();
+        imageController = new ImageController();
+        lotteryController = new LotteryController();
 
         tvEventName = findViewById(R.id.tv_event_name);
         tvEventLocation = findViewById(R.id.tv_event_location);
@@ -80,6 +111,8 @@ public class EventManageActivity extends AppCompatActivity {
         loadingContainer = findViewById(R.id.loading_container);
         progressBar = findViewById(R.id.progress_bar);
         tvEmpty = findViewById(R.id.tv_empty);
+        ivEventPoster = findViewById(R.id.iv_event_poster);
+        btnUpdatePoster = findViewById(R.id.btn_update_poster);
 
         RecyclerView recyclerView = findViewById(R.id.recycler_entrants);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -94,9 +127,33 @@ public class EventManageActivity extends AppCompatActivity {
         tabConfirmed.setOnClickListener(v -> selectTab("confirmed"));
         tabDeclined.setOnClickListener(v -> selectTab(WaitingList.STATUS_NOT_SELECTED));
 
+        btnUpdatePoster.setOnClickListener(v -> {
+            if (currentEvent == null) {
+                Toast.makeText(this, "Event not loaded yet", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            pickPosterLauncher.launch("image/*");
+        });
+
         // TODO US 02.05.02 – Run lottery draw
-        findViewById(R.id.btn_run_lottery).setOnClickListener(v ->
-                Toast.makeText(this, "TODO: Run lottery draw (US 02.05.02)", Toast.LENGTH_SHORT).show());
+        findViewById(R.id.btn_run_lottery).setOnClickListener(v -> {
+            if (currentEvent == null || currentEvent.getEventId() == null) {
+                Toast.makeText(this, "Event not loaded yet", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            lotteryController.runLotteryDraw(currentEvent.getEventId(),
+                    selectedCount -> runOnUiThread(() -> {
+                        if (selectedCount == 0) {
+                            Toast.makeText(this, "No entrants were selected", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(this, selectedCount + " entrant(s) invited", Toast.LENGTH_SHORT).show();
+                        }
+                        loadEventData();
+                    }),
+                    e -> runOnUiThread(() ->
+                            Toast.makeText(this, "Failed to run lottery draw", Toast.LENGTH_SHORT).show()));
+        });
 
         // TODO – Notify all waitlisted
         findViewById(R.id.btn_notify_all).setOnClickListener(v ->
@@ -134,6 +191,7 @@ public class EventManageActivity extends AppCompatActivity {
                 finish();
                 return;
             }
+            currentEvent = event;
             populateEventInfo(event);
 
             Switch switchGeo = findViewById(R.id.switch_geolocation);
@@ -148,8 +206,7 @@ public class EventManageActivity extends AppCompatActivity {
 
     private void populateEventInfo(Event event) {
         if (event.getPosterImageUrl() != null && !event.getPosterImageUrl().isEmpty()) {
-            ImageView poster = findViewById(R.id.iv_event_poster);
-            Glide.with(this).load(event.getPosterImageUrl()).centerCrop().into(poster);
+            Glide.with(this).load(event.getPosterImageUrl()).centerCrop().into(ivEventPoster);
         }
         tvEventName.setText(event.getName() != null ? event.getName() : "Untitled");
         tvEventLocation.setText(event.getLocation() != null ? event.getLocation() : "No location");
@@ -223,10 +280,14 @@ public class EventManageActivity extends AppCompatActivity {
     private void selectTab(String status) {
         currentTab = status;
         switch (status) {
-            case WaitingList.STATUS_PENDING:    setTabActive(tabWaitlisted); break;
-            case WaitingList.STATUS_SELECTED:   setTabActive(tabInvited); break;
-            case "confirmed":                   setTabActive(tabConfirmed); break;
-            default:                            setTabActive(tabDeclined); break;
+            case WaitingList.STATUS_PENDING:
+                setTabActive(tabWaitlisted); break;
+            case WaitingList.STATUS_SELECTED:
+                setTabActive(tabInvited); break;
+            case "confirmed":
+                setTabActive(tabConfirmed); break;
+            default:
+                setTabActive(tabDeclined); break;
         }
         showFilteredEntrants();
     }
