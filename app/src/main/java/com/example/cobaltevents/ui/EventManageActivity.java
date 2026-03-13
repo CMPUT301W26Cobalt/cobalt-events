@@ -26,6 +26,7 @@ import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.WaitingList;
 import com.example.cobaltevents.ui.adapter.WaitlistEntrantAdapter;
+import com.example.cobaltevents.controller.LotteryController;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -46,6 +47,7 @@ public class EventManageActivity extends AppCompatActivity {
     private ProfileDB profileDB;
     private ImageController imageController;
     private WaitlistEntrantAdapter adapter;
+    private LotteryController lotteryController;
 
     private String eventId;
     private Event currentEvent;
@@ -93,6 +95,7 @@ public class EventManageActivity extends AppCompatActivity {
         waitingListDB = new WaitingListDB();
         profileDB = new ProfileDB();
         imageController = new ImageController();
+        lotteryController = new LotteryController();
 
         tvEventName = findViewById(R.id.tv_event_name);
         tvEventLocation = findViewById(R.id.tv_event_location);
@@ -133,8 +136,24 @@ public class EventManageActivity extends AppCompatActivity {
         });
 
         // TODO US 02.05.02 – Run lottery draw
-        findViewById(R.id.btn_run_lottery).setOnClickListener(v ->
-                Toast.makeText(this, "TODO: Run lottery draw (US 02.05.02)", Toast.LENGTH_SHORT).show());
+        findViewById(R.id.btn_run_lottery).setOnClickListener(v -> {
+            if (currentEvent == null || currentEvent.getEventId() == null) {
+                Toast.makeText(this, "Event not loaded yet", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            lotteryController.runLotteryDraw(currentEvent.getEventId(),
+                    selectedCount -> runOnUiThread(() -> {
+                        if (selectedCount == 0) {
+                            Toast.makeText(this, "No entrants were selected", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(this, selectedCount + " entrant(s) invited", Toast.LENGTH_SHORT).show();
+                        }
+                        loadEventData();
+                    }),
+                    e -> runOnUiThread(() ->
+                            Toast.makeText(this, "Failed to run lottery draw", Toast.LENGTH_SHORT).show()));
+        });
 
         // TODO – Notify all waitlisted
         findViewById(R.id.btn_notify_all).setOnClickListener(v ->
