@@ -95,33 +95,38 @@
         android:layout_marginBottom="32dp"
         android:visibility="gone" />
 
-    <!-- Event list + empty state -->
-    <FrameLayout
+    <!-- Event list + empty state with pull-to-refresh -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_events"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_events"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
+            android:layout_height="match_parent">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_events"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
                 android:paddingTop="16dp"
                 android:paddingBottom="96dp"
-            android:clipToPadding="false" />
+                android:clipToPadding="false" />
 
-        <TextView
-            android:id="@+id/tv_empty"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:text="No events found"
-            android:textSize="15sp"
-            android:textColor="@color/grey_medium"
-            android:visibility="gone" />
-
-    </FrameLayout>
+            <TextView
+                android:id="@+id/tv_empty"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="No events found"
+                android:textSize="15sp"
+                android:textColor="@color/grey_medium"
+                android:visibility="gone" />
+        </FrameLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <!-- Bottom Navigation -->
     <include layout="@layout/partial_bottom_nav" />

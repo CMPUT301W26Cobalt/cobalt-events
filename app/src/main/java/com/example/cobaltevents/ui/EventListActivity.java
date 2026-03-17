@@ -23,6 +23,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.controller.EventController;
@@ -57,6 +58,7 @@ public class EventListActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private ProgressBar progressBar;
     private TextView tvEmpty;
+    private SwipeRefreshLayout swipeRefreshLayout;
     private EventAdapter adapter;
     private String deviceId;
     private EventController eventController;
@@ -85,17 +87,10 @@ public class EventListActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recycler_events);
         progressBar = findViewById(R.id.progress_bar);
         tvEmpty = findViewById(R.id.tv_empty);
+        swipeRefreshLayout = findViewById(R.id.swipe_refresh_events);
 
         adapter = new EventAdapter(new ArrayList<>(), this::handleJoinOrLeave);
         adapter.setDeviceId(deviceId);
-        adapter.setOnNotificationsToggleListener((eventId, devId, notificationsAllowed) -> {
-            waitingListDB.updateNotificationsAllowed(eventId, devId, notificationsAllowed,
-                    v -> adapter.updateNotificationsAllowedForEvent(eventId, notificationsAllowed),
-                    e -> {
-                        Toast.makeText(this, "Failed to update notification setting", Toast.LENGTH_SHORT).show();
-                        loadActiveRegistrationsThenApplyFilters();
-                    });
-        });
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
@@ -113,6 +108,11 @@ public class EventListActivity extends AppCompatActivity {
 
         findViewById(R.id.btn_filter).setOnClickListener(v -> showFilterDialog());
 
+        // Pull-to-refresh
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setOnRefreshListener(this::loadEvents);
+            swipeRefreshLayout.setColorSchemeColors(ContextCompat.getColor(this, R.color.user_green));
+        }
         loadEvents();
         setupBottomNavigation();
     }
@@ -127,10 +127,12 @@ public class EventListActivity extends AppCompatActivity {
         progressBar.setVisibility(View.VISIBLE);
         eventController.getAllEvents(events -> {
             progressBar.setVisibility(View.GONE);
+            if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
             allEvents = events != null ? events : new ArrayList<>();
         loadActiveRegistrationsThenApplyFilters();
         }, e -> {
             progressBar.setVisibility(View.GONE);
+            if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
             Toast.makeText(this, "Failed to load events: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         });
     }

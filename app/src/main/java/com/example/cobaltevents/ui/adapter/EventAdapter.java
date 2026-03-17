@@ -28,13 +28,9 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         void onEventClick(Event event, boolean isJoined);
     }
 
-    public interface OnNotificationsToggleListener {
-        void onNotificationsToggle(String eventId, String deviceId, boolean notificationsAllowed);
-    }
 
     private List<Event> events;
     private final OnEventClickListener listener;
-    private OnNotificationsToggleListener notificationsToggleListener;
     private final Set<String> expandedIds = new HashSet<>();
     private Map<String, WaitingList> activeRegistrationsByEventId;
     private Map<String, Integer> waitlistCountByEventId;
@@ -71,9 +67,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         this.deviceId = deviceId;
     }
 
-    public void setOnNotificationsToggleListener(OnNotificationsToggleListener listener) {
-        this.notificationsToggleListener = listener;
-    }
 
     /** Call after updating notificationsAllowed in Firestore so the card reflects the new value. */
     public void updateNotificationsAllowedForEvent(String eventId, boolean enabled) {
@@ -187,18 +180,8 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                     : "No special criteria.";
             holder.tvCriteriaDescription.setText(criteriaText);
             holder.layoutGeoNote.setVisibility(View.GONE);
-            holder.layoutEventNotifications.setVisibility(isJoined ? View.VISIBLE : View.GONE);
-            if (isJoined) {
-                WaitingList reg = activeRegistrationsByEventId != null ? activeRegistrationsByEventId.get(event.getEventId()) : null;
-                boolean enabled = reg != null && reg.isNotificationsAllowed();
-                holder.switchEventNotifications.setOnCheckedChangeListener(null);
-                holder.switchEventNotifications.setChecked(enabled);
-                holder.switchEventNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                    if (notificationsToggleListener != null && deviceId != null && event.getEventId() != null) {
-                        notificationsToggleListener.onNotificationsToggle(event.getEventId(), deviceId, isChecked);
-                    }
-                });
-            }
+            // Event-specific notifications removed
+            holder.layoutEventNotifications.setVisibility(View.GONE);
         }
 
         View.OnClickListener toggleExpand = v -> {

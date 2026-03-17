@@ -90,6 +90,30 @@ public class EventDB {
                 .addOnFailureListener(onFailure);
     }
 
+    /**
+     * Fetch a single event by its qrCodeData value.
+     * Returns the first matching event or null if none found.
+     */
+    public void getEventByQrCode(String qrCodeData,
+                                 OnSuccessListener<Event> onSuccess,
+                                 OnFailureListener onFailure) {
+        db.collection(COLLECTION)
+                .whereEqualTo("qrCodeData", qrCodeData)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) {
+                        onSuccess.onSuccess(null);
+                        return;
+                    }
+                    com.google.firebase.firestore.DocumentSnapshot doc = querySnapshot.getDocuments().get(0);
+                    Event e = doc.toObject(Event.class);
+                    if (e != null) e.setEventId(doc.getId());
+                    onSuccess.onSuccess(e);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
     public void updateEvent(Event event,
                             OnSuccessListener<Void> onSuccess,
                             OnFailureListener onFailure) {

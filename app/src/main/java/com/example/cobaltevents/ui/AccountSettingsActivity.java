@@ -19,16 +19,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.controller.EntrantController;
-import com.example.cobaltevents.controller.EventController;
 import com.example.cobaltevents.db.EntrantDB;
-import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.db.ImageDB;
 import com.example.cobaltevents.db.ProfileDB;
 import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Entrant;
-import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.WaitingList;
-import com.example.cobaltevents.ui.adapter.NotificationEventAdapter;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
@@ -49,16 +45,13 @@ public class AccountSettingsActivity extends AppCompatActivity {
     private View btnCancelEdit;
 
     private EntrantController controller;
-    private EventController eventController;
     private EntrantDB entrantDB;
     private ImageDB imageDB;
     private ProfileDB profileDB;
     private WaitingListDB waitingListDB;
-    private EventDB eventDB;
     private Entrant currentEntrant;
     private SharedPreferences notificationPrefs;
-    private RecyclerView recyclerNotificationEvents;
-    private NotificationEventAdapter notificationEventAdapter;
+    // Removed event-specific notifications; global switch controls all
 
     private final ActivityResultLauncher<String> getContent = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
@@ -77,8 +70,6 @@ public class AccountSettingsActivity extends AppCompatActivity {
         imageDB = new ImageDB();
         profileDB = new ProfileDB();
         waitingListDB = new WaitingListDB();
-        eventDB = new EventDB();
-        eventController = new EventController();
         notificationPrefs = getSharedPreferences("cobalt_prefs", MODE_PRIVATE);
         controller = new EntrantController(entrantDB);
         currentEntrant = entrantDB.getEntrant();
@@ -116,20 +107,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
         });
         btnDeleteConfirm.setOnClickListener(v -> performAccountDeletion());
 
-        recyclerNotificationEvents = findViewById(R.id.recycler_notification_events);
-        recyclerNotificationEvents.setLayoutManager(new LinearLayoutManager(this));
-        notificationEventAdapter = new NotificationEventAdapter();
-        notificationEventAdapter.setOnToggleListener((eventId, enabled) -> {
-            String deviceId = currentEntrant != null ? currentEntrant.getDeviceId() : null;
-            if (deviceId == null || eventId == null) return;
-            waitingListDB.updateNotificationsAllowed(eventId, deviceId, enabled,
-                    v -> { /* updated in Firestore */ },
-                    e -> {
-                        Toast.makeText(this, "Failed to update notification setting", Toast.LENGTH_SHORT).show();
-                        loadNotificationEvents();
-                    });
-        });
-        recyclerNotificationEvents.setAdapter(notificationEventAdapter);
+        // Event-specific notification UI removed
 
         androidx.appcompat.widget.SwitchCompat switchGeneral = findViewById(R.id.switch_general);
         androidx.appcompat.widget.SwitchCompat switchEventUpdates = findViewById(R.id.switch_event_updates);
@@ -138,12 +116,10 @@ public class AccountSettingsActivity extends AppCompatActivity {
         switchGeneral.setChecked(notificationPrefs.getBoolean("notification_general", true));
         switchEventUpdates.setChecked(notificationPrefs.getBoolean("notification_event_updates", true));
         switchGeneral.setOnCheckedChangeListener((v, isChecked) -> notificationPrefs.edit().putBoolean("notification_general", isChecked).apply());
-        switchEventUpdates.setOnCheckedChangeListener((v, isChecked) -> {
-            notificationPrefs.edit().putBoolean("notification_event_updates", isChecked).apply();
-            setNotificationsAllowedForAllJoinedEvents(isChecked);
-        });
+        switchEventUpdates.setOnCheckedChangeListener((v, isChecked) ->
+                notificationPrefs.edit().putBoolean("notification_event_updates", isChecked).apply());
 
-        loadNotificationEvents();
+        // No per-event notifications to load
         
         setupBottomNavigation();
     }
@@ -151,10 +127,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (currentEntrant != null) {
-            currentEntrant = entrantDB.getEntrant();
-            loadNotificationEvents();
-        }
+        if (currentEntrant != null) currentEntrant = entrantDB.getEntrant();
     }
 
     private void applySwitchTints(androidx.appcompat.widget.SwitchCompat switchCompat) {
@@ -162,83 +135,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
         switchCompat.setTrackTintList(ContextCompat.getColorStateList(this, R.color.switch_track_selector));
     }
 
-    private void loadNotificationEvents() {
-        if (currentEntrant == null) {
-            notificationEventAdapter.setItems(new ArrayList<>());
-            return;
-        }
-        String deviceId = currentEntrant.getDeviceId();
-        if (deviceId == null || deviceId.isEmpty()) {
-            notificationEventAdapter.setItems(new ArrayList<>());
-            return;
-        }
-        // Load all events, then for each check if user is on waitlist (no collection-group query needed)
-        eventController.getAllEvents(
-            events -> {
-                if (events == null || events.isEmpty()) {
-                    notificationEventAdapter.setItems(new ArrayList<>());
-                    return;
-                }
-                List<NotificationEventAdapter.Item> items = new ArrayList<>();
-                java.util.concurrent.atomic.AtomicInteger pending = new java.util.concurrent.atomic.AtomicInteger(events.size());
-                for (Event event : events) {
-                    if (event == null || event.getEventId() == null) {
-                        if (pending.decrementAndGet() == 0) finishLoadingNotificationEvents(items);
-                        continue;
-                    }
-                    String eventId = event.getEventId();
-                    waitingListDB.getActiveRegistrationForEvent(eventId, deviceId,
-                        reg -> {
-                            if (reg != null) {
-                                String name = event.getName() != null ? event.getName() : "Event";
-                                boolean enabled = reg.isNotificationsAllowed();
-                                synchronized (items) {
-                                    items.add(new NotificationEventAdapter.Item(eventId, name, enabled));
-                                }
-                            }
-                            if (pending.decrementAndGet() == 0) finishLoadingNotificationEvents(items);
-                        },
-                        e -> {
-                            if (pending.decrementAndGet() == 0) finishLoadingNotificationEvents(items);
-                        });
-                }
-            },
-            e -> notificationEventAdapter.setItems(new ArrayList<>()));
-    }
-
-    private void finishLoadingNotificationEvents(List<NotificationEventAdapter.Item> items) {
-        runOnUiThread(() -> {
-            synchronized (items) {
-                Collections.sort(items, (a, b) -> a.eventName.compareToIgnoreCase(b.eventName));
-            }
-            notificationEventAdapter.setItems(items);
-        });
-    }
-
-    /** Turn notifications on or off for every event the user has joined. UI updates immediately; Firestore updates in background. */
-    private void setNotificationsAllowedForAllJoinedEvents(boolean allowed) {
-        if (currentEntrant == null) return;
-        String deviceId = currentEntrant.getDeviceId();
-        if (deviceId == null || deviceId.isEmpty()) return;
-
-        List<String> eventIds = notificationEventAdapter.getEventIds();
-        if (eventIds.isEmpty()) return;
-
-        // Update UI immediately so the switch and per-event toggles feel instant
-        notificationEventAdapter.setAllEnabled(allowed);
-
-        // Persist to Firestore in background (no reload)
-        java.util.concurrent.atomic.AtomicInteger pending = new java.util.concurrent.atomic.AtomicInteger(eventIds.size());
-        for (String eventId : eventIds) {
-            waitingListDB.updateNotificationsAllowed(eventId, deviceId, allowed,
-                    v -> { if (pending.decrementAndGet() == 0) { /* all done */ } },
-                    e -> {
-                        if (pending.decrementAndGet() == 0) { /* all done */ }
-                        runOnUiThread(() -> Toast.makeText(this, "Some notification updates failed", Toast.LENGTH_SHORT).show());
-                        runOnUiThread(this::loadNotificationEvents);
-                    });
-        }
-    }
+    // Removed per-event notifications plumbing; global toggle persists preference only.
 
     private void switchToEditMode() {
         editName.setText(currentEntrant.getName());
