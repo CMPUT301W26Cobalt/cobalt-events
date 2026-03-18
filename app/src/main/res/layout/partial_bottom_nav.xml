@@ -68,18 +68,17 @@
         android:focusable="true">
 
         <LinearLayout
-            android:layout_width="64dp"
-            android:layout_height="64dp"
+            android:layout_width="62dp"
+            android:layout_height="62dp"
             android:layout_marginTop="-6dp"
-            android:background="@drawable/bg_qr_button"
+            android:background="@drawable/bg_qr_button_gradient"
             android:gravity="center"
-            android:elevation="6dp">
+            android:elevation="10dp">
 
             <ImageView
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:src="@drawable/ic_nav_qrcode"
-                app:tint="@color/white" />
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@drawable/ic_nav_qr_grid" />
         </LinearLayout>
     </LinearLayout>
 

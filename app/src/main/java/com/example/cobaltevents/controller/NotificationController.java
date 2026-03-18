@@ -82,6 +82,14 @@ public class NotificationController {
     public void startNotificationListener(Context context, String deviceId) {
         stopNotificationListener();
 
+        // Global toggle: if event update notifications are disabled, don't listen/show
+        android.content.SharedPreferences prefs =
+                context.getSharedPreferences("cobalt_prefs", android.content.Context.MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean("notification_event_updates", true);
+        if (!enabled) {
+            return;
+        }
+
         listenerRegistration = notificationDB.listenForNotifications(deviceId,
                 new NotificationDB.OnNotificationListener() {
                     @Override

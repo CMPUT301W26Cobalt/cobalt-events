@@ -39,8 +39,11 @@
         <activity android:name=".ui.admin.AdminEventListActivity" />
         <activity android:name=".ui.admin.AdminProfileListActivity" />
         <activity android:name=".ui.admin.AdminImageListActivity" />
+        <activity android:name=".ui.MapPreviewActivity" />
 
-        <!-- TODO: Add Google Maps API key meta-data if using maps -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyBabAFfSHjSMZAzjaqDT6wraGJQc5YB8G4" />
 
     </application>
 </manifest>

@@ -1,17 +1,22 @@
 package com.example.cobaltevents.ui;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
 import com.example.cobaltevents.R;
@@ -27,6 +32,12 @@ import android.net.NetworkCapabilities;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
+import com.example.cobaltevents.controller.GeolocationController;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import android.app.Dialog;
+import android.view.Window;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.Color;
 
 public class EventDetailActivity extends AppCompatActivity {
 
@@ -47,6 +58,17 @@ public class EventDetailActivity extends AppCompatActivity {
     private String deviceId;
 
     private SharedPreferences prefs;
+    private GeolocationController geolocationController;
+    private String pendingGeoJoinEventId;
+    private final ActivityResultLauncher<String> locationPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted && pendingGeoJoinEventId != null) {
+                    joinAndRecordLocation(pendingGeoJoinEventId);
+                } else if (!granted) {
+                    Toast.makeText(this, "Location permission denied — cannot join this event.", Toast.LENGTH_LONG).show();
+                }
+                pendingGeoJoinEventId = null;
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +89,7 @@ public class EventDetailActivity extends AppCompatActivity {
         entrantDB = new EntrantDB(this);
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         prefs = getSharedPreferences("cobalt_prefs", MODE_PRIVATE);
+        geolocationController = new GeolocationController();
 
         String eventId = getIntent().getStringExtra("eventId");
 
@@ -136,7 +159,7 @@ public class EventDetailActivity extends AppCompatActivity {
     private void applyJoinLeaveUi() {
         boolean joined = activeRegistration != null;
         btnJoinLeave.setText(joined ? getString(R.string.leave_waitlist_button) : getString(R.string.join_waitlist_button));
-        btnJoinLeave.setBackgroundResource(joined ? R.drawable.bg_button_red_pill : R.drawable.bg_button_primary_account);
+        btnJoinLeave.setBackgroundResource(joined ? R.drawable.bg_button_red_pill : R.drawable.bg_button_join_solid);
 
         if (joined) {
             layoutEventNotifications.setVisibility(View.VISIBLE);
@@ -158,7 +181,7 @@ public class EventDetailActivity extends AppCompatActivity {
 
     private void showJoinConfirmDialog(String eventId) {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_join_waitlist_confirm, null);
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setView(dialogView)
                 .create();
 
@@ -174,6 +197,9 @@ public class EventDetailActivity extends AppCompatActivity {
         });
 
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
     }
 
     private void joinWaitlist(String eventId) {
@@ -187,6 +213,51 @@ public class EventDetailActivity extends AppCompatActivity {
             startActivity(new Intent(this, AccountSettingsActivity.class));
             return;
         }
+        if (currentEvent != null && currentEvent.isGeolocationRequired()) {
+            if (geolocationController.hasLocationPermission(this)) {
+                joinAndRecordLocation(eventId);
+            } else {
+                pendingGeoJoinEventId = eventId;
+                new androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Location Required")
+                        .setMessage("This event requires your location to be recorded when joining the waitlist.")
+                        .setPositiveButton("Allow", (d, w) ->
+                                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION))
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
+            return;
+        }
+        performJoinWaitlist(eventId);
+    }
+
+    private void joinAndRecordLocation(String eventId) {
+        if (currentEvent == null) return;
+        geolocationController.checkDistanceForEvent(this, currentEvent,
+                new GeolocationController.GeoJoinCallback() {
+                    @Override
+                    public void onAllowed(android.location.Location userLocation) {
+                        performJoinWaitlist(eventId);
+                        geolocationController.recordLocationForEvent(
+                                EventDetailActivity.this, deviceId, eventId,
+                                userLocation, unused -> {}, e -> {});
+                    }
+                    @Override
+                    public void onBlocked(float distanceMeters) {
+                        int km = Math.round(distanceMeters / 1000f);
+                        Toast.makeText(EventDetailActivity.this,
+                                "You are " + km + "km away. Must be within 30km to join.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                    @Override
+                    public void onError(String message) {
+                        Toast.makeText(EventDetailActivity.this, message, Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private void performJoinWaitlist(String eventId) {
+        Entrant entrant = entrantDB.getEntrant();
         WaitingList registration = new WaitingList(
                 eventId,
                 deviceId,
@@ -209,7 +280,7 @@ public class EventDetailActivity extends AppCompatActivity {
     private void showLeaveConfirmDialog() {
         if (activeRegistration == null || activeRegistration.getDeviceId() == null) return;
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_leave_waitlist_confirm, null);
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setView(dialogView)
                 .create();
 
@@ -222,6 +293,9 @@ public class EventDetailActivity extends AppCompatActivity {
         });
 
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
     }
 
     private void leaveWaitlist() {

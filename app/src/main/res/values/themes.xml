@@ -15,6 +15,12 @@
         <item name="android:minHeight">28dp</item>
     </style>
 
+    <!-- Clips ImageView to a perfect circle -->
+    <style name="CircleImageView" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
     <style name="AdminTab">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
@@ -28,4 +34,5 @@
         <item name="android:background">@drawable/bg_tab</item>
         <item name="android:gravity">center</item>
     </style>
+
 </resources>

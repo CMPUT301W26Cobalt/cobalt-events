@@ -172,7 +172,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="13sp"
-                    android:textColor="@color/grey_muted_text" />
+                    android:textColor="@color/header_teal"
+                    android:drawablePadding="4dp"
+                    android:drawableStart="@drawable/ic_map_pin"
+                    android:clickable="true"
+                    android:focusable="true" />
             </LinearLayout>
 
             <!-- Price row -->
@@ -347,14 +351,35 @@
         <TextView
             android:id="@+id/btn_join"
             android:layout_width="match_parent"
-            android:layout_height="44dp"
+            android:layout_height="@dimen/button_height"
             android:text="JOIN WAITLIST"
             android:textSize="13sp"
             android:textStyle="bold"
             android:textColor="@color/white"
             android:gravity="center"
             android:layout_marginTop="4dp"
-            android:background="@drawable/bg_button_primary_account" />
+            android:background="@drawable/bg_button_join_solid" />
+
+        <!-- Inline close control for dialog usage (hidden in lists) -->
+        <LinearLayout
+            android:id="@+id/layout_close_inline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:padding="8dp"
+            android:visibility="gone">
+            <TextView
+                android:id="@+id/btn_close_inline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="CLOSE"
+                android:textStyle="bold"
+                android:textColor="@color/grey_medium"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp" />
+        </LinearLayout>
 
     </LinearLayout>
 

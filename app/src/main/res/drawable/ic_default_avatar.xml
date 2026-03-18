@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="90dp"
+    android:height="90dp"
+    android:viewportWidth="90"
+    android:viewportHeight="90">
+
+    <!-- Green circle background -->
+    <path
+        android:fillColor="@color/user_green"
+        android:pathData="M45,0 A45,45 0 1 1 44.9999,0 Z"/>
+
+    <!-- White person icon centred -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M45,41 c7.18,0 13,-5.82 13,-13 S52.18,15 45,15 32,20.82 32,28 s5.82,13 13,13z
+                          M45,48 c-8.68,0 -26,4.36 -26,13 L19,68 L71,68 L71,61 c0,-8.64 -17.32,-13 -26,-13z"/>
+</vector>

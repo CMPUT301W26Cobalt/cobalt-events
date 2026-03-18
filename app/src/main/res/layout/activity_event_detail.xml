@@ -115,14 +115,14 @@
                     <TextView
                         android:id="@+id/btn_join_leave"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
+                        android:layout_height="@dimen/button_height_large"
                         android:layout_marginTop="14dp"
                         android:text="@string/join_waitlist_button"
                         android:textSize="13sp"
                         android:textStyle="bold"
                         android:textColor="@color/white"
                         android:gravity="center"
-                        android:background="@drawable/bg_button_primary_account" />
+                        android:background="@drawable/bg_button_join_solid" />
 
                 </LinearLayout>
             </LinearLayout>

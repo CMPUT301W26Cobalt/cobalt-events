@@ -1,116 +1,131 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="18dp"
-    android:background="@drawable/bg_dialog_rounded">
-
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp">
-
-        <TextView
-            android:id="@+id/tv_title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/dialog_join_waitlist_title"
-            android:textAlignment="center"
-            android:textColor="@color/text_primary"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <ImageView
-            android:id="@+id/btn_close"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:layout_alignParentEnd="true"
-            android:contentDescription="@string/dialog_cancel"
-            android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:tint="@color/grey_medium" />
-    </RelativeLayout>
-
-    <TextView
-        android:id="@+id/tv_subtitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="@string/dialog_join_waitlist_subtitle"
-        android:textAlignment="center"
-        android:textColor="@color/text_secondary"
-        android:textSize="13sp" />
+    app:cardCornerRadius="16dp"
+    app:cardElevation="8dp"
+    app:cardUseCompatPadding="true"
+    app:cardBackgroundColor="@color/white">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
         android:orientation="vertical"
-        android:padding="12dp"
-        android:background="@drawable/bg_guidelines_box">
+        android:padding="18dp">
 
-        <TextView
+        <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/dialog_join_waitlist_guidelines_title"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:id="@+id/tv_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/dialog_join_waitlist_title"
+                android:textAlignment="center"
+                android:gravity="center"
+                android:textColor="@color/text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/btn_close"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_alignParentEnd="true"
+                android:contentDescription="@string/dialog_cancel"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                android:tint="@color/grey_medium" />
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/tv_subtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/dialog_join_waitlist_subtitle"
             android:textAlignment="center"
-            android:textColor="@color/header_teal"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:gravity="center"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:background="@drawable/bg_guidelines_box">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/dialog_join_waitlist_guidelines_title"
+                android:textAlignment="center"
+                android:gravity="center"
+                android:textColor="@color/header_teal"
+                android:textSize="13sp"
+                android:textStyle="bold" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="@string/dialog_join_waitlist_guidelines_body"
-            android:textAlignment="viewStart"
+            android:textAlignment="center"
+            android:gravity="center"
             android:textColor="@color/header_teal"
             android:textSize="12sp"
             android:lineSpacingExtra="2dp" />
 
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/tv_disclaimer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:text="@string/dialog_join_waitlist_disclaimer"
-        android:textAlignment="center"
-        android:textColor="@color/grey_medium"
-        android:textSize="12sp"
-        android:textStyle="italic" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:orientation="horizontal">
+        </LinearLayout>
 
         <TextView
-            android:id="@+id/btn_cancel"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
+            android:id="@+id/tv_disclaimer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/dialog_join_waitlist_disclaimer"
+            android:textAlignment="center"
             android:gravity="center"
-            android:text="@string/dialog_cancel"
-            android:textColor="@color/text_primary"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:background="@drawable/bg_button_outline_grey_pill" />
+            android:textColor="@color/grey_medium"
+            android:textSize="12sp"
+            android:textStyle="italic" />
 
-        <TextView
-            android:id="@+id/btn_join"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
-            android:layout_marginStart="12dp"
-            android:gravity="center"
-            android:text="@string/dialog_join_waitlist_confirm"
-            android:textColor="@color/white"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:background="@drawable/bg_button_primary_account" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/btn_cancel"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/button_height"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="@string/dialog_cancel"
+                android:textColor="@color/text_primary"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_button_outline_grey_pill" />
+
+            <TextView
+                android:id="@+id/btn_join"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/button_height"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:gravity="center"
+                android:text="@string/dialog_join_waitlist_confirm"
+                android:textColor="@color/white"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_button_join_solid" />
+        </LinearLayout>
+
     </LinearLayout>
 
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -66,6 +66,9 @@
     <color name="notif_accept_btn_end">#008236</color>
     <color name="notif_decline_border">#D1D5DC</color>
     <color name="notif_decline_text">#364153</color>
+    <!-- Badge tints -->
+    <color name="status_warning_orange_15">#26E65100</color>
+    <color name="grey_200">#E5E7EB</color>
 
     <!-- Other -->
     <color name="tag_teal_background">#E0F2F1</color>
@@ -75,4 +78,11 @@
     <color name="brand_mint_text">#2d6a5f</color>
     <color name="brand_teal">#1B9A8B</color>
     <color name="grey_400">#9CA3AF</color>
+    <!-- New standardized palette -->
+    <color name="teal_009689">#009689</color>
+    <color name="green_00A63E">#00A63E</color>
+    <color name="dark_text_1E2939">#1E2939</color>
+    <color name="muted_text_4A5565">#4A5565</color>
+    <color name="delete_red_E7000B">#E7000B</color>
+    <color name="page_bg_F9FAFB">#F9FAFB</color>
 </resources>

@@ -19,17 +19,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.controller.EntrantController;
-import com.example.cobaltevents.controller.EventController;
 import com.example.cobaltevents.db.EntrantDB;
-import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.db.ImageDB;
 import com.example.cobaltevents.db.ProfileDB;
 import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Entrant;
-import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.WaitingList;
-import com.example.cobaltevents.ui.adapter.NotificationEventAdapter;
-import com.squareup.picasso.Picasso;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,8 +37,7 @@ import java.util.Set;
 public class AccountSettingsActivity extends AppCompatActivity {
 
     private TextView tvName, tvEmail, tvPhone;
-    private ImageView profileImage;
-    private TextView profileInitials;
+    private com.google.android.material.imageview.ShapeableImageView profileImage;
     private View profileViewPanel;
     private View profileEditPanel;
     private EditText editName, editEmail, editPhone;
@@ -49,16 +45,13 @@ public class AccountSettingsActivity extends AppCompatActivity {
     private View btnCancelEdit;
 
     private EntrantController controller;
-    private EventController eventController;
     private EntrantDB entrantDB;
     private ImageDB imageDB;
     private ProfileDB profileDB;
     private WaitingListDB waitingListDB;
-    private EventDB eventDB;
     private Entrant currentEntrant;
     private SharedPreferences notificationPrefs;
-    private RecyclerView recyclerNotificationEvents;
-    private NotificationEventAdapter notificationEventAdapter;
+
 
     private final ActivityResultLauncher<String> getContent = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
@@ -77,8 +70,6 @@ public class AccountSettingsActivity extends AppCompatActivity {
         imageDB = new ImageDB();
         profileDB = new ProfileDB();
         waitingListDB = new WaitingListDB();
-        eventDB = new EventDB();
-        eventController = new EventController();
         notificationPrefs = getSharedPreferences("cobalt_prefs", MODE_PRIVATE);
         controller = new EntrantController(entrantDB);
         currentEntrant = entrantDB.getEntrant();
@@ -87,7 +78,6 @@ public class AccountSettingsActivity extends AppCompatActivity {
         tvEmail = findViewById(R.id.tv_email);
         tvPhone = findViewById(R.id.tv_phone);
         profileImage = findViewById(R.id.profile_image);
-        profileInitials = findViewById(R.id.profile_initials);
         profileViewPanel = findViewById(R.id.profile_view_panel);
         profileEditPanel = findViewById(R.id.profile_edit_panel);
         editName = findViewById(R.id.edit_name);
@@ -97,6 +87,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
         btnCancelEdit = findViewById(R.id.btn_cancel_edit);
         View btnEditInfo = findViewById(R.id.btn_edit_info);
         View btnDeleteAccount = findViewById(R.id.btn_delete_account);
+        View btnChangePicture = findViewById(R.id.btn_change_picture);
         View deleteConfirmPanel = findViewById(R.id.delete_confirm_panel);
         View btnDeleteCancel = findViewById(R.id.btn_delete_cancel);
         View btnDeleteConfirm = findViewById(R.id.btn_delete_confirm);
@@ -115,21 +106,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
             btnDeleteAccount.setVisibility(View.VISIBLE);
         });
         btnDeleteConfirm.setOnClickListener(v -> performAccountDeletion());
-
-        recyclerNotificationEvents = findViewById(R.id.recycler_notification_events);
-        recyclerNotificationEvents.setLayoutManager(new LinearLayoutManager(this));
-        notificationEventAdapter = new NotificationEventAdapter();
-        notificationEventAdapter.setOnToggleListener((eventId, enabled) -> {
-            String deviceId = currentEntrant != null ? currentEntrant.getDeviceId() : null;
-            if (deviceId == null || eventId == null) return;
-            waitingListDB.updateNotificationsAllowed(eventId, deviceId, enabled,
-                    v -> { /* updated in Firestore */ },
-                    e -> {
-                        Toast.makeText(this, "Failed to update notification setting", Toast.LENGTH_SHORT).show();
-                        loadNotificationEvents();
-                    });
-        });
-        recyclerNotificationEvents.setAdapter(notificationEventAdapter);
+        btnChangePicture.setOnClickListener(v -> getContent.launch("image/*"));
 
         androidx.appcompat.widget.SwitchCompat switchGeneral = findViewById(R.id.switch_general);
         androidx.appcompat.widget.SwitchCompat switchEventUpdates = findViewById(R.id.switch_event_updates);
@@ -138,106 +115,21 @@ public class AccountSettingsActivity extends AppCompatActivity {
         switchGeneral.setChecked(notificationPrefs.getBoolean("notification_general", true));
         switchEventUpdates.setChecked(notificationPrefs.getBoolean("notification_event_updates", true));
         switchGeneral.setOnCheckedChangeListener((v, isChecked) -> notificationPrefs.edit().putBoolean("notification_general", isChecked).apply());
-        switchEventUpdates.setOnCheckedChangeListener((v, isChecked) -> {
-            notificationPrefs.edit().putBoolean("notification_event_updates", isChecked).apply();
-            setNotificationsAllowedForAllJoinedEvents(isChecked);
-        });
+        switchEventUpdates.setOnCheckedChangeListener((v, isChecked) ->
+                notificationPrefs.edit().putBoolean("notification_event_updates", isChecked).apply());
 
-        loadNotificationEvents();
-        
         setupBottomNavigation();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (currentEntrant != null) {
-            currentEntrant = entrantDB.getEntrant();
-            loadNotificationEvents();
-        }
+        if (currentEntrant != null) currentEntrant = entrantDB.getEntrant();
     }
 
     private void applySwitchTints(androidx.appcompat.widget.SwitchCompat switchCompat) {
         switchCompat.setThumbTintList(ContextCompat.getColorStateList(this, R.color.thumb_white));
         switchCompat.setTrackTintList(ContextCompat.getColorStateList(this, R.color.switch_track_selector));
-    }
-
-    private void loadNotificationEvents() {
-        if (currentEntrant == null) {
-            notificationEventAdapter.setItems(new ArrayList<>());
-            return;
-        }
-        String deviceId = currentEntrant.getDeviceId();
-        if (deviceId == null || deviceId.isEmpty()) {
-            notificationEventAdapter.setItems(new ArrayList<>());
-            return;
-        }
-        // Load all events, then for each check if user is on waitlist (no collection-group query needed)
-        eventController.getAllEvents(
-            events -> {
-                if (events == null || events.isEmpty()) {
-                    notificationEventAdapter.setItems(new ArrayList<>());
-                    return;
-                }
-                List<NotificationEventAdapter.Item> items = new ArrayList<>();
-                java.util.concurrent.atomic.AtomicInteger pending = new java.util.concurrent.atomic.AtomicInteger(events.size());
-                for (Event event : events) {
-                    if (event == null || event.getEventId() == null) {
-                        if (pending.decrementAndGet() == 0) finishLoadingNotificationEvents(items);
-                        continue;
-                    }
-                    String eventId = event.getEventId();
-                    waitingListDB.getActiveRegistrationForEvent(eventId, deviceId,
-                        reg -> {
-                            if (reg != null) {
-                                String name = event.getName() != null ? event.getName() : "Event";
-                                boolean enabled = reg.isNotificationsAllowed();
-                                synchronized (items) {
-                                    items.add(new NotificationEventAdapter.Item(eventId, name, enabled));
-                                }
-                            }
-                            if (pending.decrementAndGet() == 0) finishLoadingNotificationEvents(items);
-                        },
-                        e -> {
-                            if (pending.decrementAndGet() == 0) finishLoadingNotificationEvents(items);
-                        });
-                }
-            },
-            e -> notificationEventAdapter.setItems(new ArrayList<>()));
-    }
-
-    private void finishLoadingNotificationEvents(List<NotificationEventAdapter.Item> items) {
-        runOnUiThread(() -> {
-            synchronized (items) {
-                Collections.sort(items, (a, b) -> a.eventName.compareToIgnoreCase(b.eventName));
-            }
-            notificationEventAdapter.setItems(items);
-        });
-    }
-
-    /** Turn notifications on or off for every event the user has joined. UI updates immediately; Firestore updates in background. */
-    private void setNotificationsAllowedForAllJoinedEvents(boolean allowed) {
-        if (currentEntrant == null) return;
-        String deviceId = currentEntrant.getDeviceId();
-        if (deviceId == null || deviceId.isEmpty()) return;
-
-        List<String> eventIds = notificationEventAdapter.getEventIds();
-        if (eventIds.isEmpty()) return;
-
-        // Update UI immediately so the switch and per-event toggles feel instant
-        notificationEventAdapter.setAllEnabled(allowed);
-
-        // Persist to Firestore in background (no reload)
-        java.util.concurrent.atomic.AtomicInteger pending = new java.util.concurrent.atomic.AtomicInteger(eventIds.size());
-        for (String eventId : eventIds) {
-            waitingListDB.updateNotificationsAllowed(eventId, deviceId, allowed,
-                    v -> { if (pending.decrementAndGet() == 0) { /* all done */ } },
-                    e -> {
-                        if (pending.decrementAndGet() == 0) { /* all done */ }
-                        runOnUiThread(() -> Toast.makeText(this, "Some notification updates failed", Toast.LENGTH_SHORT).show());
-                        runOnUiThread(this::loadNotificationEvents);
-                    });
-        }
     }
 
     private void switchToEditMode() {
@@ -276,22 +168,21 @@ public class AccountSettingsActivity extends AppCompatActivity {
         tvName.setText(currentEntrant.getName());
         tvEmail.setText(currentEntrant.getEmail());
         tvPhone.setText(currentEntrant.getPhone() != null && !currentEntrant.getPhone().isEmpty() ? currentEntrant.getPhone() : "Not provided");
-        updateProfileImageUI(profileImage, profileInitials);
+        updateProfileImageUI();
     }
 
-    private void updateProfileImageUI(ImageView imageView, TextView initialsView) {
+    private void updateProfileImageUI() {
         String url = currentEntrant.getProfilePictureUrl();
         if (url != null && !url.isEmpty()) {
-            imageView.setVisibility(View.VISIBLE);
-            initialsView.setVisibility(View.GONE);
-            imageView.setImageDrawable(null);
-            imageView.setColorFilter(null);
-            Picasso.get().load(url).into(imageView);
+            Glide.with(this)
+                    .load(url)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .circleCrop()
+                    .placeholder(R.drawable.ic_default_avatar)
+                    .into(profileImage);
         } else {
-            imageView.setVisibility(View.VISIBLE);
-            initialsView.setVisibility(View.GONE);
-            imageView.setImageResource(R.drawable.ic_avatar_person);
-            imageView.setColorFilter(ContextCompat.getColor(this, android.R.color.white));
+            profileImage.setImageResource(R.drawable.ic_default_avatar);
+            profileImage.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
         }
     }
 
@@ -307,36 +198,71 @@ public class AccountSettingsActivity extends AppCompatActivity {
                     finish();
                 },
                 e -> Toast.makeText(this, "Failed to delete profile", Toast.LENGTH_SHORT).show()),
-            e -> Toast.makeText(this, "Failed to remove from waitlists", Toast.LENGTH_SHORT).show());
+            e -> Toast.makeText(this, "Failed to remove from waitlists: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
     private void uploadImage(Uri uri) {
+        Toast.makeText(this, "Uploading profile picture…", Toast.LENGTH_SHORT).show();
+        final String oldUrl = currentEntrant.getProfilePictureUrl();
         imageDB.uploadProfileImage(uri, url -> {
             currentEntrant.setProfilePictureUrl(url);
-            updateProfileImageUI(profileImage, profileInitials);
+            entrantDB.saveEntrant(currentEntrant);
+            profileDB.saveProfile(currentEntrant,
+                    unused -> {
+                        updateProfileImageUI();
+                        Toast.makeText(this, "Profile picture updated", Toast.LENGTH_SHORT).show();
+                        if (oldUrl != null && !oldUrl.isEmpty()) {
+                            new ImageDB().deleteImageByUrl(oldUrl, v -> {}, err -> {});
+                        }
+                    },
+                    err -> {
+                        updateProfileImageUI();
+                        Toast.makeText(this, "Saved locally; cloud update failed", Toast.LENGTH_LONG).show();
+                    });
         }, e -> Toast.makeText(this, "Upload failed", Toast.LENGTH_SHORT).show());
     }
 
     private void setupBottomNavigation() {
-        findViewById(R.id.nav_events).setOnClickListener(v -> {
-            startActivity(new Intent(this, EventListActivity.class));
-            finish();
-        });
-        
-        findViewById(R.id.nav_notifications).setOnClickListener(v -> {
-            startActivity(new Intent(this, NotificationsActivity.class));
-        });
+        android.widget.FrameLayout navContainer = findViewById(R.id.nav_container);
+        boolean fromOrganizer = getIntent().getBooleanExtra("fromOrganizer", false);
+        int layoutRes = fromOrganizer ? R.layout.partial_bottom_nav_organizer : R.layout.partial_bottom_nav;
+        android.view.LayoutInflater.from(this).inflate(layoutRes, navContainer, true);
 
-        findViewById(R.id.nav_my_events).setOnClickListener(v -> {
-        });
-
-        findViewById(R.id.nav_qr).setOnClickListener(v -> {
-            startActivity(new Intent(this, QRScanActivity.class));
-        });
-
-        ImageView ivAccount = findViewById(R.id.iv_nav_account);
-        TextView tvAccount = findViewById(R.id.tv_nav_account);
-        ivAccount.setColorFilter(getResources().getColor(R.color.user_green));
-        tvAccount.setTextColor(getResources().getColor(R.color.user_green));
+        if (fromOrganizer) {
+            findViewById(R.id.nav_dashboard).setOnClickListener(v ->
+                    startActivity(new Intent(this, OrganizerActivity.class)));
+            findViewById(R.id.nav_create).setOnClickListener(v ->
+                    startActivity(new Intent(this, EventCreateActivity.class)));
+            findViewById(R.id.nav_my_events).setOnClickListener(v -> {
+                startActivity(new Intent(this, OrganizerActivity.class));
+                finish();
+            });
+            findViewById(R.id.nav_notifications).setOnClickListener(v ->
+                    startActivity(new Intent(this, NotificationsActivity.class)
+                            .putExtra("fromOrganizer", true)));
+            ImageView iv = findViewById(R.id.iv_nav_account);
+            TextView tv = findViewById(R.id.tv_nav_account);
+            if (iv != null) iv.setColorFilter(getResources().getColor(R.color.organizer_blue));
+            if (tv != null) tv.setTextColor(getResources().getColor(R.color.organizer_blue));
+        } else {
+            findViewById(R.id.nav_events).setOnClickListener(v -> {
+                startActivity(new Intent(this, EventListActivity.class));
+                finish();
+            });
+            findViewById(R.id.nav_notifications).setOnClickListener(v -> {
+                startActivity(new Intent(this, NotificationsActivity.class));
+            });
+            findViewById(R.id.nav_my_events).setOnClickListener(v -> {
+                startActivity(new Intent(this, EventHistoryActivity.class));
+                finish();
+            });
+            findViewById(R.id.nav_qr).setOnClickListener(v -> {
+                startActivity(new Intent(this, QRScanActivity.class));
+            });
+            ImageView ivAccount = findViewById(R.id.iv_nav_account);
+            TextView tvAccount = findViewById(R.id.tv_nav_account);
+            if (ivAccount != null) ivAccount.setColorFilter(getResources().getColor(R.color.user_green));
+            if (tvAccount != null) tvAccount.setTextColor(getResources().getColor(R.color.user_green));
+        }
     }
 }

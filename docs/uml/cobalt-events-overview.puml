@@ -6,6 +6,10 @@ skinparam shadowing false
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
 skinparam defaultTextAlignment left
+'
+' Higher-resolution export settings
+skinparam dpi 300
+scale 1.6
 
 ' ------------------------------------------------------------------------------
 ' Legend
@@ -43,10 +47,12 @@ package "com.example.cobaltevents.model" as model {
   }
 
   class WaitingList {
+    +id: String
     +eventId: String
     +deviceId: String
     +status: String
     +registeredAt: Timestamp
+    +note: String
     +numParticipants: int
     +name: String
     +email: String
@@ -55,8 +61,6 @@ package "com.example.cobaltevents.model" as model {
     +notificationsAllowed: boolean
     --
     +STATUS_PENDING
-    +STATUS_ACCEPTED
-    +STATUS_REJECTED
     +STATUS_SELECTED
     +STATUS_NOT_SELECTED
     +STATUS_CANCELLED
@@ -101,9 +105,7 @@ package "com.example.cobaltevents.model" as model {
     +organizerEnabled: Boolean
   }
 
-  class Organizer {
-    ..stub..
-  }
+  class Organizer
 }
 
 package "com.example.cobaltevents.db" as db {
@@ -193,7 +195,7 @@ package "com.example.cobaltevents.controller" as ctl {
     +acceptInvitation(deviceId, eventId, onSuccess, onFailure)
     +declineInvitation(deviceId, eventId, onSuccess, onFailure)
     --
-    ..drawReplacement() updates waitlist to SELECTED; event-specific\n   notification sending removed per requirements..
+    ..drawReplacement() updates waitlist to SELECTED; event-specific notification sending removed..
   }
   class NotificationController {
     +createNotificationChannel(context)
@@ -211,8 +213,8 @@ package "com.example.cobaltevents.controller" as ctl {
   class ImageController {
     +uploadPoster(imageUri, event, onSuccess, onFailure)
   }
-  class OrganizerController { ..stub.. }
-  class GeolocationController { ..stub.. }
+  class OrganizerController
+  class GeolocationController
 }
 
 package "com.example.cobaltevents.ui" as ui {

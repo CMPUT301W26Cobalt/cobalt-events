@@ -111,6 +111,31 @@ public class WaitingListDB {
                 .addOnFailureListener(onFailure);
     }
 
+    /**
+     * Fetch a registration document for the given event/device regardless of status.
+     * Returns the WaitingList object if the document exists, otherwise null.
+     */
+    public void getRegistrationForEventAnyStatus(String eventId,
+                                                 String deviceId,
+                                                 OnSuccessListener<WaitingList> onSuccess,
+                                                 OnFailureListener onFailure) {
+        db.collection(COLLECTION_WAITLISTS)
+                .document(eventId)
+                .collection(SUBCOLLECTION_ENTRIES)
+                .document(deviceId)
+                .get()
+                .addOnSuccessListener(docSnapshot -> {
+                    if (docSnapshot == null || !docSnapshot.exists()) {
+                        onSuccess.onSuccess(null);
+                        return;
+                    }
+                    WaitingList reg = docSnapshot.toObject(WaitingList.class);
+                    if (reg != null) reg.setEventId(eventId);
+                    onSuccess.onSuccess(reg);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
     public void updateStatus(String eventId, String registrationId, String status, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
         db.collection(COLLECTION_WAITLISTS)
                 .document(eventId)
@@ -163,19 +188,33 @@ public class WaitingListDB {
                 .addOnFailureListener(onFailure);
     }
 
-    public void removeUserFromAllWaitlists(String deviceId, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
-        db.collectionGroup(SUBCOLLECTION_ENTRIES)
-                .whereEqualTo("deviceId", deviceId)
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    if (querySnapshot.isEmpty()) {
+    /**
+     * Removes the user's waitlist entry from every event by scanning all events
+     * and deleting the per-event entry doc directly.
+     * This avoids the collectionGroup index requirement.
+     */
+    public void removeUserFromAllWaitlists(String deviceId,
+                                           OnSuccessListener<Void> onSuccess,
+                                           OnFailureListener onFailure) {
+        db.collection("events").get()
+                .addOnSuccessListener(eventSnapshot -> {
+                    if (eventSnapshot.isEmpty()) {
                         onSuccess.onSuccess(null);
                         return;
                     }
-                    AtomicInteger pending = new AtomicInteger(querySnapshot.size());
+                    List<String> eventIds = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : eventSnapshot) {
+                        eventIds.add(doc.getId());
+                    }
+                    AtomicInteger pending = new AtomicInteger(eventIds.size());
                     AtomicReference<Exception> firstError = new AtomicReference<>(null);
-                    for (QueryDocumentSnapshot doc : querySnapshot) {
-                        doc.getReference().delete()
+
+                    for (String eventId : eventIds) {
+                        db.collection(COLLECTION_WAITLISTS)
+                                .document(eventId)
+                                .collection(SUBCOLLECTION_ENTRIES)
+                                .document(deviceId)
+                                .delete()
                                 .addOnSuccessListener(v -> {
                                     if (pending.decrementAndGet() == 0) {
                                         if (firstError.get() != null) {
@@ -188,7 +227,7 @@ public class WaitingListDB {
                                 .addOnFailureListener(e -> {
                                     firstError.compareAndSet(null, e);
                                     if (pending.decrementAndGet() == 0) {
-                                        onFailure.onFailure(firstError.get() != null ? firstError.get() : e);
+                                        onFailure.onFailure(firstError.get());
                                     }
                                 });
                     }
@@ -232,6 +271,22 @@ public class WaitingListDB {
                         if (pending.decrementAndGet() == 0) onSuccess.onSuccess(result);
                     });
         }
+    }
+
+    public void saveLocation(String eventId, String deviceId,
+                             double latitude, double longitude,
+                             OnSuccessListener<Void> onSuccess,
+                             OnFailureListener onFailure) {
+        java.util.Map<String, Object> update = new java.util.HashMap<>();
+        update.put("latitude", latitude);
+        update.put("longitude", longitude);
+        db.collection(COLLECTION_WAITLISTS)
+                .document(eventId)
+                .collection(SUBCOLLECTION_ENTRIES)
+                .document(deviceId)
+                .update(update)
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
     }
 
     public void getWaitlistInfoForDevice(String deviceId,
@@ -279,10 +334,6 @@ public class WaitingListDB {
 
     private static boolean isEntryActive(String status) {
         if (status == null) return true;
-        // Active entries: still participating in the flow
-        // Pending → awaiting draw/response
-        // Selected → invited, awaiting response
-        // Enrolled → accepted and enrolled (still an active participant)
         return WaitingList.STATUS_PENDING.equals(status)
                 || WaitingList.STATUS_SELECTED.equals(status)
                 || WaitingList.STATUS_ENROLLED.equals(status);

@@ -11,6 +11,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.db.EntrantDB;
@@ -22,6 +23,8 @@ public class NotificationsActivity extends AppCompatActivity {
     private NotificationDB notificationDB;
     private NotificationListAdapter adapter;
     private String deviceId;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private TextView tvEmpty;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +38,14 @@ public class NotificationsActivity extends AppCompatActivity {
         recycler.setLayoutManager(new LinearLayoutManager(this));
         adapter = new NotificationListAdapter();
         recycler.setAdapter(adapter);
+
+        tvEmpty = findViewById(R.id.tv_empty_notifications);
+
+        swipeRefreshLayout = findViewById(R.id.swipe_refresh_notifications);
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setOnRefreshListener(this::loadNotifications);
+            swipeRefreshLayout.setColorSchemeColors(getResources().getColor(R.color.user_green));
+        }
 
         setupBottomNavigation();
     }
@@ -50,22 +61,25 @@ public class NotificationsActivity extends AppCompatActivity {
     private void loadNotifications() {
         if (deviceId == null || deviceId.isEmpty()) {
             adapter.setItems(new java.util.ArrayList<>());
+            if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
             return;
         }
         notificationDB.getNotificationsForRecipient(deviceId,
             list -> {
                 if (list == null) list = new java.util.ArrayList<>();
                 adapter.setItems(list);
+                if (tvEmpty != null) tvEmpty.setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
+                if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
             },
             e -> {
                 Log.e("NotificationsActivity", "Load notifications failed", e);
                 String msg = e.getMessage() != null ? e.getMessage() : "Failed to load notifications";
                 Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
                 adapter.setItems(new java.util.ArrayList<>());
+                if (tvEmpty != null) tvEmpty.setVisibility(View.VISIBLE);
+                if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
             });
     }
-
-    // No event-specific actions (accept/decline); notifications are informational only.
 
     private void setupBottomNavigation() {
         findViewById(R.id.nav_events).setOnClickListener(v -> {

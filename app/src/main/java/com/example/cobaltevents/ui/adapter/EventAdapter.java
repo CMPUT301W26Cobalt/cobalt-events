@@ -28,13 +28,9 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         void onEventClick(Event event, boolean isJoined);
     }
 
-    public interface OnNotificationsToggleListener {
-        void onNotificationsToggle(String eventId, String deviceId, boolean notificationsAllowed);
-    }
 
     private List<Event> events;
     private final OnEventClickListener listener;
-    private OnNotificationsToggleListener notificationsToggleListener;
     private final Set<String> expandedIds = new HashSet<>();
     private Map<String, WaitingList> activeRegistrationsByEventId;
     private Map<String, Integer> waitlistCountByEventId;
@@ -71,9 +67,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         this.deviceId = deviceId;
     }
 
-    public void setOnNotificationsToggleListener(OnNotificationsToggleListener listener) {
-        this.notificationsToggleListener = listener;
-    }
 
     /** Call after updating notificationsAllowed in Firestore so the card reflects the new value. */
     public void updateNotificationsAllowedForEvent(String eventId, boolean enabled) {
@@ -129,24 +122,36 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         Timestamp now = Timestamp.now();
         boolean registrationClosed = event.getRegistrationClose() != null
                 && event.getRegistrationClose().compareTo(now) < 0;
-        boolean registrationNotOpen = event.getRegistrationOpen() != null
-                && event.getRegistrationOpen().compareTo(now) > 0;
+        boolean upcoming = event.getRegistrationOpen() != null
+                && event.getRegistrationOpen().compareTo(now) > 0
+                && event.getEventDate() != null
+                && event.getEventDate().compareTo(now) > 0;
+        int capacity = event.getWaitingListCapacity();
+        boolean full = !isJoined
+                && capacity > 0
+                && count != null
+                && count >= capacity;
 
         if (registrationClosed) {
             holder.btnJoin.setText("REGISTRATION CLOSED");
             holder.btnJoin.setAlpha(0.45f);
             holder.btnJoin.setEnabled(false);
-            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_primary_account);
-        } else if (registrationNotOpen) {
-            holder.btnJoin.setText(isJoined ? "LEAVE WAITLIST" : "JOIN WAITLIST");
-            holder.btnJoin.setAlpha(0.65f);
-            holder.btnJoin.setEnabled(true);
-            holder.btnJoin.setBackgroundResource(isJoined ? R.drawable.bg_button_red_pill : R.drawable.bg_button_primary_account);
+            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
+        } else if (upcoming) {
+            holder.btnJoin.setText("UPCOMING");
+            holder.btnJoin.setAlpha(0.45f);
+            holder.btnJoin.setEnabled(false);
+            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_upcoming);
+        } else if (full) {
+            holder.btnJoin.setText("WAITLIST FULL");
+            holder.btnJoin.setAlpha(0.45f);
+            holder.btnJoin.setEnabled(false);
+            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
         } else {
             holder.btnJoin.setText(isJoined ? "LEAVE WAITLIST" : "JOIN WAITLIST");
             holder.btnJoin.setAlpha(1.0f);
             holder.btnJoin.setEnabled(true);
-            holder.btnJoin.setBackgroundResource(isJoined ? R.drawable.bg_button_red_pill : R.drawable.bg_button_primary_account);
+            holder.btnJoin.setBackgroundResource(isJoined ? R.drawable.bg_button_red_pill : R.drawable.bg_button_join_solid);
         }
 
         holder.layoutExpandedDetails.setVisibility(isExpanded ? View.VISIBLE : View.GONE);
@@ -165,7 +170,19 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 holder.tvDetailTime.setText("TBD");
             }
 
-            holder.tvDetailLocation.setText(event.getLocation() != null ? event.getLocation() : "TBD");
+            String location = event.getLocation() != null ? event.getLocation() : "TBD";
+            holder.tvDetailLocation.setText(location);
+            holder.tvDetailLocation.setOnClickListener(v -> {
+                if (event.getLocation() != null && !event.getLocation().isEmpty()) {
+                    android.content.Intent intent = new android.content.Intent(
+                            v.getContext(), com.example.cobaltevents.ui.MapPreviewActivity.class);
+                    intent.putExtra(com.example.cobaltevents.ui.MapPreviewActivity.EXTRA_LOCATION,
+                            event.getLocation());
+                    intent.putExtra(com.example.cobaltevents.ui.MapPreviewActivity.EXTRA_EVENT_NAME,
+                            event.getName());
+                    v.getContext().startActivity(intent);
+                }
+            });
 
             holder.tvPrice.setText(formatPrice(event.getPrice()));
 
@@ -181,24 +198,12 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 holder.tvRegClose.setText("TBD");
             }
 
-            // Criteria text from event model
             String criteriaText = (event.getCriteria() != null && !event.getCriteria().isEmpty())
                     ? event.getCriteria()
                     : "No special criteria.";
             holder.tvCriteriaDescription.setText(criteriaText);
             holder.layoutGeoNote.setVisibility(View.GONE);
-            holder.layoutEventNotifications.setVisibility(isJoined ? View.VISIBLE : View.GONE);
-            if (isJoined) {
-                WaitingList reg = activeRegistrationsByEventId != null ? activeRegistrationsByEventId.get(event.getEventId()) : null;
-                boolean enabled = reg != null && reg.isNotificationsAllowed();
-                holder.switchEventNotifications.setOnCheckedChangeListener(null);
-                holder.switchEventNotifications.setChecked(enabled);
-                holder.switchEventNotifications.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                    if (notificationsToggleListener != null && deviceId != null && event.getEventId() != null) {
-                        notificationsToggleListener.onNotificationsToggle(event.getEventId(), deviceId, isChecked);
-                    }
-                });
-            }
+            holder.layoutEventNotifications.setVisibility(View.GONE);
         }
 
         View.OnClickListener toggleExpand = v -> {
