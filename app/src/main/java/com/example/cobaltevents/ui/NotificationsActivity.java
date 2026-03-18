@@ -24,6 +24,7 @@ public class NotificationsActivity extends AppCompatActivity {
     private NotificationListAdapter adapter;
     private String deviceId;
     private SwipeRefreshLayout swipeRefreshLayout;
+    private TextView tvEmpty;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,6 +38,8 @@ public class NotificationsActivity extends AppCompatActivity {
         recycler.setLayoutManager(new LinearLayoutManager(this));
         adapter = new NotificationListAdapter();
         recycler.setAdapter(adapter);
+
+        tvEmpty = findViewById(R.id.tv_empty_notifications);
 
         swipeRefreshLayout = findViewById(R.id.swipe_refresh_notifications);
         if (swipeRefreshLayout != null) {
@@ -65,6 +68,7 @@ public class NotificationsActivity extends AppCompatActivity {
             list -> {
                 if (list == null) list = new java.util.ArrayList<>();
                 adapter.setItems(list);
+                if (tvEmpty != null) tvEmpty.setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
                 if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
             },
             e -> {
@@ -72,6 +76,7 @@ public class NotificationsActivity extends AppCompatActivity {
                 String msg = e.getMessage() != null ? e.getMessage() : "Failed to load notifications";
                 Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
                 adapter.setItems(new java.util.ArrayList<>());
+                if (tvEmpty != null) tvEmpty.setVisibility(View.VISIBLE);
                 if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
             });
     }

@@ -25,7 +25,8 @@ import com.example.cobaltevents.db.ProfileDB;
 import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Entrant;
 import com.example.cobaltevents.model.WaitingList;
-import com.squareup.picasso.Picasso;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -180,7 +181,12 @@ public class AccountSettingsActivity extends AppCompatActivity {
         String url = currentEntrant.getProfilePictureUrl();
         if (url != null && !url.isEmpty()) {
             profileImage.clearColorFilter();
-            Picasso.get().load(url).into(profileImage);
+            Glide.with(this)
+                    .load(url)
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .placeholder(R.drawable.ic_avatar_person)
+                    .circleCrop()
+                    .into(profileImage);
         } else {
             profileImage.setImageResource(R.drawable.ic_avatar_person);
             profileImage.setColorFilter(ContextCompat.getColor(this, R.color.user_green));

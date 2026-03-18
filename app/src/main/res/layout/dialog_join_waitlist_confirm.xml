@@ -25,6 +25,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/dialog_join_waitlist_title"
                 android:textAlignment="center"
+                android:gravity="center"
                 android:textColor="@color/text_primary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
@@ -46,6 +47,7 @@
             android:layout_marginTop="4dp"
             android:text="@string/dialog_join_waitlist_subtitle"
             android:textAlignment="center"
+            android:gravity="center"
             android:textColor="@color/text_secondary"
             android:textSize="13sp" />
 
@@ -62,19 +64,21 @@
                 android:layout_height="wrap_content"
                 android:text="@string/dialog_join_waitlist_guidelines_title"
                 android:textAlignment="center"
+                android:gravity="center"
                 android:textColor="@color/header_teal"
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/dialog_join_waitlist_guidelines_body"
-                android:textAlignment="viewStart"
-                android:textColor="@color/header_teal"
-                android:textSize="12sp"
-                android:lineSpacingExtra="2dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/dialog_join_waitlist_guidelines_body"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:textColor="@color/header_teal"
+            android:textSize="12sp"
+            android:lineSpacingExtra="2dp" />
 
         </LinearLayout>
 
@@ -85,6 +89,7 @@
             android:layout_marginTop="10dp"
             android:text="@string/dialog_join_waitlist_disclaimer"
             android:textAlignment="center"
+            android:gravity="center"
             android:textColor="@color/grey_medium"
             android:textSize="12sp"
             android:textStyle="italic" />

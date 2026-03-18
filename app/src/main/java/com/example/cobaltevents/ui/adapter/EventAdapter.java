@@ -122,19 +122,21 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         Timestamp now = Timestamp.now();
         boolean registrationClosed = event.getRegistrationClose() != null
                 && event.getRegistrationClose().compareTo(now) < 0;
-        boolean registrationNotOpen = event.getRegistrationOpen() != null
-                && event.getRegistrationOpen().compareTo(now) > 0;
+        boolean upcoming = event.getRegistrationOpen() != null
+                && event.getRegistrationOpen().compareTo(now) > 0
+                && event.getEventDate() != null
+                && event.getEventDate().compareTo(now) > 0;
 
         if (registrationClosed) {
             holder.btnJoin.setText("REGISTRATION CLOSED");
             holder.btnJoin.setAlpha(0.45f);
             holder.btnJoin.setEnabled(false);
             holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
-        } else if (registrationNotOpen) {
-            holder.btnJoin.setText(isJoined ? "LEAVE WAITLIST" : "JOIN WAITLIST");
-            holder.btnJoin.setAlpha(0.65f);
-            holder.btnJoin.setEnabled(true);
-            holder.btnJoin.setBackgroundResource(isJoined ? R.drawable.bg_button_red_pill : R.drawable.bg_button_join_solid);
+        } else if (upcoming) {
+            holder.btnJoin.setText("UPCOMING");
+            holder.btnJoin.setAlpha(0.45f);
+            holder.btnJoin.setEnabled(false);
+            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_upcoming);
         } else {
             holder.btnJoin.setText(isJoined ? "LEAVE WAITLIST" : "JOIN WAITLIST");
             holder.btnJoin.setAlpha(1.0f);
@@ -158,7 +160,17 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 holder.tvDetailTime.setText("TBD");
             }
 
-            holder.tvDetailLocation.setText(event.getLocation() != null ? event.getLocation() : "TBD");
+            String location = event.getLocation() != null ? event.getLocation() : "TBD";
+            holder.tvDetailLocation.setText(location);
+            holder.tvDetailLocation.setOnClickListener(v -> {
+                if (event.getLocation() != null && !event.getLocation().isEmpty()) {
+                    android.net.Uri uri = android.net.Uri.parse(
+                            "https://maps.google.com/?q=" + android.net.Uri.encode(event.getLocation()));
+                    android.content.Intent mapIntent = new android.content.Intent(
+                            android.content.Intent.ACTION_VIEW, uri);
+                    v.getContext().startActivity(mapIntent);
+                }
+            });
 
             holder.tvPrice.setText(formatPrice(event.getPrice()));
 
