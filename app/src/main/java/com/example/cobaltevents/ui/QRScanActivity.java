@@ -55,7 +55,6 @@ public class QRScanActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_qr_scan);
-        // UI only for now; functionality will be added later.
         eventDB = new EventDB();
         waitingListDB = new WaitingListDB();
         entrantDB = new EntrantDB(this);
@@ -106,7 +105,6 @@ public class QRScanActivity extends AppCompatActivity {
 
     private void showEventPopup(Event event) {
         View content = LayoutInflater.from(this).inflate(R.layout.dialog_event_card, null, false);
-        // Populate fields similarly to EventAdapter, but show details expanded and hide actions
         TextView tvName = content.findViewById(R.id.tv_event_name);
         TextView tvCategory = content.findViewById(R.id.tv_category_tag);
         TextView tvWaitlist = content.findViewById(R.id.tv_waitlist_count);
@@ -173,7 +171,6 @@ public class QRScanActivity extends AppCompatActivity {
         }
         btnCloseInline.setOnClickListener(v -> dialog.dismiss());
 
-        // Remove inner (included) CardView elevation/margins so only the outer card provides corners
         View innerCardMaybe = content.findViewById(R.id.include_event_card);
         if (innerCardMaybe instanceof androidx.cardview.widget.CardView) {
             androidx.cardview.widget.CardView innerCard = (androidx.cardview.widget.CardView) innerCardMaybe;
@@ -188,7 +185,6 @@ public class QRScanActivity extends AppCompatActivity {
             }
         }
 
-        // Restrict dialog scrollable height to ~65% of screen
         final View scroll = content.findViewById(R.id.scroll_event_dialog);
         if (scroll != null) {
             scroll.post(() -> {
@@ -202,7 +198,6 @@ public class QRScanActivity extends AppCompatActivity {
             });
         }
 
-        // Determine join/leave state and wire the button
         if (event.getEventId() != null && deviceId != null) {
             waitingListDB.getActiveRegistrationForEvent(event.getEventId(), deviceId,
                     reg -> {
@@ -350,13 +345,11 @@ public class QRScanActivity extends AppCompatActivity {
             finish();
         });
 
-        // Dim other tabs to match active state behavior
         int inactive = ContextCompat.getColor(this, R.color.grey_nav_inactive);
         tintNavIconAndText(R.id.iv_nav_events, R.id.tv_nav_events, inactive);
         tintNavIconAndText(R.id.iv_nav_my_events, R.id.tv_nav_my_events, inactive);
         tintNavIconAndText(R.id.iv_nav_notifications, R.id.tv_nav_notifications, inactive);
         tintNavIconAndText(R.id.iv_nav_account, R.id.tv_nav_account, inactive);
-        // Center QR stays the green pill by design
     }
 
     private void tintNavIconAndText(int iconId, int textId, int color) {

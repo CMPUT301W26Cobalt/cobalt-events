@@ -81,8 +81,6 @@ public class NotificationsActivity extends AppCompatActivity {
             });
     }
 
-    // No event-specific actions (accept/decline); notifications are informational only.
-
     private void setupBottomNavigation() {
         findViewById(R.id.nav_events).setOnClickListener(v -> {
             startActivity(new Intent(this, EventListActivity.class));

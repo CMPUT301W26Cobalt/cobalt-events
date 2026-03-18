@@ -51,7 +51,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
     private WaitingListDB waitingListDB;
     private Entrant currentEntrant;
     private SharedPreferences notificationPrefs;
-    // Removed event-specific notifications; global switch controls all
+
 
     private final ActivityResultLauncher<String> getContent = registerForActivityResult(
             new ActivityResultContracts.GetContent(),
@@ -108,8 +108,6 @@ public class AccountSettingsActivity extends AppCompatActivity {
         btnDeleteConfirm.setOnClickListener(v -> performAccountDeletion());
         btnChangePicture.setOnClickListener(v -> getContent.launch("image/*"));
 
-        // Event-specific notification UI removed
-
         androidx.appcompat.widget.SwitchCompat switchGeneral = findViewById(R.id.switch_general);
         androidx.appcompat.widget.SwitchCompat switchEventUpdates = findViewById(R.id.switch_event_updates);
         applySwitchTints(switchGeneral);
@@ -120,8 +118,6 @@ public class AccountSettingsActivity extends AppCompatActivity {
         switchEventUpdates.setOnCheckedChangeListener((v, isChecked) ->
                 notificationPrefs.edit().putBoolean("notification_event_updates", isChecked).apply());
 
-        // No per-event notifications to load
-        
         setupBottomNavigation();
     }
 
@@ -135,8 +131,6 @@ public class AccountSettingsActivity extends AppCompatActivity {
         switchCompat.setThumbTintList(ContextCompat.getColorStateList(this, R.color.thumb_white));
         switchCompat.setTrackTintList(ContextCompat.getColorStateList(this, R.color.switch_track_selector));
     }
-
-    // Removed per-event notifications plumbing; global toggle persists preference only.
 
     private void switchToEditMode() {
         editName.setText(currentEntrant.getName());
@@ -235,7 +229,6 @@ public class AccountSettingsActivity extends AppCompatActivity {
         android.view.LayoutInflater.from(this).inflate(layoutRes, navContainer, true);
 
         if (fromOrganizer) {
-            // Organizer nav wiring
             findViewById(R.id.nav_dashboard).setOnClickListener(v ->
                     startActivity(new Intent(this, OrganizerActivity.class)));
             findViewById(R.id.nav_create).setOnClickListener(v ->
@@ -247,13 +240,11 @@ public class AccountSettingsActivity extends AppCompatActivity {
             findViewById(R.id.nav_notifications).setOnClickListener(v ->
                     startActivity(new Intent(this, NotificationsActivity.class)
                             .putExtra("fromOrganizer", true)));
-            // Highlight account
             ImageView iv = findViewById(R.id.iv_nav_account);
             TextView tv = findViewById(R.id.tv_nav_account);
             if (iv != null) iv.setColorFilter(getResources().getColor(R.color.organizer_blue));
             if (tv != null) tv.setTextColor(getResources().getColor(R.color.organizer_blue));
         } else {
-            // User nav wiring
             findViewById(R.id.nav_events).setOnClickListener(v -> {
                 startActivity(new Intent(this, EventListActivity.class));
                 finish();

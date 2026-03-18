@@ -32,7 +32,6 @@ public class GeolocationController {
     private static final long LOCATION_TIMEOUT_MS = 10_000L;
     private static final String TAG = "GeolocationController";
 
-    // Fetched once on app startup — reused for all geo checks
     private static Location appLocation = null;
 
     private final WaitingListDB waitingListDB;
@@ -59,9 +58,6 @@ public class GeolocationController {
                 == PackageManager.PERMISSION_GRANTED;
     }
 
-    // -------------------------------------------------------------------------
-    // Called once on app startup — fetches and stores location for entire session
-    // -------------------------------------------------------------------------
     public void fetchLocationOnStartup(Context context) {
         if (!hasLocationPermission(context)) return;
         getCurrentDeviceLocation(context, location -> {
@@ -72,14 +68,10 @@ public class GeolocationController {
         });
     }
 
-    // -------------------------------------------------------------------------
-    // Main geo-check: uses startup location (instant) + geocodes event address
-    // -------------------------------------------------------------------------
     public void checkDistanceForEvent(Context context, Event event, GeoJoinCallback callback) {
         Location userLoc = appLocation;
 
         if (userLoc == null) {
-            // Startup location not ready yet — fetch now as fallback
             getCurrentDeviceLocation(context, freshLoc -> {
                 if (freshLoc == null) {
                     callback.onError("Could not get your location. Make sure location is enabled.");
@@ -131,9 +123,6 @@ public class GeolocationController {
         });
     }
 
-    // -------------------------------------------------------------------------
-    // Location fetch via LocationManager — works on all devices and emulators
-    // -------------------------------------------------------------------------
     @SuppressWarnings("MissingPermission")
     public void getCurrentDeviceLocation(Context context, OnLocationResult cb) {
         if (!hasLocationPermission(context)) { cb.onResult(null); return; }
@@ -141,7 +130,6 @@ public class GeolocationController {
         LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
         if (lm == null) { cb.onResult(null); return; }
 
-        // Try last known first (instant)
         Location best = null;
         for (String p : Arrays.asList(
                 LocationManager.GPS_PROVIDER,
@@ -154,7 +142,6 @@ public class GeolocationController {
         }
         if (best != null) { cb.onResult(best); return; }
 
-        // Request live fix from all providers
         Handler handler = new Handler(Looper.getMainLooper());
         final boolean[] delivered = {false};
 
@@ -192,9 +179,6 @@ public class GeolocationController {
         }, LOCATION_TIMEOUT_MS);
     }
 
-    // -------------------------------------------------------------------------
-    // Save user lat/lng to the waitlist entry in Firestore
-    // -------------------------------------------------------------------------
     public void recordLocationForEvent(Context context, String deviceId, String eventId,
                                        Location userLocation,
                                        OnSuccessListener<Void> onSuccess,

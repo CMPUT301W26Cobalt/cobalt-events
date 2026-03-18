@@ -128,13 +128,11 @@ public class EventHistoryActivity extends AppCompatActivity {
                 updateTabStyles();
             });
         }
-        // Ensure initial style selection
         updateTabStyles();
     }
     
     private void updateTabStyles() {
         if (tabUpcoming == null || tabPast == null) return;
-        // Active tab uses solid green pill with white text, inactive are white with green text
         int white = getResources().getColor(android.R.color.white);
         int green = getResources().getColor(R.color.user_green);
         
@@ -159,7 +157,6 @@ public class EventHistoryActivity extends AppCompatActivity {
         tvEmpty.setVisibility(View.GONE);
         allHistory.clear();
 
-        // Avoid collection-group index requirement by scanning events and checking per-event doc.
         eventController.getAllEvents(events -> {
             if (events == null || events.isEmpty()) {
                 progressBar.setVisibility(View.GONE);
@@ -217,7 +214,6 @@ public class EventHistoryActivity extends AppCompatActivity {
                     break;
             }
         }
-        // Sort by start date DESC (most recent to oldest)
         Collections.sort(filtered, new Comparator<EventHistory>() {
             @Override
             public int compare(EventHistory a, EventHistory b) {

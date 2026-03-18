@@ -188,13 +188,11 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 holder.tvRegClose.setText("TBD");
             }
 
-            // Criteria text from event model
             String criteriaText = (event.getCriteria() != null && !event.getCriteria().isEmpty())
                     ? event.getCriteria()
                     : "No special criteria.";
             holder.tvCriteriaDescription.setText(criteriaText);
             holder.layoutGeoNote.setVisibility(View.GONE);
-            // Event-specific notifications removed
             holder.layoutEventNotifications.setVisibility(View.GONE);
         }
 

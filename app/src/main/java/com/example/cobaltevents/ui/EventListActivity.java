@@ -75,7 +75,6 @@ public class EventListActivity extends AppCompatActivity {
     private final ActivityResultLauncher<String> locationPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
                 if (granted) {
-                    // Fetch startup location now that permission is granted
                     geolocationController.fetchLocationOnStartup(this);
                     if (pendingGeoJoinEvent != null) {
                         joinAndRecordLocation(pendingGeoJoinEvent);
@@ -106,7 +105,6 @@ public class EventListActivity extends AppCompatActivity {
         entrantDB = new EntrantDB(this);
         geolocationController = new GeolocationController();
 
-        // Fetch location immediately on startup so it's ready before user taps join
         if (geolocationController.hasLocationPermission(this)) {
             geolocationController.fetchLocationOnStartup(this);
         } else {
@@ -137,7 +135,6 @@ public class EventListActivity extends AppCompatActivity {
 
         findViewById(R.id.btn_filter).setOnClickListener(v -> showFilterDialog());
 
-        // Pull-to-refresh
         if (swipeRefreshLayout != null) {
             swipeRefreshLayout.setOnRefreshListener(this::loadEvents);
             swipeRefreshLayout.setColorSchemeColors(ContextCompat.getColor(this, R.color.user_green));
@@ -174,7 +171,6 @@ public class EventListActivity extends AppCompatActivity {
             applyFilters();
             return;
         }
-        // Load "am I on waitlist?" per event so we don't depend on collection-group index (getEntrantHistory can fail without it).
         java.util.concurrent.atomic.AtomicInteger pending = new java.util.concurrent.atomic.AtomicInteger(allEvents.size());
         for (Event event : allEvents) {
             if (event == null || event.getEventId() == null) {
