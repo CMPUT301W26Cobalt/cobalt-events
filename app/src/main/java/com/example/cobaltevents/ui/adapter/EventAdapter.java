@@ -164,11 +164,13 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.tvDetailLocation.setText(location);
             holder.tvDetailLocation.setOnClickListener(v -> {
                 if (event.getLocation() != null && !event.getLocation().isEmpty()) {
-                    android.net.Uri uri = android.net.Uri.parse(
-                            "https://maps.google.com/?q=" + android.net.Uri.encode(event.getLocation()));
-                    android.content.Intent mapIntent = new android.content.Intent(
-                            android.content.Intent.ACTION_VIEW, uri);
-                    v.getContext().startActivity(mapIntent);
+                    android.content.Intent intent = new android.content.Intent(
+                            v.getContext(), com.example.cobaltevents.ui.MapPreviewActivity.class);
+                    intent.putExtra(com.example.cobaltevents.ui.MapPreviewActivity.EXTRA_LOCATION,
+                            event.getLocation());
+                    intent.putExtra(com.example.cobaltevents.ui.MapPreviewActivity.EXTRA_EVENT_NAME,
+                            event.getName());
+                    v.getContext().startActivity(intent);
                 }
             });
 

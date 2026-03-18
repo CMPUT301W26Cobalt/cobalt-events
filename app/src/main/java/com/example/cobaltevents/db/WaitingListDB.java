@@ -188,19 +188,34 @@ public class WaitingListDB {
                 .addOnFailureListener(onFailure);
     }
 
-    public void removeUserFromAllWaitlists(String deviceId, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
-        db.collectionGroup(SUBCOLLECTION_ENTRIES)
-                .whereEqualTo("deviceId", deviceId)
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    if (querySnapshot.isEmpty()) {
+    /**
+     * Removes the user's waitlist entry from every event by scanning all events
+     * and deleting the per-event entry doc directly.
+     * This avoids the collectionGroup index requirement.
+     */
+    public void removeUserFromAllWaitlists(String deviceId,
+                                           OnSuccessListener<Void> onSuccess,
+                                           OnFailureListener onFailure) {
+        // Fetch all event IDs, then delete deviceId entry under each one
+        db.collection("events").get()
+                .addOnSuccessListener(eventSnapshot -> {
+                    if (eventSnapshot.isEmpty()) {
                         onSuccess.onSuccess(null);
                         return;
                     }
-                    AtomicInteger pending = new AtomicInteger(querySnapshot.size());
+                    List<String> eventIds = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : eventSnapshot) {
+                        eventIds.add(doc.getId());
+                    }
+                    AtomicInteger pending = new AtomicInteger(eventIds.size());
                     AtomicReference<Exception> firstError = new AtomicReference<>(null);
-                    for (QueryDocumentSnapshot doc : querySnapshot) {
-                        doc.getReference().delete()
+
+                    for (String eventId : eventIds) {
+                        db.collection(COLLECTION_WAITLISTS)
+                                .document(eventId)
+                                .collection(SUBCOLLECTION_ENTRIES)
+                                .document(deviceId)
+                                .delete()
                                 .addOnSuccessListener(v -> {
                                     if (pending.decrementAndGet() == 0) {
                                         if (firstError.get() != null) {
@@ -213,7 +228,7 @@ public class WaitingListDB {
                                 .addOnFailureListener(e -> {
                                     firstError.compareAndSet(null, e);
                                     if (pending.decrementAndGet() == 0) {
-                                        onFailure.onFailure(firstError.get() != null ? firstError.get() : e);
+                                        onFailure.onFailure(firstError.get());
                                     }
                                 });
                     }
@@ -257,6 +272,22 @@ public class WaitingListDB {
                         if (pending.decrementAndGet() == 0) onSuccess.onSuccess(result);
                     });
         }
+    }
+
+    public void saveLocation(String eventId, String deviceId,
+                             double latitude, double longitude,
+                             OnSuccessListener<Void> onSuccess,
+                             OnFailureListener onFailure) {
+        java.util.Map<String, Object> update = new java.util.HashMap<>();
+        update.put("latitude", latitude);
+        update.put("longitude", longitude);
+        db.collection(COLLECTION_WAITLISTS)
+                .document(eventId)
+                .collection(SUBCOLLECTION_ENTRIES)
+                .document(deviceId)
+                .update(update)
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
     }
 
     public void getWaitlistInfoForDevice(String deviceId,

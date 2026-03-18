@@ -45,7 +45,19 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
         EventHistory history = historyList.get(position);
         
         holder.tvEventName.setText(history.getEvent().getName());
-        holder.tvEventLocation.setText(history.getEvent().getLocation());
+
+        String location = history.getEvent().getLocation();
+        holder.tvEventLocation.setText(location);
+        if (location != null && !location.isEmpty()) {
+            holder.tvEventLocation.setOnClickListener(v -> {
+                android.content.Intent intent = new android.content.Intent(
+                        v.getContext(), com.example.cobaltevents.ui.MapPreviewActivity.class);
+                intent.putExtra(com.example.cobaltevents.ui.MapPreviewActivity.EXTRA_LOCATION, location);
+                intent.putExtra(com.example.cobaltevents.ui.MapPreviewActivity.EXTRA_EVENT_NAME,
+                        history.getEvent().getName());
+                v.getContext().startActivity(intent);
+            });
+        }
         
         if (history.getEvent().getEventDate() != null) {
             SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy", Locale.getDefault());

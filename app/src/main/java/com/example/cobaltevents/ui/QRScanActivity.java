@@ -1,6 +1,8 @@
 package com.example.cobaltevents.ui;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,10 +12,13 @@ import android.widget.TextView;
 import android.graphics.drawable.ColorDrawable;
 import android.view.ViewGroup;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.example.cobaltevents.R;
+import com.example.cobaltevents.controller.GeolocationController;
 import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.db.EntrantDB;
 import com.example.cobaltevents.db.WaitingListDB;
@@ -31,6 +36,20 @@ public class QRScanActivity extends AppCompatActivity {
     private EntrantDB entrantDB;
     private Entrant currentEntrant;
     private String deviceId;
+    private GeolocationController geolocationController;
+    private Event pendingGeoJoinEvent;
+    private TextView pendingGeoJoinBtn;
+    private final ActivityResultLauncher<String> locationPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted && pendingGeoJoinEvent != null) {
+                    joinAndRecordLocation(pendingGeoJoinEvent, pendingGeoJoinBtn);
+                } else if (!granted) {
+                    android.widget.Toast.makeText(this,
+                            "Location permission denied — cannot join this event.", android.widget.Toast.LENGTH_LONG).show();
+                }
+                pendingGeoJoinEvent = null;
+                pendingGeoJoinBtn = null;
+            });
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +61,7 @@ public class QRScanActivity extends AppCompatActivity {
         entrantDB = new EntrantDB(this);
         currentEntrant = entrantDB.getEntrant();
         deviceId = currentEntrant != null ? currentEntrant.getDeviceId() : null;
+        geolocationController = new GeolocationController();
         editEventCode = findViewById(R.id.edit_event_code);
         findViewById(R.id.btn_go_to_event).setOnClickListener(v -> onGoToEvent());
         findViewById(R.id.btn_simulate_qr).setOnClickListener(v -> onSimulate());
@@ -248,6 +268,51 @@ public class QRScanActivity extends AppCompatActivity {
             startActivity(new Intent(this, AccountSettingsActivity.class));
             return;
         }
+        if (event.isGeolocationRequired()) {
+            if (geolocationController.hasLocationPermission(this)) {
+                joinAndRecordLocation(event, btn);
+            } else {
+                pendingGeoJoinEvent = event;
+                pendingGeoJoinBtn = btn;
+                new androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Location Required")
+                        .setMessage("This event requires your location to be recorded when joining the waitlist.")
+                        .setPositiveButton("Allow", (d, w) ->
+                                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION))
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
+            return;
+        }
+        performJoinWaitlist(event, btn);
+    }
+
+    private void joinAndRecordLocation(Event event, TextView btn) {
+        geolocationController.checkDistanceForEvent(this, event,
+                new GeolocationController.GeoJoinCallback() {
+                    @Override
+                    public void onAllowed(android.location.Location userLocation) {
+                        performJoinWaitlist(event, btn);
+                        geolocationController.recordLocationForEvent(
+                                QRScanActivity.this, deviceId, event.getEventId(),
+                                userLocation, unused -> {}, e -> {});
+                    }
+                    @Override
+                    public void onBlocked(float distanceMeters) {
+                        int km = Math.round(distanceMeters / 1000f);
+                        android.widget.Toast.makeText(QRScanActivity.this,
+                                "You are " + km + "km away. Must be within 30km to join.",
+                                android.widget.Toast.LENGTH_LONG).show();
+                    }
+                    @Override
+                    public void onError(String message) {
+                        android.widget.Toast.makeText(QRScanActivity.this, message,
+                                android.widget.Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private void performJoinWaitlist(Event event, TextView btn) {
         WaitingList registration = new WaitingList(
                 event.getEventId(),
                 deviceId,

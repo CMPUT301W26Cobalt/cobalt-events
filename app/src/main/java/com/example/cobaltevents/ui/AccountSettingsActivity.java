@@ -180,16 +180,15 @@ public class AccountSettingsActivity extends AppCompatActivity {
     private void updateProfileImageUI() {
         String url = currentEntrant.getProfilePictureUrl();
         if (url != null && !url.isEmpty()) {
-            profileImage.clearColorFilter();
             Glide.with(this)
                     .load(url)
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .placeholder(R.drawable.ic_avatar_person)
                     .circleCrop()
+                    .placeholder(R.drawable.ic_default_avatar)
                     .into(profileImage);
         } else {
-            profileImage.setImageResource(R.drawable.ic_avatar_person);
-            profileImage.setColorFilter(ContextCompat.getColor(this, R.color.user_green));
+            profileImage.setImageResource(R.drawable.ic_default_avatar);
+            profileImage.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
         }
     }
 
@@ -205,7 +204,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
                     finish();
                 },
                 e -> Toast.makeText(this, "Failed to delete profile", Toast.LENGTH_SHORT).show()),
-            e -> Toast.makeText(this, "Failed to remove from waitlists", Toast.LENGTH_SHORT).show());
+            e -> Toast.makeText(this, "Failed to remove from waitlists: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
     private void uploadImage(Uri uri) {

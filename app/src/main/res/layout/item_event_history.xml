@@ -82,21 +82,19 @@
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
                     android:layout_marginTop="4dp">
-                    <ImageView
-                        android:layout_width="16dp"
-                        android:layout_height="16dp"
-                        android:src="@android:drawable/ic_menu_mylocation"
-                        android:tint="@color/muted_text_4A5565"/>
                     <TextView
                         android:id="@+id/tv_event_location"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:layout_marginStart="6dp"
-                        android:textColor="@color/muted_text_4A5565"
+                        android:textColor="@color/header_teal"
                         android:textSize="12sp"
                         android:ellipsize="end"
-                        android:maxLines="1"/>
+                        android:maxLines="1"
+                        android:drawableStart="@drawable/ic_map_pin"
+                        android:drawablePadding="4dp"
+                        android:clickable="true"
+                        android:focusable="true"/>
                 </LinearLayout>
             </LinearLayout>
 

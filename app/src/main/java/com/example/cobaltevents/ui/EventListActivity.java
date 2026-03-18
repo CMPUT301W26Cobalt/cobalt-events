@@ -1,7 +1,9 @@
 package com.example.cobaltevents.ui;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -18,6 +20,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
@@ -32,6 +36,7 @@ import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.WaitingList;
 import com.example.cobaltevents.model.Entrant;
+import com.example.cobaltevents.controller.GeolocationController;
 import com.example.cobaltevents.ui.adapter.EventAdapter;
 import com.google.firebase.Timestamp;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -65,6 +70,21 @@ public class EventListActivity extends AppCompatActivity {
     private EventController eventController;
     private WaitingListDB waitingListDB;
     private EntrantDB entrantDB;
+    private GeolocationController geolocationController;
+    private Event pendingGeoJoinEvent;
+    private final ActivityResultLauncher<String> locationPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
+                if (granted) {
+                    // Fetch startup location now that permission is granted
+                    geolocationController.fetchLocationOnStartup(this);
+                    if (pendingGeoJoinEvent != null) {
+                        joinAndRecordLocation(pendingGeoJoinEvent);
+                    }
+                } else {
+                    Toast.makeText(this, "Location permission denied — cannot join this event.", Toast.LENGTH_LONG).show();
+                }
+                pendingGeoJoinEvent = null;
+            });
     private final Map<String, WaitingList> activeRegistrationsByEventId = new HashMap<>();
     private final Map<String, Integer> waitlistCountByEventId = new HashMap<>();
 
@@ -84,6 +104,14 @@ public class EventListActivity extends AppCompatActivity {
         eventController = new EventController();
         waitingListDB = new WaitingListDB();
         entrantDB = new EntrantDB(this);
+        geolocationController = new GeolocationController();
+
+        // Fetch location immediately on startup so it's ready before user taps join
+        if (geolocationController.hasLocationPermission(this)) {
+            geolocationController.fetchLocationOnStartup(this);
+        } else {
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
 
         recyclerView = findViewById(R.id.recycler_events);
         progressBar = findViewById(R.id.progress_bar);
@@ -435,6 +463,50 @@ public class EventListActivity extends AppCompatActivity {
             startActivity(new Intent(this, AccountSettingsActivity.class));
             return;
         }
+        if (event.isGeolocationRequired()) {
+            if (geolocationController.hasLocationPermission(this)) {
+                joinAndRecordLocation(event);
+            } else {
+                pendingGeoJoinEvent = event;
+                new androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Location Required")
+                        .setMessage("This event requires your location to be recorded when joining the waitlist.")
+                        .setPositiveButton("Allow", (d, w) ->
+                                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION))
+                        .setNegativeButton("Cancel", null)
+                        .show();
+            }
+            return;
+        }
+        performJoinWaitlist(event);
+    }
+
+    private void joinAndRecordLocation(Event event) {
+        geolocationController.checkDistanceForEvent(this, event,
+                new GeolocationController.GeoJoinCallback() {
+                    @Override
+                    public void onAllowed(android.location.Location userLocation) {
+                        performJoinWaitlist(event);
+                        geolocationController.recordLocationForEvent(
+                                EventListActivity.this, deviceId, event.getEventId(),
+                                userLocation, unused -> {}, e -> {});
+                    }
+                    @Override
+                    public void onBlocked(float distanceMeters) {
+                        int km = Math.round(distanceMeters / 1000f);
+                        Toast.makeText(EventListActivity.this,
+                                "You are " + km + "km away. Must be within 30km to join.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                    @Override
+                    public void onError(String message) {
+                        Toast.makeText(EventListActivity.this, message, Toast.LENGTH_LONG).show();
+                    }
+                });
+    }
+
+    private void performJoinWaitlist(Event event) {
+        Entrant entrant = entrantDB.getEntrant();
         WaitingList registration = new WaitingList(
                 event.getEventId(),
                 deviceId,
