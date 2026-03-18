@@ -44,7 +44,27 @@ public class QRScanActivity extends AppCompatActivity {
         deviceId = currentEntrant != null ? currentEntrant.getDeviceId() : null;
         editEventCode = findViewById(R.id.edit_event_code);
         findViewById(R.id.btn_go_to_event).setOnClickListener(v -> onGoToEvent());
+        findViewById(R.id.btn_simulate_qr).setOnClickListener(v -> onSimulate());
         setupBottomNavigation();
+    }
+
+    private void onSimulate() {
+        eventDB.getAllEvents(events -> {
+            if (events == null || events.isEmpty()) {
+                android.widget.Toast.makeText(this, "No events to demo with", android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
+            java.util.List<com.example.cobaltevents.model.Event> valid = new java.util.ArrayList<>();
+            for (com.example.cobaltevents.model.Event e : events) {
+                if (e != null && e.getEventId() != null) valid.add(e);
+            }
+            if (valid.isEmpty()) {
+                android.widget.Toast.makeText(this, "No events to demo with", android.widget.Toast.LENGTH_SHORT).show();
+                return;
+            }
+            int randomIndex = (int) (Math.random() * valid.size());
+            showEventPopup(valid.get(randomIndex));
+        }, e -> android.widget.Toast.makeText(this, "No events to demo with", android.widget.Toast.LENGTH_SHORT).show());
     }
 
     private void onGoToEvent() {
