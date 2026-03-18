@@ -36,8 +36,7 @@ import java.util.Set;
 public class AccountSettingsActivity extends AppCompatActivity {
 
     private TextView tvName, tvEmail, tvPhone;
-    private ImageView profileImage;
-    private TextView profileInitials;
+    private com.google.android.material.imageview.ShapeableImageView profileImage;
     private View profileViewPanel;
     private View profileEditPanel;
     private EditText editName, editEmail, editPhone;
@@ -78,7 +77,6 @@ public class AccountSettingsActivity extends AppCompatActivity {
         tvEmail = findViewById(R.id.tv_email);
         tvPhone = findViewById(R.id.tv_phone);
         profileImage = findViewById(R.id.profile_image);
-        profileInitials = findViewById(R.id.profile_initials);
         profileViewPanel = findViewById(R.id.profile_view_panel);
         profileEditPanel = findViewById(R.id.profile_edit_panel);
         editName = findViewById(R.id.edit_name);
@@ -88,6 +86,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
         btnCancelEdit = findViewById(R.id.btn_cancel_edit);
         View btnEditInfo = findViewById(R.id.btn_edit_info);
         View btnDeleteAccount = findViewById(R.id.btn_delete_account);
+        View btnChangePicture = findViewById(R.id.btn_change_picture);
         View deleteConfirmPanel = findViewById(R.id.delete_confirm_panel);
         View btnDeleteCancel = findViewById(R.id.btn_delete_cancel);
         View btnDeleteConfirm = findViewById(R.id.btn_delete_confirm);
@@ -106,6 +105,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
             btnDeleteAccount.setVisibility(View.VISIBLE);
         });
         btnDeleteConfirm.setOnClickListener(v -> performAccountDeletion());
+        btnChangePicture.setOnClickListener(v -> getContent.launch("image/*"));
 
         // Event-specific notification UI removed
 
@@ -173,22 +173,17 @@ public class AccountSettingsActivity extends AppCompatActivity {
         tvName.setText(currentEntrant.getName());
         tvEmail.setText(currentEntrant.getEmail());
         tvPhone.setText(currentEntrant.getPhone() != null && !currentEntrant.getPhone().isEmpty() ? currentEntrant.getPhone() : "Not provided");
-        updateProfileImageUI(profileImage, profileInitials);
+        updateProfileImageUI();
     }
 
-    private void updateProfileImageUI(ImageView imageView, TextView initialsView) {
+    private void updateProfileImageUI() {
         String url = currentEntrant.getProfilePictureUrl();
         if (url != null && !url.isEmpty()) {
-            imageView.setVisibility(View.VISIBLE);
-            initialsView.setVisibility(View.GONE);
-            imageView.setImageDrawable(null);
-            imageView.setColorFilter(null);
-            Picasso.get().load(url).into(imageView);
+            profileImage.clearColorFilter();
+            Picasso.get().load(url).into(profileImage);
         } else {
-            imageView.setVisibility(View.VISIBLE);
-            initialsView.setVisibility(View.GONE);
-            imageView.setImageResource(R.drawable.ic_avatar_person);
-            imageView.setColorFilter(ContextCompat.getColor(this, android.R.color.white));
+            profileImage.setImageResource(R.drawable.ic_avatar_person);
+            profileImage.setColorFilter(ContextCompat.getColor(this, R.color.user_green));
         }
     }
 
@@ -208,32 +203,70 @@ public class AccountSettingsActivity extends AppCompatActivity {
     }
 
     private void uploadImage(Uri uri) {
+        Toast.makeText(this, "Uploading profile picture…", Toast.LENGTH_SHORT).show();
+        final String oldUrl = currentEntrant.getProfilePictureUrl();
         imageDB.uploadProfileImage(uri, url -> {
             currentEntrant.setProfilePictureUrl(url);
-            updateProfileImageUI(profileImage, profileInitials);
+            entrantDB.saveEntrant(currentEntrant);
+            profileDB.saveProfile(currentEntrant,
+                    unused -> {
+                        updateProfileImageUI();
+                        Toast.makeText(this, "Profile picture updated", Toast.LENGTH_SHORT).show();
+                        if (oldUrl != null && !oldUrl.isEmpty()) {
+                            new ImageDB().deleteImageByUrl(oldUrl, v -> {}, err -> {});
+                        }
+                    },
+                    err -> {
+                        updateProfileImageUI();
+                        Toast.makeText(this, "Saved locally; cloud update failed", Toast.LENGTH_LONG).show();
+                    });
         }, e -> Toast.makeText(this, "Upload failed", Toast.LENGTH_SHORT).show());
     }
 
     private void setupBottomNavigation() {
-        findViewById(R.id.nav_events).setOnClickListener(v -> {
-            startActivity(new Intent(this, EventListActivity.class));
-            finish();
-        });
-        
-        findViewById(R.id.nav_notifications).setOnClickListener(v -> {
-            startActivity(new Intent(this, NotificationsActivity.class));
-        });
+        android.widget.FrameLayout navContainer = findViewById(R.id.nav_container);
+        boolean fromOrganizer = getIntent().getBooleanExtra("fromOrganizer", false);
+        int layoutRes = fromOrganizer ? R.layout.partial_bottom_nav_organizer : R.layout.partial_bottom_nav;
+        android.view.LayoutInflater.from(this).inflate(layoutRes, navContainer, true);
 
-        findViewById(R.id.nav_my_events).setOnClickListener(v -> {
-        });
-
-        findViewById(R.id.nav_qr).setOnClickListener(v -> {
-            startActivity(new Intent(this, QRScanActivity.class));
-        });
-
-        ImageView ivAccount = findViewById(R.id.iv_nav_account);
-        TextView tvAccount = findViewById(R.id.tv_nav_account);
-        ivAccount.setColorFilter(getResources().getColor(R.color.user_green));
-        tvAccount.setTextColor(getResources().getColor(R.color.user_green));
+        if (fromOrganizer) {
+            // Organizer nav wiring
+            findViewById(R.id.nav_dashboard).setOnClickListener(v ->
+                    startActivity(new Intent(this, OrganizerActivity.class)));
+            findViewById(R.id.nav_create).setOnClickListener(v ->
+                    startActivity(new Intent(this, EventCreateActivity.class)));
+            findViewById(R.id.nav_my_events).setOnClickListener(v -> {
+                startActivity(new Intent(this, OrganizerActivity.class));
+                finish();
+            });
+            findViewById(R.id.nav_notifications).setOnClickListener(v ->
+                    startActivity(new Intent(this, NotificationsActivity.class)
+                            .putExtra("fromOrganizer", true)));
+            // Highlight account
+            ImageView iv = findViewById(R.id.iv_nav_account);
+            TextView tv = findViewById(R.id.tv_nav_account);
+            if (iv != null) iv.setColorFilter(getResources().getColor(R.color.organizer_blue));
+            if (tv != null) tv.setTextColor(getResources().getColor(R.color.organizer_blue));
+        } else {
+            // User nav wiring
+            findViewById(R.id.nav_events).setOnClickListener(v -> {
+                startActivity(new Intent(this, EventListActivity.class));
+                finish();
+            });
+            findViewById(R.id.nav_notifications).setOnClickListener(v -> {
+                startActivity(new Intent(this, NotificationsActivity.class));
+            });
+            findViewById(R.id.nav_my_events).setOnClickListener(v -> {
+                startActivity(new Intent(this, EventHistoryActivity.class));
+                finish();
+            });
+            findViewById(R.id.nav_qr).setOnClickListener(v -> {
+                startActivity(new Intent(this, QRScanActivity.class));
+            });
+            ImageView ivAccount = findViewById(R.id.iv_nav_account);
+            TextView tvAccount = findViewById(R.id.tv_nav_account);
+            if (ivAccount != null) ivAccount.setColorFilter(getResources().getColor(R.color.user_green));
+            if (tvAccount != null) tvAccount.setTextColor(getResources().getColor(R.color.user_green));
+        }
     }
 }

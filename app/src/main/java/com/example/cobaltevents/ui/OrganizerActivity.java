@@ -96,7 +96,8 @@ public class OrganizerActivity extends AppCompatActivity {
                         .putExtra("fromOrganizer", true)));
 
         findViewById(R.id.nav_account).setOnClickListener(v ->
-                startActivity(new Intent(this, AccountSettingsActivity.class)));
+                startActivity(new Intent(this, AccountSettingsActivity.class)
+                        .putExtra("fromOrganizer", true)));
     }
 
     private void setDashboardTabActive() {

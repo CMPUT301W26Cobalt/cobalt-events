@@ -111,6 +111,31 @@ public class WaitingListDB {
                 .addOnFailureListener(onFailure);
     }
 
+    /**
+     * Fetch a registration document for the given event/device regardless of status.
+     * Returns the WaitingList object if the document exists, otherwise null.
+     */
+    public void getRegistrationForEventAnyStatus(String eventId,
+                                                 String deviceId,
+                                                 OnSuccessListener<WaitingList> onSuccess,
+                                                 OnFailureListener onFailure) {
+        db.collection(COLLECTION_WAITLISTS)
+                .document(eventId)
+                .collection(SUBCOLLECTION_ENTRIES)
+                .document(deviceId)
+                .get()
+                .addOnSuccessListener(docSnapshot -> {
+                    if (docSnapshot == null || !docSnapshot.exists()) {
+                        onSuccess.onSuccess(null);
+                        return;
+                    }
+                    WaitingList reg = docSnapshot.toObject(WaitingList.class);
+                    if (reg != null) reg.setEventId(eventId);
+                    onSuccess.onSuccess(reg);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
     public void updateStatus(String eventId, String registrationId, String status, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
         db.collection(COLLECTION_WAITLISTS)
                 .document(eventId)

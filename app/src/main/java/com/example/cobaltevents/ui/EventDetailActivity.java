@@ -27,6 +27,11 @@ import android.net.NetworkCapabilities;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import android.app.Dialog;
+import android.view.Window;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.Color;
 
 public class EventDetailActivity extends AppCompatActivity {
 
@@ -136,7 +141,7 @@ public class EventDetailActivity extends AppCompatActivity {
     private void applyJoinLeaveUi() {
         boolean joined = activeRegistration != null;
         btnJoinLeave.setText(joined ? getString(R.string.leave_waitlist_button) : getString(R.string.join_waitlist_button));
-        btnJoinLeave.setBackgroundResource(joined ? R.drawable.bg_button_red_pill : R.drawable.bg_button_primary_account);
+        btnJoinLeave.setBackgroundResource(joined ? R.drawable.bg_button_red_pill : R.drawable.bg_button_join_solid);
 
         if (joined) {
             layoutEventNotifications.setVisibility(View.VISIBLE);
@@ -158,7 +163,7 @@ public class EventDetailActivity extends AppCompatActivity {
 
     private void showJoinConfirmDialog(String eventId) {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_join_waitlist_confirm, null);
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setView(dialogView)
                 .create();
 
@@ -174,6 +179,9 @@ public class EventDetailActivity extends AppCompatActivity {
         });
 
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
     }
 
     private void joinWaitlist(String eventId) {
@@ -209,7 +217,7 @@ public class EventDetailActivity extends AppCompatActivity {
     private void showLeaveConfirmDialog() {
         if (activeRegistration == null || activeRegistration.getDeviceId() == null) return;
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_leave_waitlist_confirm, null);
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setView(dialogView)
                 .create();
 
@@ -222,6 +230,9 @@ public class EventDetailActivity extends AppCompatActivity {
         });
 
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
     }
 
     private void leaveWaitlist() {

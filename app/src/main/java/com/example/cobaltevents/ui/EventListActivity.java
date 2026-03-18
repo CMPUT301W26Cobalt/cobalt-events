@@ -34,6 +34,7 @@ import com.example.cobaltevents.model.WaitingList;
 import com.example.cobaltevents.model.Entrant;
 import com.example.cobaltevents.ui.adapter.EventAdapter;
 import com.google.firebase.Timestamp;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -250,10 +251,14 @@ public class EventListActivity extends AppCompatActivity {
 
         for (Event event : allEvents) {
             if (!currentQuery.isEmpty()) {
-                String query = currentQuery.toLowerCase();
-                boolean matches = event.getName().toLowerCase().contains(query) ||
-                                event.getDescription().toLowerCase().contains(query) ||
-                                event.getLocation().toLowerCase().contains(query);
+                final String query = currentQuery.toLowerCase();
+                String name = event.getName();
+                String desc = event.getDescription();
+                String loc = event.getLocation();
+                boolean matches =
+                        (name != null && name.toLowerCase().contains(query)) ||
+                        (desc != null && desc.toLowerCase().contains(query)) ||
+                        (loc != null && loc.toLowerCase().contains(query));
                 if (!matches) continue;
             }
             if (selectedCategoryIndex > 0) {
@@ -347,7 +352,7 @@ public class EventListActivity extends AppCompatActivity {
         spinnerAvailability.setAdapter(availabilityAdapter);
         spinnerAvailability.setSelection(selectedAvailabilityIndex);
 
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setView(dialogView)
                 .create();
 
@@ -376,6 +381,9 @@ public class EventListActivity extends AppCompatActivity {
         });
 
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
     }
 
     private void handleJoinOrLeave(Event event, boolean isJoined) {
@@ -392,7 +400,7 @@ public class EventListActivity extends AppCompatActivity {
             return;
         }
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_join_waitlist_confirm, null);
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setView(dialogView)
                 .create();
 
@@ -407,6 +415,9 @@ public class EventListActivity extends AppCompatActivity {
         });
 
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
     }
 
     private void joinWaitlist(Event event) {
@@ -460,7 +471,7 @@ public class EventListActivity extends AppCompatActivity {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_leave_waitlist_confirm, null);
         ((TextView) dialogView.findViewById(R.id.tv_message))
                 .setText("Are you sure you want to leave the waitlist for " + event.getName() + "?");
-        AlertDialog dialog = new AlertDialog.Builder(this)
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setView(dialogView)
                 .create();
 
@@ -478,6 +489,9 @@ public class EventListActivity extends AppCompatActivity {
         });
 
         dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
     }
 
     private boolean isNetworkAvailable() {

@@ -215,7 +215,7 @@ public class QRScanActivity extends AppCompatActivity {
             btn.setEnabled(true);
         } else {
             btn.setText("JOIN WAITLIST");
-            btn.setBackgroundResource(R.drawable.bg_button_primary_account);
+            btn.setBackgroundResource(R.drawable.bg_button_join_solid);
             btn.setAlpha(1.0f);
             btn.setEnabled(true);
         }
