@@ -126,6 +126,11 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 && event.getRegistrationOpen().compareTo(now) > 0
                 && event.getEventDate() != null
                 && event.getEventDate().compareTo(now) > 0;
+        int capacity = event.getWaitingListCapacity();
+        boolean full = !isJoined
+                && capacity > 0
+                && count != null
+                && count >= capacity;
 
         if (registrationClosed) {
             holder.btnJoin.setText("REGISTRATION CLOSED");
@@ -137,6 +142,11 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.btnJoin.setAlpha(0.45f);
             holder.btnJoin.setEnabled(false);
             holder.btnJoin.setBackgroundResource(R.drawable.bg_button_upcoming);
+        } else if (full) {
+            holder.btnJoin.setText("WAITLIST FULL");
+            holder.btnJoin.setAlpha(0.45f);
+            holder.btnJoin.setEnabled(false);
+            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
         } else {
             holder.btnJoin.setText(isJoined ? "LEAVE WAITLIST" : "JOIN WAITLIST");
             holder.btnJoin.setAlpha(1.0f);
