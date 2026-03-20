@@ -373,11 +373,6 @@ public class QRScanActivity extends AppCompatActivity {
             btn.setBackgroundResource(R.drawable.bg_button_join_solid);
             btn.setAlpha(0.45f);
             btn.setEnabled(false);
-        } else if (event != null && event.isPrivate() && !isJoined) {
-            btn.setText("PRIVATE EVENT");
-            btn.setBackgroundResource(R.drawable.bg_button_join_solid);
-            btn.setAlpha(0.45f);
-            btn.setEnabled(false);
         } else if (WaitingList.STATUS_ENROLLED.equals(status)) {
             btn.setText("ENROLLED");
             btn.setBackgroundResource(R.drawable.bg_button_join_solid);
@@ -385,6 +380,12 @@ public class QRScanActivity extends AppCompatActivity {
             btn.setEnabled(false);
         } else if (isDeclinedStyleStatus(status)) {
             btn.setText("DECLINED");
+            btn.setBackgroundResource(R.drawable.bg_button_join_solid);
+            btn.setAlpha(0.45f);
+            btn.setEnabled(false);
+        } else if (event != null && event.isPrivate() && !isJoined) {
+            // Declined must always win over "PRIVATE EVENT" styling.
+            btn.setText("PRIVATE EVENT");
             btn.setBackgroundResource(R.drawable.bg_button_join_solid);
             btn.setAlpha(0.45f);
             btn.setEnabled(false);

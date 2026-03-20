@@ -212,11 +212,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.btnJoin.setAlpha(0.45f);
             holder.btnJoin.setEnabled(false);
             holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
-        } else if (privateBlocked) {
-            holder.btnJoin.setText("PRIVATE EVENT");
-            holder.btnJoin.setAlpha(0.45f);
-            holder.btnJoin.setEnabled(false);
-            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
         } else if (enrolled) {
             holder.btnJoin.setText("ENROLLED");
             holder.btnJoin.setAlpha(0.45f);
@@ -224,6 +219,12 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
         } else if (declined) {
             holder.btnJoin.setText("DECLINED");
+            holder.btnJoin.setAlpha(0.45f);
+            holder.btnJoin.setEnabled(false);
+            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
+        } else if (privateBlocked) {
+            // Declined must always win over "PRIVATE EVENT" styling.
+            holder.btnJoin.setText("PRIVATE EVENT");
             holder.btnJoin.setAlpha(0.45f);
             holder.btnJoin.setEnabled(false);
             holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);

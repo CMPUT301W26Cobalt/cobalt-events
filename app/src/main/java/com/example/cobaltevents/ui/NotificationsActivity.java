@@ -1,8 +1,6 @@
 package com.example.cobaltevents.ui;
 
 import android.content.Intent;
-import android.os.Handler;
-import android.os.Looper;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -23,10 +21,6 @@ import com.example.cobaltevents.model.WaitingList;
 import com.example.cobaltevents.ui.adapter.NotificationListAdapter;
 
 public class NotificationsActivity extends AppCompatActivity {
-    // TEMP: seed a single private-event notification for QA.
-    // Uses current deviceId as `recipientId`.
-    private static final String DEBUG_PRIVATE_EVENT_ID = "1dCPXQLN0wdTfaFfn9Y1";
-
     private NotificationDB notificationDB;
     private WaitingListDB waitingListDB;
     private NotificationListAdapter adapter;
@@ -101,64 +95,8 @@ public class NotificationsActivity extends AppCompatActivity {
         }
 
         setupBottomNavigation();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        seedPrivateEventSampleIfNeeded();
-    }
-
-    /**
-     * TEMP: seeds a single private-event notification for QA.
-     * Seeds only if there is no private-event notification already for this device+event
-     * (regardless of response). This prevents the notification from reappearing after
-     * you accept/decline.
-     */
-    private void seedPrivateEventSampleIfNeeded() {
-        if (deviceId == null || deviceId.isEmpty()) {
-            loadNotifications();
-            return;
-        }
-
-        notificationDB.getNotificationsForRecipientAndEvent(
-                deviceId,
-                DEBUG_PRIVATE_EVENT_ID,
-                notifications -> {
-                    boolean hasAnyPrivate = false;
-                    if (notifications != null) {
-                        for (com.example.cobaltevents.model.Notification n : notifications) {
-                            if (n == null || n.getType() == null) continue;
-                            if (!com.example.cobaltevents.model.Notification.TYPE_PRIVATE_EVENT.equals(n.getType())) continue;
-                            hasAnyPrivate = true;
-                            break;
-                        }
-                    }
-
-                    if (hasAnyPrivate) {
-                        loadNotifications();
-                        return;
-                    }
-
-                    com.example.cobaltevents.model.Notification sample =
-                            new com.example.cobaltevents.model.Notification(
-                                    deviceId,
-                                    DEBUG_PRIVATE_EVENT_ID,
-                                    "Private Event Invitation",
-                                    "You have been invited to a private event. Accept to join the waitlist or decline to opt out.",
-                                    com.example.cobaltevents.model.Notification.TYPE_PRIVATE_EVENT
-                            );
-                    sample.setTimestamp(new java.util.Date());
-
-                    notificationDB.saveNotification(sample,
-                            id -> new Handler(Looper.getMainLooper())
-                                    .postDelayed(this::loadNotifications, 1200),
-                            e -> {
-                                Log.e("NotificationsActivity", "Failed seeding private-event notification", e);
-                                loadNotifications();
-                            });
-                },
-                e -> loadNotifications());
+        // Ensure notifications load immediately on entry (manual swipe refresh should be optional).
+        loadNotifications();
     }
 
     private void loadNotifications() {
@@ -240,6 +178,37 @@ public class NotificationsActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Updates the notification response in-memory so the card badge updates immediately,
+     * without waiting for a full Firestore reload.
+     *
+     * We still call {@link #loadNotifications()} after the backend writes succeed/fail
+     * to keep DB and UI consistent.
+     */
+    private void applyLocalResponseUpdate(
+            com.example.cobaltevents.model.Notification target,
+            String newResponse) {
+        if (target == null || newResponse == null) return;
+        String notificationId = target.getId();
+        if (notificationId == null || notificationId.isEmpty()) return;
+
+        // Update the item object we already have (in case it's the same reference),
+        // and also update the copy inside currentNotifications by id.
+        target.setResponse(newResponse);
+        if (currentNotifications != null) {
+            for (com.example.cobaltevents.model.Notification n : currentNotifications) {
+                if (n == null) continue;
+                if (notificationId.equals(n.getId())) {
+                    n.setResponse(newResponse);
+                    break;
+                }
+            }
+        }
+        if (adapter != null) {
+            adapter.setItems(currentNotifications, currentEventIdToStatus);
+        }
+    }
+
     private void setupBottomNavigation() {
         findViewById(R.id.nav_events).setOnClickListener(v -> {
             if (notificationActionInProgress) {
@@ -315,6 +284,9 @@ public class NotificationsActivity extends AppCompatActivity {
                     }
                     // Only update notification/DB after we confirm the waitlist entry exists.
                     // Also, don't update UI until both DB writes succeed so DB and button stay aligned.
+                    // For faster feedback, update only the notification response badge locally now.
+                    currentEventIdToStatus.put(eventId, newStatus);
+                    applyLocalResponseUpdate(notification, newResponse);
                     waitingListDB.updateStatus(eventId, deviceId, newStatus,
                             unused2 -> notificationDB.updateResponse(notificationId, newResponse,
                                     unused3 -> {
@@ -388,6 +360,9 @@ public class NotificationsActivity extends AppCompatActivity {
                         // Don't downgrade already finalized states.
                         if (WaitingList.STATUS_ENROLLED.equals(currentStatus)
                                 || WaitingList.STATUS_SELECTED.equals(currentStatus)) {
+                            // Response badge can update immediately; waitlist is already final.
+                            currentEventIdToStatus.put(eventId, currentStatus);
+                            applyLocalResponseUpdate(notification, newResponse);
                             notificationDB.updateResponse(notificationId, newResponse,
                                     unused -> {
                                         loadNotifications();
@@ -403,6 +378,9 @@ public class NotificationsActivity extends AppCompatActivity {
 
                     // Update waitlist status (or create entry) first...
                     if (reg != null) {
+                        // For faster feedback, update the response badge locally now.
+                        currentEventIdToStatus.put(eventId, waitlistStatus);
+                        applyLocalResponseUpdate(notification, newResponse);
                         waitingListDB.updateStatus(eventId, deviceId, waitlistStatus,
                                 unused -> notificationDB.updateResponse(notificationId, newResponse,
                                         unused2 -> {
@@ -422,6 +400,9 @@ public class NotificationsActivity extends AppCompatActivity {
                                 });
                     } else {
                         WaitingList newReg = new WaitingList(eventId, deviceId, waitlistStatus);
+                        // For faster feedback, update the response badge locally now.
+                        currentEventIdToStatus.put(eventId, waitlistStatus);
+                        applyLocalResponseUpdate(notification, newResponse);
                         waitingListDB.addRegistration(newReg,
                                 unused -> notificationDB.updateResponse(notificationId, newResponse,
                                         unused2 -> {
@@ -508,6 +489,9 @@ public class NotificationsActivity extends AppCompatActivity {
                 reg -> {
                     String currentStatus = reg != null ? reg.getStatus() : null;
                     if (WaitingList.STATUS_DECLINED.equals(currentStatus)) {
+                        // For faster feedback, update the response badge locally now.
+                        currentEventIdToStatus.put(eventId, WaitingList.STATUS_DECLINED);
+                        applyLocalResponseUpdate(notification, com.example.cobaltevents.model.Notification.RESPONSE_DECLINED);
                         notificationDB.updateResponse(notificationId,
                                         com.example.cobaltevents.model.Notification.RESPONSE_DECLINED,
                                         unused -> {

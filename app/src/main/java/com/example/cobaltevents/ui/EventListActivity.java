@@ -342,6 +342,8 @@ public class EventListActivity extends AppCompatActivity {
         java.util.List<String> eventIds = new java.util.ArrayList<>();
         for (Event e : allEvents) {
             if (e == null || e.getEventId() == null) continue;
+            // Unlimited capacity events never need counts for "full" UI or capacity filtering logic.
+            if (e.getWaitingListCapacity() <= 0) continue;
             eventIds.add(e.getEventId());
         }
 
@@ -355,32 +357,62 @@ public class EventListActivity extends AppCompatActivity {
             return;
         }
 
-        java.util.concurrent.atomic.AtomicInteger pending = new java.util.concurrent.atomic.AtomicInteger(eventIds.size());
-        for (String eventId : eventIds) {
-            waitingListDB.getActiveCountForEvent(eventId,
-                    count -> {
-                        waitlistCountByEventId.put(eventId, count);
-                        if (pending.decrementAndGet() == 0) {
-                            adapter.setWaitlistCountByEventId(waitlistCountByEventId);
-                            eventsLoading = false;
-                            applyFilters();
-                            progressBar.setVisibility(View.GONE);
-                            if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
-                            if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
-                        }
-                    },
-                    err -> {
-                        // Still finalize when all callbacks return.
-                        if (pending.decrementAndGet() == 0) {
-                            adapter.setWaitlistCountByEventId(waitlistCountByEventId);
-                            eventsLoading = false;
-                            applyFilters();
-                            progressBar.setVisibility(View.GONE);
-                            if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
-                            if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
-                        }
-                    });
-        }
+        // Fetch waitlist counts with limited parallelism to avoid Firestore throttling/timeouts.
+        final int maxConcurrent = 5;
+        java.util.concurrent.atomic.AtomicInteger nextIndex = new java.util.concurrent.atomic.AtomicInteger(0);
+        java.util.concurrent.atomic.AtomicInteger inFlight = new java.util.concurrent.atomic.AtomicInteger(0);
+        java.util.concurrent.atomic.AtomicInteger remaining = new java.util.concurrent.atomic.AtomicInteger(eventIds.size());
+        java.util.concurrent.atomic.AtomicBoolean finalized = new java.util.concurrent.atomic.AtomicBoolean(false);
+
+        final Runnable[] startMoreRef = new Runnable[1];
+        startMoreRef[0] = new Runnable() {
+            @Override
+            public void run() {
+                // Start up to maxConcurrent more tasks.
+                while (!finalized.get()
+                        && inFlight.get() < maxConcurrent
+                        && nextIndex.get() < eventIds.size()) {
+                    final int idx = nextIndex.getAndIncrement();
+                    if (idx >= eventIds.size()) break;
+
+                    final String eventId = eventIds.get(idx);
+                    inFlight.incrementAndGet();
+                    waitingListDB.getActiveCountForEvent(eventId,
+                            count -> {
+                                waitlistCountByEventId.put(eventId, count);
+                                inFlight.decrementAndGet();
+                                if (remaining.decrementAndGet() == 0
+                                        && finalized.compareAndSet(false, true)) {
+                                    adapter.setWaitlistCountByEventId(waitlistCountByEventId);
+                                    eventsLoading = false;
+                                    applyFilters();
+                                    progressBar.setVisibility(View.GONE);
+                                    if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
+                                    if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+                                } else {
+                                if (startMoreRef[0] != null) runOnUiThread(startMoreRef[0]);
+                                }
+                            },
+                            err -> {
+                                inFlight.decrementAndGet();
+                                if (remaining.decrementAndGet() == 0
+                                        && finalized.compareAndSet(false, true)) {
+                                    adapter.setWaitlistCountByEventId(waitlistCountByEventId);
+                                    eventsLoading = false;
+                                    applyFilters();
+                                    progressBar.setVisibility(View.GONE);
+                                    if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
+                                    if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+                                } else {
+                                if (startMoreRef[0] != null) runOnUiThread(startMoreRef[0]);
+                                }
+                            });
+                }
+            }
+        };
+
+        // Kick off initial tasks.
+        if (startMoreRef[0] != null) runOnUiThread(startMoreRef[0]);
     }
 
     private void setupBottomNavigation() {

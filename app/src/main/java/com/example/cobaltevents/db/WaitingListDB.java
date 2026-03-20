@@ -178,9 +178,8 @@ public class WaitingListDB {
                 .addOnSuccessListener(querySnapshot -> {
                     int count = 0;
                     for (QueryDocumentSnapshot doc : querySnapshot) {
-                        WaitingList reg = doc.toObject(WaitingList.class);
-                        if (reg == null) continue;
-                        String status = reg.getStatus();
+                        // Avoid deserializing the full WaitingList object for speed.
+                        String status = doc.getString("status");
                         if (!isEntryActive(status)) continue;
                         count++;
                     }

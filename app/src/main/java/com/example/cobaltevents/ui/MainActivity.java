@@ -22,7 +22,8 @@ public class MainActivity extends AppCompatActivity {
         notificationController = new NotificationController();
         notificationController.createNotificationChannel(this);
         notificationController.requestNotificationPermission(this);
-        Intent intent = new Intent(this, NotificationsActivity.class);
+        // Default to Events; Events screen loads notification-derived effective status.
+        Intent intent = new Intent(this, EventListActivity.class);
         startActivity(intent);
     }
 
