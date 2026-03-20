@@ -132,7 +132,80 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Availability"
+        android:text="Availability Date Range"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="6dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:id="@+id/btn_availability_start"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="Start date"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:textColor="@color/text_primary"
+            android:background="@drawable/bg_input_field"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/btn_availability_end"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="End date"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:textColor="@color/text_primary"
+            android:background="@drawable/bg_input_field" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Event Capacity"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="6dp" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_input_field"
+        android:layout_marginBottom="16dp">
+        <Spinner
+            android:id="@+id/spinner_capacity"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@null"
+            android:paddingStart="12dp"
+            android:paddingEnd="40dp" />
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="12dp"
+            android:src="@android:drawable/arrow_down_float"
+            app:tint="@color/grey_medium"
+            android:contentDescription="Dropdown" />
+    </RelativeLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Visibility"
         android:textSize="13sp"
         android:textStyle="bold"
         android:textColor="@color/text_primary"
@@ -144,7 +217,7 @@
         android:background="@drawable/bg_input_field"
         android:layout_marginBottom="24dp">
         <Spinner
-            android:id="@+id/spinner_availability"
+            android:id="@+id/spinner_visibility"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:background="@null"

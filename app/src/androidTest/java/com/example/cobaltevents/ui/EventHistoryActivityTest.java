@@ -1,104 +1,94 @@
 package com.example.cobaltevents.ui;
 
-import static androidx.test.espresso.Espresso.onView;
-import static androidx.test.espresso.action.ViewActions.*;
-import static androidx.test.espresso.assertion.ViewAssertions.matches;
-import static androidx.test.espresso.matcher.ViewMatchers.*;
-import static org.hamcrest.Matchers.isA;
+import static org.junit.Assert.*;
 
+import android.content.Context;
+import android.view.ContextThemeWrapper;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
-import androidx.test.ext.junit.rules.ActivityScenarioRule;
+import androidx.test.core.app.ApplicationProvider;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.example.cobaltevents.R;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * UI Tests for EventHistoryActivity
- * US 01.02.03: As an entrant, I want to have a history of events I have registered for,
- * whether I was selected or not.
+ * Layout-level checks for {@link EventHistoryActivity} (My Events).
+ * This avoids launching the Activity so tests don't depend on remote services.
  */
 @RunWith(AndroidJUnit4.class)
 public class EventHistoryActivityTest {
 
-    @Rule
-    public ActivityScenarioRule<EventHistoryActivity> rule =
-            new ActivityScenarioRule<>(EventHistoryActivity.class);
-
-    // ── Layout presence ──────────────────────────────────────────────────────
-
-    @Test
-    public void backButton_isDisplayed() {
-        onView(withId(R.id.btn_back)).check(matches(isDisplayed()));
+    private Context themed() {
+        Context base = ApplicationProvider.getApplicationContext();
+        return new ContextThemeWrapper(base, R.style.Theme_CobaltEvents);
     }
 
     @Test
-    public void recyclerView_isDisplayed() {
-        onView(withId(R.id.recycler_history)).check(matches(isDisplayed()));
+    public void layout_hasCoreViews() {
+        View root = LayoutInflater.from(themed()).inflate(R.layout.activity_event_history, null, false);
+
+        assertNotNull(root.findViewById(R.id.tab_upcoming));
+        assertNotNull(root.findViewById(R.id.tab_past));
+        assertNotNull(root.findViewById(R.id.recycler_history));
+        assertNotNull(root.findViewById(R.id.progress_bar));
+        assertNotNull(root.findViewById(R.id.tv_empty));
+
+        assertTrue(root.findViewById(R.id.progress_bar) instanceof ProgressBar);
     }
 
     @Test
-    public void headerTitle_isDisplayed() {
-        onView(withText("My Event History")).check(matches(isDisplayed()));
-    }
+    public void tabs_haveCorrectLabels() {
+        View root = LayoutInflater.from(themed()).inflate(R.layout.activity_event_history, null, false);
 
-    // ── Back button functionality ────────────────────────────────────────────
+        TextView tabUpcoming = root.findViewById(R.id.tab_upcoming);
+        TextView tabPast = root.findViewById(R.id.tab_past);
 
-    @Test
-    public void backButton_isClickable() {
-        onView(withId(R.id.btn_back))
-                .check(matches(isClickable()));
-    }
-
-    @Test
-    public void backButton_click_finishesActivity() {
-        onView(withId(R.id.btn_back)).perform(click());
-        
-        // Activity should finish, so we can't interact with views anymore
-        // This test passes if no exception is thrown
-    }
-
-    // ── Empty state ──────────────────────────────────────────────────────────
-
-    @Test
-    public void emptyState_textView_exists() {
-        // Just verify the empty state view exists, regardless of visibility
-        onView(withId(R.id.tv_empty))
-                .check(matches(withText("No event history")));
-    }
-
-    // ── Progress bar ─────────────────────────────────────────────────────────
-
-    @Test
-    public void progressBar_viewExists() {
-        // Just verify the progress bar view exists in the layout
-        onView(withId(R.id.progress_bar)).check(matches(isAssignableFrom(ProgressBar.class)));
-    }
-
-    // ── RecyclerView functionality ───────────────────────────────────────────
-
-    @Test
-    public void recyclerView_isScrollable() {
-        onView(withId(R.id.recycler_history))
-                .check(matches(isDisplayed()))
-                .perform(swipeUp());
-    }
-
-    // ── Header styling ───────────────────────────────────────────────────────
-
-    @Test
-    public void headerTitle_hasCorrectText() {
-        onView(withText("My Event History"))
-                .check(matches(isDisplayed()));
+        assertNotNull(tabUpcoming);
+        assertNotNull(tabPast);
+        assertEquals("Upcoming", tabUpcoming.getText().toString());
+        assertEquals("Past Events", tabPast.getText().toString());
     }
 
     @Test
-    public void backButton_hasBackText() {
-        onView(withText("Back"))
-                .check(matches(isDisplayed()));
+    public void emptyState_hasCorrectTextAndIsHiddenByDefault() {
+        View root = LayoutInflater.from(themed()).inflate(R.layout.activity_event_history, null, false);
+
+        TextView tvEmpty = root.findViewById(R.id.tv_empty);
+        assertNotNull(tvEmpty);
+        assertEquals("No events to show", tvEmpty.getText().toString());
+        assertEquals(View.GONE, tvEmpty.getVisibility());
+    }
+
+    @Test
+    public void header_hasTitleText() {
+        View root = LayoutInflater.from(themed()).inflate(R.layout.activity_event_history, null, false);
+        TextView title = findFirstTextViewWithText(root, "My Events");
+        assertNotNull(title);
+    }
+
+    private TextView findFirstTextViewWithText(View root, String text) {
+        if (root instanceof TextView) {
+            TextView tv = (TextView) root;
+            if (tv.getText() != null && text.equals(tv.getText().toString())) {
+                return tv;
+            }
+        }
+
+        if (!(root instanceof View)) return null;
+        if (!(root instanceof android.view.ViewGroup)) return null;
+
+        android.view.ViewGroup vg = (android.view.ViewGroup) root;
+        for (int i = 0; i < vg.getChildCount(); i++) {
+            View child = vg.getChildAt(i);
+            TextView hit = findFirstTextViewWithText(child, text);
+            if (hit != null) return hit;
+        }
+        return null;
     }
 }

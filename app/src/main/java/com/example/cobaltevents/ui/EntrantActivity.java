@@ -100,7 +100,8 @@ public class EntrantActivity extends AppCompatActivity {
     }
 
     private void navigateToMain() {
-        Intent intent = new Intent(this, EventListActivity.class);
+        // Default to notifications so the notification-driven UI is correct immediately.
+        Intent intent = new Intent(this, NotificationsActivity.class);
         startActivity(intent);
         finish();
     }

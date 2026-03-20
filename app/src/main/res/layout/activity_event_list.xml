@@ -36,7 +36,8 @@
             android:layout_width="match_parent"
             android:layout_height="40dp"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
 
             <!-- Search input -->
             <LinearLayout
@@ -82,6 +83,67 @@
             </LinearLayout>
 
         </LinearLayout>
+
+        <!-- Keyword chips: matches event category strings only (see EventListActivity.matchesKeywordFilters). -->
+        <LinearLayout
+            android:id="@+id/layout_keyword_input_bar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_keywords_input_bar"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:layout_marginBottom="12dp">
+
+            <EditText
+                android:id="@+id/et_keywords"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="@null"
+                android:hint="@string/event_list_keywords_hint"
+                android:inputType="text"
+                android:singleLine="true"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:cursorVisible="true"
+                android:textCursorDrawable="@drawable/bg_cursor_white"
+                android:textColor="@color/white"
+                android:textColorHint="#99FFFFFF"
+                android:textSize="14sp"
+                android:padding="0dp" />
+
+            <TextView
+                android:id="@+id/btn_add_keyword"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="+"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Keyword chips row (UI preview only, no functionality yet) -->
+        <HorizontalScrollView
+            android:id="@+id/scroll_keyword_chips"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:overScrollMode="never"
+            android:fillViewport="true"
+            android:layout_marginBottom="4dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/layout_keyword_chips"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
 
     </LinearLayout>
 

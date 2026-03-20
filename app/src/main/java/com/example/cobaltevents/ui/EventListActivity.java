@@ -15,6 +15,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.HorizontalScrollView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -32,8 +34,10 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.controller.EventController;
 import com.example.cobaltevents.db.EntrantDB;
+import com.example.cobaltevents.db.NotificationDB;
 import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Event;
+import com.example.cobaltevents.model.Notification;
 import com.example.cobaltevents.model.WaitingList;
 import com.example.cobaltevents.model.Entrant;
 import com.example.cobaltevents.controller.GeolocationController;
@@ -42,8 +46,10 @@ import com.google.firebase.Timestamp;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class EventListActivity extends AppCompatActivity {
@@ -57,8 +63,11 @@ public class EventListActivity extends AppCompatActivity {
     private static final String[] AGE_GROUP_OPTIONS = {
             "All", "All Ages", "Kids", "Teens", "Adults", "18+", "21+"
     };
-    private static final String[] AVAILABILITY_OPTIONS = {
-            "All", "Open", "Upcoming", "Closed"
+    private static final String[] CAPACITY_OPTIONS = {
+            "All", "Spots Available", "Full", "Unlimited"
+    };
+    private static final String[] VISIBILITY_OPTIONS = {
+            "All", "Public", "Private"
     };
 
     private RecyclerView recyclerView;
@@ -66,8 +75,10 @@ public class EventListActivity extends AppCompatActivity {
     private TextView tvEmpty;
     private SwipeRefreshLayout swipeRefreshLayout;
     private EventAdapter adapter;
+    private boolean eventsLoading = false;
     private String deviceId;
     private EventController eventController;
+    private NotificationDB notificationDB;
     private WaitingListDB waitingListDB;
     private EntrantDB entrantDB;
     private GeolocationController geolocationController;
@@ -85,14 +96,23 @@ public class EventListActivity extends AppCompatActivity {
                 pendingGeoJoinEvent = null;
             });
     private final Map<String, WaitingList> activeRegistrationsByEventId = new HashMap<>();
+    private final Map<String, WaitingList> registrationsByEventId = new HashMap<>();
     private final Map<String, Integer> waitlistCountByEventId = new HashMap<>();
 
     private List<Event> allEvents = new ArrayList<>();
     private String currentQuery = "";
+    private String currentKeywordInput = "";
     private int selectedCategoryIndex = 0;
     private int selectedPriceRangeIndex = 0;
     private int selectedAgeGroupIndex = 0;
-    private int selectedAvailabilityIndex = 0;
+    private int selectedCapacityIndex = 0;
+    private int selectedVisibilityIndex = 0;
+    private Long availabilityStartMillis = null;
+    private Long availabilityEndMillis = null;
+    private final List<String> selectedKeywords = new ArrayList<>();
+    private EditText etKeywords;
+    private HorizontalScrollView scrollKeywordChips;
+    private LinearLayout layoutKeywordChips;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,6 +121,7 @@ public class EventListActivity extends AppCompatActivity {
 
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         eventController = new EventController();
+        notificationDB = new NotificationDB();
         waitingListDB = new WaitingListDB();
         entrantDB = new EntrantDB(this);
         geolocationController = new GeolocationController();
@@ -133,6 +154,39 @@ public class EventListActivity extends AppCompatActivity {
             }
         });
 
+        etKeywords = findViewById(R.id.et_keywords);
+        scrollKeywordChips = findViewById(R.id.scroll_keyword_chips);
+        layoutKeywordChips = findViewById(R.id.layout_keyword_chips);
+        if (etKeywords != null) {
+            etKeywords.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+                @Override
+                public void afterTextChanged(Editable s) {
+                    currentKeywordInput = s.toString();
+                }
+            });
+            etKeywords.setOnEditorActionListener((v, actionId, event) -> {
+                boolean isImeAction = actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE
+                        || actionId == android.view.inputmethod.EditorInfo.IME_ACTION_GO
+                        || actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH
+                        || actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND;
+                boolean isEnter = event != null
+                        && event.getAction() == android.view.KeyEvent.ACTION_DOWN
+                        && event.getKeyCode() == android.view.KeyEvent.KEYCODE_ENTER;
+                if (isImeAction || isEnter) {
+                    addKeywordChipFromInput();
+                    return true;
+                }
+                return false;
+            });
+        }
+        TextView btnAddKeyword = findViewById(R.id.btn_add_keyword);
+        if (btnAddKeyword != null) {
+            btnAddKeyword.setOnClickListener(v -> addKeywordChipFromInput());
+        }
+        renderKeywordChips();
+
         findViewById(R.id.btn_filter).setOnClickListener(v -> showFilterDialog());
 
         if (swipeRefreshLayout != null) {
@@ -150,24 +204,31 @@ public class EventListActivity extends AppCompatActivity {
     }
 
     private void loadEvents() {
+        eventsLoading = true;
         progressBar.setVisibility(View.VISIBLE);
+        if (recyclerView != null) recyclerView.setVisibility(View.INVISIBLE);
+        if (tvEmpty != null) tvEmpty.setVisibility(View.GONE);
+        if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
         eventController.getAllEvents(events -> {
-            progressBar.setVisibility(View.GONE);
             if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
             allEvents = events != null ? events : new ArrayList<>();
         loadActiveRegistrationsThenApplyFilters();
         }, e -> {
             progressBar.setVisibility(View.GONE);
             if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+            eventsLoading = false;
+            if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
             Toast.makeText(this, "Failed to load events: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         });
     }
 
     private void loadActiveRegistrationsThenApplyFilters() {
         activeRegistrationsByEventId.clear();
+        registrationsByEventId.clear();
         if (allEvents == null || allEvents.isEmpty()) {
             adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
-            loadWaitlistCountsThenApplyFilters();
+            adapter.setRegistrationsByEventId(registrationsByEventId);
+            loadWaitlistCountsThenFinalize();
             applyFilters();
             return;
         }
@@ -178,9 +239,14 @@ public class EventListActivity extends AppCompatActivity {
                 continue;
             }
             String eventId = event.getEventId();
-            waitingListDB.getActiveRegistrationForEvent(eventId, deviceId,
+            waitingListDB.getRegistrationForEventAnyStatus(eventId, deviceId,
                     reg -> {
-                        if (reg != null) activeRegistrationsByEventId.put(eventId, reg);
+                        if (reg != null) {
+                            registrationsByEventId.put(eventId, reg);
+                            if (isActiveStatus(reg.getStatus())) {
+                                activeRegistrationsByEventId.put(eventId, reg);
+                            }
+                        }
                         if (pending.decrementAndGet() == 0) finishLoadingRegistrations();
                     },
                     e -> {
@@ -191,27 +257,130 @@ public class EventListActivity extends AppCompatActivity {
 
     private void finishLoadingRegistrations() {
         adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
-        loadWaitlistCountsThenApplyFilters();
-        applyFilters();
+        adapter.setRegistrationsByEventId(registrationsByEventId);
+        applyNotificationEffectiveStatusToAdapter();
     }
 
-    private void loadWaitlistCountsThenApplyFilters() {
+    private void applyNotificationEffectiveStatusToAdapter() {
+        if (deviceId == null || deviceId.isEmpty()) {
+            adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+            adapter.setRegistrationsByEventId(registrationsByEventId);
+            adapter.setEffectiveStatusByEventId(new java.util.HashMap<>());
+            loadWaitlistCountsThenFinalize();
+            return;
+        }
+        notificationDB.getNotificationsForRecipient(deviceId,
+                notifications -> {
+                    adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+                    adapter.setRegistrationsByEventId(registrationsByEventId);
+                    adapter.setEffectiveStatusByEventId(computeEffectiveStatusByEventId(notifications));
+                    loadWaitlistCountsThenFinalize();
+                },
+                e -> {
+                    adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+                    adapter.setRegistrationsByEventId(registrationsByEventId);
+                    adapter.setEffectiveStatusByEventId(new java.util.HashMap<>());
+                    loadWaitlistCountsThenFinalize();
+                });
+    }
+
+    private java.util.Map<String, String> computeEffectiveStatusByEventId(List<Notification> notifications) {
+        java.util.Map<String, String> effective = new java.util.HashMap<>();
+        if (notifications == null) return effective;
+        java.util.Set<String> processedEventIds = new java.util.HashSet<>();
+        for (Notification n : notifications) {
+            if (n == null || n.getEventId() == null || n.getType() == null) continue;
+            String eventId = n.getEventId();
+            if (processedEventIds.contains(eventId)) continue;
+            String effectiveStatus = getOverrideStatusFromNotification(n);
+            if (effectiveStatus == null) continue;
+            processedEventIds.add(eventId);
+            effective.put(eventId, effectiveStatus);
+        }
+        return effective;
+    }
+
+    private String getOverrideStatusFromNotification(Notification n) {
+        if (n == null || n.getType() == null) return null;
+        String type = n.getType();
+        String response = n.getResponse();
+        if (Notification.TYPE_CO_ORGANIZER.equals(type)) {
+            // No waitlist connection for co-organization.
+            return null;
+        }
+        if (Notification.TYPE_NOT_SELECTED.equals(type)) {
+            // Still in the waitlist; only indicates you weren't selected.
+            return WaitingList.STATUS_NOT_SELECTED;
+        }
+        if (Notification.TYPE_PRIVATE_EVENT.equals(type)) {
+            // Private invitations should not force event-list join/leave state
+            // until the user actually presses accept/decline and a waitlist entry exists.
+            return null;
+        }
+        if (Notification.TYPE_SELECTED.equals(type) || Notification.TYPE_GOT_OFF_WAITLIST.equals(type)) {
+            if (Notification.RESPONSE_ACCEPTED.equals(response)) return WaitingList.STATUS_ENROLLED;
+            if (Notification.RESPONSE_DECLINED.equals(response)) return WaitingList.STATUS_DECLINED;
+            // Pending selected/star must not flip JOIN/LEAVE UI by itself.
+            return null;
+        }
+        return null;
+    }
+
+    private boolean isActiveStatus(String status) {
+        return WaitingList.STATUS_PENDING.equals(status)
+                || WaitingList.STATUS_SELECTED.equals(status)
+                || WaitingList.STATUS_ENROLLED.equals(status)
+                // X / "not-selected" should still count as being in the waitlist.
+                || WaitingList.STATUS_NOT_SELECTED.equals(status);
+    }
+
+    private void loadWaitlistCountsThenFinalize() {
+        // Wait until all events have their waitlist counts + notification effective status
+        // computed before showing the list UI.
         waitlistCountByEventId.clear();
+
+        java.util.List<String> eventIds = new java.util.ArrayList<>();
         for (Event e : allEvents) {
             if (e == null || e.getEventId() == null) continue;
-            String eventId = e.getEventId();
+            eventIds.add(e.getEventId());
+        }
+
+        if (eventIds.isEmpty()) {
+            adapter.setWaitlistCountByEventId(waitlistCountByEventId);
+            eventsLoading = false;
+            applyFilters();
+            progressBar.setVisibility(View.GONE);
+            if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
+            if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+            return;
+        }
+
+        java.util.concurrent.atomic.AtomicInteger pending = new java.util.concurrent.atomic.AtomicInteger(eventIds.size());
+        for (String eventId : eventIds) {
             waitingListDB.getActiveCountForEvent(eventId,
                     count -> {
                         waitlistCountByEventId.put(eventId, count);
-                        adapter.setWaitlistCountByEventId(waitlistCountByEventId);
-                        applyFilters();
+                        if (pending.decrementAndGet() == 0) {
+                            adapter.setWaitlistCountByEventId(waitlistCountByEventId);
+                            eventsLoading = false;
+                            applyFilters();
+                            progressBar.setVisibility(View.GONE);
+                            if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
+                            if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+                        }
                     },
                     err -> {
-                        adapter.setWaitlistCountByEventId(waitlistCountByEventId);
-                        applyFilters();
+                        // Still finalize when all callbacks return.
+                        if (pending.decrementAndGet() == 0) {
+                            adapter.setWaitlistCountByEventId(waitlistCountByEventId);
+                            eventsLoading = false;
+                            applyFilters();
+                            progressBar.setVisibility(View.GONE);
+                            if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
+                            if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+                        }
                     });
         }
-        adapter.setWaitlistCountByEventId(waitlistCountByEventId);
     }
 
     private void setupBottomNavigation() {
@@ -271,6 +440,7 @@ public class EventListActivity extends AppCompatActivity {
     }
     
     private void applyFilters() {
+        if (eventsLoading) return;
         List<Event> filtered = new ArrayList<>();
 
         for (Event event : allEvents) {
@@ -287,8 +457,15 @@ public class EventListActivity extends AppCompatActivity {
             }
             if (selectedCategoryIndex > 0) {
                 String selectedCategory = CATEGORY_OPTIONS[selectedCategoryIndex];
-                String eventCategory = event.getCategory();
-                if (eventCategory == null || !eventCategory.equalsIgnoreCase(selectedCategory)) continue;
+                List<String> eventCategories = event.getCategory();
+                boolean hasMatch = false;
+                for (String eventCategory : eventCategories) {
+                    if (eventCategory != null && eventCategory.equalsIgnoreCase(selectedCategory)) {
+                        hasMatch = true;
+                        break;
+                    }
+                }
+                if (!hasMatch) continue;
             }
             if (selectedPriceRangeIndex > 0) {
                 if (!matchesPriceRangeFilter(event, selectedPriceRangeIndex)) continue;
@@ -298,8 +475,17 @@ public class EventListActivity extends AppCompatActivity {
                 String eventAgeGroup = event.getAgeGroup();
                 if (eventAgeGroup == null || !eventAgeGroup.equalsIgnoreCase(selectedAgeGroup)) continue;
             }
-            if (selectedAvailabilityIndex > 0) {
-                if (!matchesAvailabilityFilter(event, selectedAvailabilityIndex)) continue;
+            if (!matchesAvailabilityDateRangeFilter(event)) {
+                continue;
+            }
+            if (selectedCapacityIndex > 0) {
+                if (!matchesCapacityFilter(event, selectedCapacityIndex)) continue;
+            }
+            if (selectedVisibilityIndex > 0) {
+                if (!matchesVisibilityFilter(event, selectedVisibilityIndex)) continue;
+            }
+            if (!selectedKeywords.isEmpty()) {
+                if (!matchesKeywordFilters(event)) continue;
             }
 
             filtered.add(event);
@@ -328,24 +514,63 @@ public class EventListActivity extends AppCompatActivity {
             default: return true;
         }
     }
-    private boolean matchesAvailabilityFilter(Event event, int availabilityIndex) {
-        Timestamp now = Timestamp.now();
-        
-        switch (availabilityIndex) {
-            case 1: // Open
-                return event.getRegistrationOpen() != null && 
-                       event.getRegistrationClose() != null &&
-                       now.compareTo(event.getRegistrationOpen()) >= 0 &&
-                       now.compareTo(event.getRegistrationClose()) <= 0;
-            case 2: // Upcoming
-                return event.getRegistrationOpen() != null &&
-                       now.compareTo(event.getRegistrationOpen()) < 0;
-            case 3: // Closed
-                return event.getRegistrationClose() != null &&
-                       now.compareTo(event.getRegistrationClose()) > 0;
+    private boolean matchesAvailabilityDateRangeFilter(Event event) {
+        if (availabilityStartMillis == null && availabilityEndMillis == null) return true;
+        Timestamp eventTimestamp = event.getEventDate();
+        if (eventTimestamp == null) return false;
+        long eventMillis = eventTimestamp.toDate().getTime();
+        if (availabilityStartMillis != null && eventMillis < availabilityStartMillis) return false;
+        return availabilityEndMillis == null || eventMillis <= availabilityEndMillis;
+    }
+    private boolean matchesCapacityFilter(Event event, int capacityIndex) {
+        int capacity = event.getWaitingListCapacity();
+        int currentCount = waitlistCountByEventId.getOrDefault(event.getEventId(), 0);
+        boolean isUnlimited = capacity <= 0;
+
+        switch (capacityIndex) {
+            case 1: // Spots Available
+                return isUnlimited || currentCount < capacity;
+            case 2: // Full
+                return !isUnlimited && currentCount >= capacity;
+            case 3: // Unlimited
+                return isUnlimited;
             default:
                 return true;
         }
+    }
+    private boolean matchesVisibilityFilter(Event event, int visibilityIndex) {
+        switch (visibilityIndex) {
+            case 1: // Public
+                return !event.isPrivate();
+            case 2: // Private
+                return event.isPrivate();
+            default:
+                return true;
+        }
+    }
+
+    /**
+     * Keyword chips match only {@link Event#getCategory()} strings (substring, case-insensitive).
+     * Title, description, location, private/public, criteria, age group, etc. are not considered.
+     */
+    private boolean matchesKeywordFilters(Event event) {
+        List<String> normalizedCategories = new ArrayList<>();
+        for (String category : event.getCategory()) {
+            if (category != null) normalizedCategories.add(category.toLowerCase(Locale.US));
+        }
+        if (normalizedCategories.isEmpty()) {
+            return false;
+        }
+
+        for (String keyword : selectedKeywords) {
+            if (keyword == null) continue;
+            String term = keyword.trim().toLowerCase(Locale.US);
+            if (term.isEmpty()) continue;
+            for (String category : normalizedCategories) {
+                if (category.contains(term)) return true;
+            }
+        }
+        return false;
     }
 
     private void showFilterDialog() {
@@ -354,7 +579,10 @@ public class EventListActivity extends AppCompatActivity {
         Spinner spinnerPriceRange = dialogView.findViewById(R.id.spinner_price_range);
         Spinner spinnerAgeGroup = dialogView.findViewById(R.id.spinner_age_group);
         Spinner spinnerCategory = dialogView.findViewById(R.id.spinner_category);
-        Spinner spinnerAvailability = dialogView.findViewById(R.id.spinner_availability);
+        Spinner spinnerCapacity = dialogView.findViewById(R.id.spinner_capacity);
+        Spinner spinnerVisibility = dialogView.findViewById(R.id.spinner_visibility);
+        TextView btnAvailabilityStart = dialogView.findViewById(R.id.btn_availability_start);
+        TextView btnAvailabilityEnd = dialogView.findViewById(R.id.btn_availability_end);
 
         ArrayAdapter<String> priceRangeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, PRICE_RANGE_OPTIONS);
         priceRangeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -371,10 +599,28 @@ public class EventListActivity extends AppCompatActivity {
         spinnerCategory.setAdapter(categoryAdapter);
         spinnerCategory.setSelection(selectedCategoryIndex);
 
-        ArrayAdapter<String> availabilityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, AVAILABILITY_OPTIONS);
-        availabilityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerAvailability.setAdapter(availabilityAdapter);
-        spinnerAvailability.setSelection(selectedAvailabilityIndex);
+        ArrayAdapter<String> capacityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, CAPACITY_OPTIONS);
+        capacityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerCapacity.setAdapter(capacityAdapter);
+        spinnerCapacity.setSelection(selectedCapacityIndex);
+
+        ArrayAdapter<String> visibilityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, VISIBILITY_OPTIONS);
+        visibilityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerVisibility.setAdapter(visibilityAdapter);
+        spinnerVisibility.setSelection(selectedVisibilityIndex);
+
+        final Long[] tempAvailabilityStart = {availabilityStartMillis};
+        final Long[] tempAvailabilityEnd = {availabilityEndMillis};
+        btnAvailabilityStart.setText(formatDateLabel(tempAvailabilityStart[0], "Start date"));
+        btnAvailabilityEnd.setText(formatDateLabel(tempAvailabilityEnd[0], "End date"));
+        btnAvailabilityStart.setOnClickListener(v -> showDatePicker(tempAvailabilityStart[0], false, selected -> {
+            tempAvailabilityStart[0] = selected;
+            btnAvailabilityStart.setText(formatDateLabel(selected, "Start date"));
+        }));
+        btnAvailabilityEnd.setOnClickListener(v -> showDatePicker(tempAvailabilityEnd[0], true, selected -> {
+            tempAvailabilityEnd[0] = selected;
+            btnAvailabilityEnd.setText(formatDateLabel(selected, "End date"));
+        }));
 
         AlertDialog dialog = new MaterialAlertDialogBuilder(this)
                 .setView(dialogView)
@@ -386,7 +632,15 @@ public class EventListActivity extends AppCompatActivity {
             selectedPriceRangeIndex = spinnerPriceRange.getSelectedItemPosition();
             selectedAgeGroupIndex = spinnerAgeGroup.getSelectedItemPosition();
             selectedCategoryIndex = spinnerCategory.getSelectedItemPosition();
-            selectedAvailabilityIndex = spinnerAvailability.getSelectedItemPosition();
+            selectedCapacityIndex = spinnerCapacity.getSelectedItemPosition();
+            selectedVisibilityIndex = spinnerVisibility.getSelectedItemPosition();
+            if (tempAvailabilityStart[0] != null && tempAvailabilityEnd[0] != null
+                    && tempAvailabilityStart[0] > tempAvailabilityEnd[0]) {
+                Toast.makeText(this, "Start date cannot be after end date.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            availabilityStartMillis = tempAvailabilityStart[0];
+            availabilityEndMillis = tempAvailabilityEnd[0];
             applyFilters();
             dialog.dismiss();
         });
@@ -395,11 +649,17 @@ public class EventListActivity extends AppCompatActivity {
             selectedPriceRangeIndex = 0;
             selectedAgeGroupIndex = 0;
             selectedCategoryIndex = 0;
-            selectedAvailabilityIndex = 0;
+            selectedCapacityIndex = 0;
+            selectedVisibilityIndex = 0;
+            availabilityStartMillis = null;
+            availabilityEndMillis = null;
             spinnerPriceRange.setSelection(0);
             spinnerAgeGroup.setSelection(0);
             spinnerCategory.setSelection(0);
-            spinnerAvailability.setSelection(0);
+            spinnerCapacity.setSelection(0);
+            spinnerVisibility.setSelection(0);
+            btnAvailabilityStart.setText(formatDateLabel(null, "Start date"));
+            btnAvailabilityEnd.setText(formatDateLabel(null, "End date"));
             applyFilters();
             dialog.dismiss();
         });
@@ -408,6 +668,127 @@ public class EventListActivity extends AppCompatActivity {
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
+    }
+
+    private void addKeywordChipFromInput() {
+        if (etKeywords == null) return;
+        String raw = currentKeywordInput != null ? currentKeywordInput : "";
+        String keyword = raw.trim();
+        if (keyword.isEmpty()) return;
+        if (!containsKeywordIgnoreCase(keyword)) {
+            selectedKeywords.add(keyword);
+            renderKeywordChips();
+            applyFilters();
+        }
+        etKeywords.setText("");
+        currentKeywordInput = "";
+    }
+
+    private void renderKeywordChips() {
+        if (layoutKeywordChips == null || scrollKeywordChips == null) return;
+        layoutKeywordChips.removeAllViews();
+        if (selectedKeywords.isEmpty()) {
+            scrollKeywordChips.setVisibility(View.GONE);
+            return;
+        }
+        scrollKeywordChips.setVisibility(View.VISIBLE);
+        for (String keyword : selectedKeywords) {
+            layoutKeywordChips.addView(createKeywordChip(keyword));
+        }
+    }
+
+    private View createKeywordChip(String keyword) {
+        LinearLayout chip = new LinearLayout(this);
+        chip.setOrientation(LinearLayout.HORIZONTAL);
+        chip.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        chip.setBackgroundResource(R.drawable.bg_keyword_chip_white);
+        int horizontalPadding = dpToPx(12);
+        int verticalPadding = dpToPx(6);
+        chip.setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding);
+
+        LinearLayout.LayoutParams chipParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        );
+        chipParams.setMarginEnd(dpToPx(8));
+        chip.setLayoutParams(chipParams);
+
+        TextView keywordText = new TextView(this);
+        keywordText.setText(keyword);
+        keywordText.setTextColor(ContextCompat.getColor(this, R.color.header_teal));
+        keywordText.setTextSize(14f);
+
+        TextView removeText = new TextView(this);
+        removeText.setText("×");
+        removeText.setTextColor(ContextCompat.getColor(this, R.color.header_teal));
+        removeText.setTextSize(14f);
+        removeText.setPadding(dpToPx(8), 0, 0, 0);
+        removeText.setOnClickListener(v -> {
+            selectedKeywords.remove(keyword);
+            renderKeywordChips();
+            applyFilters();
+        });
+
+        chip.addView(keywordText);
+        chip.addView(removeText);
+        return chip;
+    }
+
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
+    }
+
+    private boolean containsKeywordIgnoreCase(String candidate) {
+        for (String existing : selectedKeywords) {
+            if (existing != null && existing.equalsIgnoreCase(candidate)) return true;
+        }
+        return false;
+    }
+
+    private interface OnDateSelectedListener {
+        void onDateSelected(long millis);
+    }
+
+    private void showDatePicker(Long initialMillis, boolean asEndOfDay, OnDateSelectedListener listener) {
+        Calendar cal = Calendar.getInstance();
+        if (initialMillis != null) {
+            cal.setTimeInMillis(initialMillis);
+        }
+        new android.app.DatePickerDialog(
+                this,
+                (view, year, month, dayOfMonth) -> {
+                    Calendar selected = Calendar.getInstance();
+                    selected.set(Calendar.YEAR, year);
+                    selected.set(Calendar.MONTH, month);
+                    selected.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                    if (asEndOfDay) {
+                        selected.set(Calendar.HOUR_OF_DAY, 23);
+                        selected.set(Calendar.MINUTE, 59);
+                        selected.set(Calendar.SECOND, 59);
+                        selected.set(Calendar.MILLISECOND, 999);
+                    } else {
+                        selected.set(Calendar.HOUR_OF_DAY, 0);
+                        selected.set(Calendar.MINUTE, 0);
+                        selected.set(Calendar.SECOND, 0);
+                        selected.set(Calendar.MILLISECOND, 0);
+                    }
+                    listener.onDateSelected(selected.getTimeInMillis());
+                },
+                cal.get(Calendar.YEAR),
+                cal.get(Calendar.MONTH),
+                cal.get(Calendar.DAY_OF_MONTH)
+        ).show();
+    }
+
+    private String formatDateLabel(Long millis, String placeholder) {
+        if (millis == null) return placeholder;
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(millis);
+        return String.format(Locale.US, "%04d-%02d-%02d",
+                cal.get(Calendar.YEAR),
+                cal.get(Calendar.MONTH) + 1,
+                cal.get(Calendar.DAY_OF_MONTH));
     }
 
     private void handleJoinOrLeave(Event event, boolean isJoined) {
@@ -516,8 +897,10 @@ public class EventListActivity extends AppCompatActivity {
                 id -> {
                     Toast.makeText(this, R.string.waitlist_success, Toast.LENGTH_SHORT).show();
                     activeRegistrationsByEventId.put(event.getEventId(), registration);
+                    registrationsByEventId.put(event.getEventId(), registration);
                     adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
-                    loadWaitlistCountsThenApplyFilters();
+                    adapter.setRegistrationsByEventId(registrationsByEventId);
+                    loadWaitlistCountsThenFinalize();
                 },
                 e -> Toast.makeText(this, getString(R.string.waitlist_fail) + " " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
@@ -536,6 +919,35 @@ public class EventListActivity extends AppCompatActivity {
             Toast.makeText(this, "Failed to leave waitlist: No internet connection.", Toast.LENGTH_SHORT).show();
             return;
         }
+        // If user has a selection/replacement notification for this event, force response via Notifications tab.
+        notificationDB.getNotificationsForRecipientAndEvent(deviceId, event.getEventId(),
+                notifications -> {
+                    boolean hasSelectionNotification = false;
+                    if (notifications != null) {
+                        for (Notification n : notifications) {
+                            if (n == null || n.getType() == null) continue;
+                            String type = n.getType();
+                            if (Notification.TYPE_SELECTED.equals(type)
+                                    || Notification.TYPE_GOT_OFF_WAITLIST.equals(type)) {
+                                hasSelectionNotification = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (hasSelectionNotification) {
+                        Toast.makeText(this,
+                                "Cannot leave waitlist was selected for enrollment.",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    showLeaveWaitlistDialog(event, reg);
+                },
+                e -> Toast.makeText(this,
+                        "Unable to verify selection status. Please try again.",
+                        Toast.LENGTH_SHORT).show());
+    }
+
+    private void showLeaveWaitlistDialog(Event event, WaitingList reg) {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_leave_waitlist_confirm, null);
         ((TextView) dialogView.findViewById(R.id.tv_message))
                 .setText("Are you sure you want to leave the waitlist for " + event.getName() + "?");

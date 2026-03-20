@@ -8,9 +8,12 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.Source;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class NotificationDB {
 
@@ -24,6 +27,13 @@ public class NotificationDB {
     public void saveNotification(Notification notification,
                                  OnSuccessListener<String> onSuccess,
                                  OnFailureListener onFailure) {
+        if (notification != null) {
+            if (Notification.TYPE_NOT_SELECTED.equals(notification.getType())) {
+                notification.setResponse(null);
+            } else if (notification.getResponse() == null || notification.getResponse().trim().isEmpty()) {
+                notification.setResponse(Notification.RESPONSE_PENDING);
+            }
+        }
         String docId = db.collection(COLLECTION).document().getId();
         notification.setId(docId);
         db.collection(COLLECTION).document(docId)
@@ -41,13 +51,54 @@ public class NotificationDB {
                 .addOnFailureListener(onFailure);
     }
 
+    public void updateResponse(String notificationId,
+                               String response,
+                               OnSuccessListener<Void> onSuccess,
+                               OnFailureListener onFailure) {
+        if (notificationId == null || notificationId.trim().isEmpty()) {
+            onFailure.onFailure(new IllegalArgumentException("notificationId is required"));
+            return;
+        }
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("response", response);
+        db.collection(COLLECTION).document(notificationId)
+                .update(updates)
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
     public void getNotificationsForRecipient(String recipientId,
                                              OnSuccessListener<List<Notification>> onSuccess,
                                              OnFailureListener onFailure) {
         db.collection(COLLECTION)
                 .whereEqualTo("recipientId", recipientId)
                 .orderBy("timestamp", Query.Direction.DESCENDING)
-                .get()
+                .get(Source.SERVER)
+                .addOnSuccessListener(querySnapshot -> {
+                    List<Notification> notifications = new ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        Notification n = doc.toObject(Notification.class);
+                        if (n != null) {
+                            n.setId(doc.getId());
+                            notifications.add(n);
+                        }
+                    }
+                    onSuccess.onSuccess(notifications);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
+    /**
+     * Fetch notifications for a specific recipient+event pair.
+     */
+    public void getNotificationsForRecipientAndEvent(String recipientId,
+                                                     String eventId,
+                                                     OnSuccessListener<List<Notification>> onSuccess,
+                                                     OnFailureListener onFailure) {
+        db.collection(COLLECTION)
+                .whereEqualTo("recipientId", recipientId)
+                .whereEqualTo("eventId", eventId)
+                .get(Source.SERVER)
                 .addOnSuccessListener(querySnapshot -> {
                     List<Notification> notifications = new ArrayList<>();
                     for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
@@ -93,23 +144,5 @@ public class NotificationDB {
     public interface OnNotificationListener {
         void onNotifications(List<Notification> notifications);
         void onError(Exception e);
-    }
-
-    /**
-     * Update the read status of a notification document.
-     */
-    public void updateReadStatus(String notificationId,
-                                 String readStatus,
-                                 OnSuccessListener<Void> onSuccess,
-                                 OnFailureListener onFailure) {
-        if (notificationId == null || notificationId.isEmpty()) {
-            if (onFailure != null) onFailure.onFailure(new IllegalArgumentException("notificationId required"));
-            return;
-        }
-        db.collection(COLLECTION)
-                .document(notificationId)
-                .update("read", readStatus)
-                .addOnSuccessListener(onSuccess)
-                .addOnFailureListener(onFailure);
     }
 }

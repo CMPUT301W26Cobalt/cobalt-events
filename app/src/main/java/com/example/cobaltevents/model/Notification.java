@@ -1,5 +1,7 @@
 package com.example.cobaltevents.model;
 
+import com.google.firebase.firestore.ServerTimestamp;
+
 import java.util.Date;
 
 /**
@@ -8,18 +10,20 @@ import java.util.Date;
  */
 public class Notification {
 
+    /**
+     * Supported notification {@code type} strings:
+     * {@link #TYPE_SELECTED} (trophy), {@link #TYPE_GOT_OFF_WAITLIST} (star),
+     * {@link #TYPE_NOT_SELECTED} (X), {@link #TYPE_PRIVATE_EVENT} (lock),
+     * {@link #TYPE_CO_ORGANIZER} (medal).
+     */
     public static final String TYPE_SELECTED = "selected";
-    public static final String TYPE_SELECT = "select";
     public static final String TYPE_GOT_OFF_WAITLIST = "got-off-waitlist";
     public static final String TYPE_NOT_SELECTED = "not-selected";
-    /** Status values aligned with waitlist entry status (used for UI only). */
-    public static final String STATUS_PENDING = "pending";
-    public static final String STATUS_ACCEPTED = "accepted";
-    public static final String STATUS_REJECTED = "rejected";
-    /** Read status mirrors STATUS_* for simplicity and UI reuse. */
-    public static final String READ_PENDING = STATUS_PENDING;
-    public static final String READ_ACCEPTED = STATUS_ACCEPTED;
-    public static final String READ_REJECTED = STATUS_REJECTED;
+    public static final String TYPE_PRIVATE_EVENT = "private-event";
+    public static final String TYPE_CO_ORGANIZER = "co-organizer";
+    public static final String RESPONSE_PENDING = "pending";
+    public static final String RESPONSE_ACCEPTED = "accepted";
+    public static final String RESPONSE_DECLINED = "declined";
 
     private String id;
     private String recipientId;
@@ -27,7 +31,8 @@ public class Notification {
     private String title;
     private String message;
     private String type;
-    private String read;
+    private String response;
+    @ServerTimestamp
     private Date timestamp;
 
     /**
@@ -49,8 +54,12 @@ public class Notification {
         this.title = title;
         this.message = message;
         this.type = type;
-        this.read = READ_PENDING;
-        this.timestamp = new Date();
+        if (TYPE_NOT_SELECTED.equals(type)) {
+            this.response = null;
+        } else {
+            this.response = RESPONSE_PENDING;
+        }
+        // timestamp left null so @ServerTimestamp fills it with accurate server time on write
     }
 
     /** @return The unique identifier of the notification. */
@@ -81,17 +90,19 @@ public class Notification {
     /** @return The notification type. */
     public String getType() { return type; }
     /** @param type Notification type to set. */
-    public void setType(String type) { this.type = type; }
+    public void setType(String type) {
+        this.type = type;
+        if (TYPE_NOT_SELECTED.equals(type)) {
+            this.response = null;
+        } else if (this.response == null || this.response.trim().isEmpty()) {
+            this.response = RESPONSE_PENDING;
+        }
+    }
 
-    /** @return The read status (e.g., "pending", "accepted"). */
-    public String getRead() { return read; }
-    /** @param read Read status to set. */
-    public void setRead(String read) { this.read = read; }
-    
-    /** @return True if the notification is still pending action. */
-    public boolean isPending() { return read == null || read.isEmpty() || READ_PENDING.equals(read); }
-    /** @param pending Placeholder setter for Firestore. */
-    public void setPending(boolean pending) { }
+    /** @return Notification response state (pending/accepted/declined). */
+    public String getResponse() { return response; }
+    /** @param response Response state to set. */
+    public void setResponse(String response) { this.response = response; }
 
     /** @return The timestamp when the notification was created. */
     public Date getTimestamp() { return timestamp; }

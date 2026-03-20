@@ -290,8 +290,9 @@ public class AdminActivity extends AppCompatActivity {
                     String meta2 = null;
                     if (e.getConfirmedAttendeeIds() != null)
                         meta2 = "✅ " + e.getConfirmedAttendeeIds().size() + " confirmed";
-                    String badge = (e.getCategory() != null && !e.getCategory().trim().isEmpty())
-                            ? e.getCategory().toUpperCase() : null;
+                    String primaryCategory = e.getPrimaryCategory();
+                    String badge = (primaryCategory != null && !primaryCategory.trim().isEmpty())
+                            ? primaryCategory.toUpperCase() : null;
 
                     newItems.add(new AdminAdapter.AdminItem(
                             id, title, subtitle, badge, "#2962FF",
@@ -625,8 +626,9 @@ public class AdminActivity extends AppCompatActivity {
 
             StringBuilder metaText1 = new StringBuilder();
             StringBuilder metaText2 = new StringBuilder();
-            if (e.getCategory() != null && !e.getCategory().trim().isEmpty())
-                metaText1.append("🏷 Category: ").append(e.getCategory());
+            String categoryText = e.getCategoryDisplayText();
+            if (!categoryText.isEmpty())
+                metaText1.append("🏷 Category: ").append(categoryText);
             metaText1.append("\n📍 Geolocation: ")
                     .append(e.isGeolocationRequired() ? "Required" : "Not required");
             if (e.getConfirmedAttendeeIds() != null)

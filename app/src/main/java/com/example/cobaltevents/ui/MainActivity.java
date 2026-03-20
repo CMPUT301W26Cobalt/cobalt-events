@@ -22,7 +22,7 @@ public class MainActivity extends AppCompatActivity {
         notificationController = new NotificationController();
         notificationController.createNotificationChannel(this);
         notificationController.requestNotificationPermission(this);
-        Intent intent = new Intent(this, EventListActivity.class);
+        Intent intent = new Intent(this, NotificationsActivity.class);
         startActivity(intent);
     }
 

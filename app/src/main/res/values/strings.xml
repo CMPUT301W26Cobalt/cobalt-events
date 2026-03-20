@@ -18,6 +18,9 @@
     <string name="notification_selected_title">You\'ve been selected!</string>
     <string name="notification_selected_message">You have been chosen to attend %1$s.</string>
 
+    <string name="private_tag_label">Private</string>
+    <string name="cd_lock_private">Private event</string>
+
     <!-- US 01.01.01 Join Waitlist -->
     <string name="add_to_waitlist">Add to waitlist</string>
     <string name="join_waitlist">Join Waitlist</string>
@@ -80,4 +83,7 @@
     <string name="tab_organizers">Organizers</string>
     <string name="tab_notifications">Notifications</string>
     <string name="section_events">Browse &amp; Manage Events</string>
+
+    <!-- Event list: keyword chips filter by category tags only (not title/description). -->
+    <string name="event_list_keywords_hint">Filter by category…</string>
 </resources>

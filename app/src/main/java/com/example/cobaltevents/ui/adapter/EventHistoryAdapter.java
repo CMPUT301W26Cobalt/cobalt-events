@@ -21,6 +21,7 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
     
     private List<EventHistory> historyList;
     private final Listener listener;
+    private java.util.Map<String, String> effectiveStatusByEventId;
     
     public interface Listener {
         void onHistoryClick(EventHistory history);
@@ -30,6 +31,11 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
     public EventHistoryAdapter(List<EventHistory> historyList, Listener listener) {
         this.historyList = historyList;
         this.listener = listener;
+    }
+
+    public void setEffectiveStatusByEventId(java.util.Map<String, String> effectiveStatusByEventId) {
+        this.effectiveStatusByEventId = effectiveStatusByEventId;
+        notifyDataSetChanged();
     }
     
     @NonNull
@@ -64,13 +70,24 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
             holder.tvEventDate.setText(sdf.format(history.getEvent().getEventDate().toDate()));
         }
         
-        String status = history.getStatus();
+        String statusDb = history.getStatus();
+        String eventId = history.getEvent() != null ? history.getEvent().getEventId() : null;
+        String status = statusDb;
+        if (eventId != null && effectiveStatusByEventId != null) {
+            String effective = effectiveStatusByEventId.get(eventId);
+            if (effective != null) status = effective;
+        }
         holder.tvStatus.setText(getStatusText(status));
         holder.tvStatus.setTextColor(getStatusColor(holder.itemView, status));
         holder.tvStatus.setBackgroundResource(getStatusBackgroundRes(status));
         
         holder.itemView.setOnClickListener(v -> listener.onHistoryClick(history));
-        holder.ivDelete.setOnClickListener(v -> listener.onDeleteClick(history));
+        boolean canLeave = status == null
+                || "pending".equals(status)
+                || "selected".equals(status)
+                || "not_selected".equals(status);
+        holder.ivDelete.setVisibility(canLeave ? View.VISIBLE : View.GONE);
+        holder.ivDelete.setOnClickListener(canLeave ? v -> listener.onDeleteClick(history) : null);
     }
     
     @Override
@@ -86,12 +103,11 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
     private String getStatusText(String status) {
         switch (status) {
             case "selected": return "Selected";
+            case "enrolled": return "Enrolled";
+            case "declined": return "Declined";
             case "not_selected": return "Not Selected";
             case "pending": return "Pending";
-            case "accepted": return "Accepted";
             case "rejected": return "Rejected";
-            case "cancelled": return "Cancelled";
-            case "withdrawn": return "Withdrawn";
             default: return "Unknown";
         }
     }
@@ -99,12 +115,11 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
     private int getStatusColor(View itemView, String status) {
         switch (status) {
             case "selected": return ContextCompat.getColor(itemView.getContext(), R.color.accent);
-            case "accepted": return ContextCompat.getColor(itemView.getContext(), R.color.accent);
+            case "enrolled": return ContextCompat.getColor(itemView.getContext(), R.color.accent);
+            case "declined": return ContextCompat.getColor(itemView.getContext(), R.color.alert_red);
             case "not_selected": return ContextCompat.getColor(itemView.getContext(), R.color.alert_red);
             case "rejected": return ContextCompat.getColor(itemView.getContext(), R.color.alert_red);
             case "pending": return ContextCompat.getColor(itemView.getContext(), R.color.status_warning_orange);
-            case "cancelled": return ContextCompat.getColor(itemView.getContext(), R.color.grey_nav_inactive);
-            case "withdrawn": return ContextCompat.getColor(itemView.getContext(), R.color.grey_medium);
             default: return ContextCompat.getColor(itemView.getContext(), R.color.black);
         }
     }
@@ -112,16 +127,14 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
     private int getStatusBackgroundRes(String status) {
         switch (status) {
             case "selected":
-            case "accepted":
+            case "enrolled":
                 return R.drawable.badge_selected_bg;
+            case "declined":
             case "not_selected":
             case "rejected":
                 return R.drawable.badge_declined_bg;
             case "pending":
                 return R.drawable.badge_pending_bg;
-            case "cancelled":
-            case "withdrawn":
-                return R.drawable.badge_neutral_bg;
             default:
                 return R.drawable.badge_neutral_bg;
         }

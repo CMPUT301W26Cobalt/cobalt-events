@@ -7,6 +7,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.Source;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -123,7 +124,7 @@ public class WaitingListDB {
                 .document(eventId)
                 .collection(SUBCOLLECTION_ENTRIES)
                 .document(deviceId)
-                .get()
+                .get(Source.SERVER)
                 .addOnSuccessListener(docSnapshot -> {
                     if (docSnapshot == null || !docSnapshot.exists()) {
                         onSuccess.onSuccess(null);
@@ -173,7 +174,7 @@ public class WaitingListDB {
         db.collection(COLLECTION_WAITLISTS)
                 .document(eventId)
                 .collection(SUBCOLLECTION_ENTRIES)
-                .get()
+                .get(Source.SERVER)
                 .addOnSuccessListener(querySnapshot -> {
                     int count = 0;
                     for (QueryDocumentSnapshot doc : querySnapshot) {
@@ -336,6 +337,8 @@ public class WaitingListDB {
         if (status == null) return true;
         return WaitingList.STATUS_PENDING.equals(status)
                 || WaitingList.STATUS_SELECTED.equals(status)
-                || WaitingList.STATUS_ENROLLED.equals(status);
+                || WaitingList.STATUS_ENROLLED.equals(status)
+                // X / "not-selected" means the user remains on the waitlist.
+                || WaitingList.STATUS_NOT_SELECTED.equals(status);
     }
 }

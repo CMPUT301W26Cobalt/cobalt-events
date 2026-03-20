@@ -101,6 +101,19 @@ public class EventTest {
         assertNull(event.getQrCodeData());
     }
 
+    @Test
+    public void testDefault_isPrivateIsFalse() {
+        assertFalse(event.isPrivate());
+    }
+
+    @Test
+    public void testSetIsPrivate_updatesValue() {
+        event.setIsPrivate(true);
+        assertTrue(event.isPrivate());
+        event.setIsPrivate(false);
+        assertFalse(event.isPrivate());
+    }
+
     // ── No-arg constructor ───────────────────────────────────────────────────
 
     @Test
@@ -109,6 +122,7 @@ public class EventTest {
         assertNotNull(empty.getConfirmedAttendeeIds());
         assertFalse(empty.isGeolocationRequired());
         assertEquals(0, empty.getWaitingListCapacity());
+        assertFalse(empty.isPrivate());
     }
 
     // ── Setters ──────────────────────────────────────────────────────────────

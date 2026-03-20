@@ -2,37 +2,48 @@ package com.example.cobaltevents.ui;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.graphics.drawable.ColorDrawable;
 import android.view.ViewGroup;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.bumptech.glide.Glide;
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.controller.GeolocationController;
 import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.db.EntrantDB;
+import com.example.cobaltevents.db.NotificationDB;
 import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.Entrant;
+import com.example.cobaltevents.model.Notification;
 import com.example.cobaltevents.model.WaitingList;
 import com.google.firebase.Timestamp;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
+import java.util.List;
 
 public class QRScanActivity extends AppCompatActivity {
 
     private EditText editEventCode;
     private EventDB eventDB;
     private WaitingListDB waitingListDB;
+    private NotificationDB notificationDB;
     private EntrantDB entrantDB;
     private Entrant currentEntrant;
     private String deviceId;
@@ -57,6 +68,7 @@ public class QRScanActivity extends AppCompatActivity {
         setContentView(R.layout.activity_qr_scan);
         eventDB = new EventDB();
         waitingListDB = new WaitingListDB();
+        notificationDB = new NotificationDB();
         entrantDB = new EntrantDB(this);
         currentEntrant = entrantDB.getEntrant();
         deviceId = currentEntrant != null ? currentEntrant.getDeviceId() : null;
@@ -105,8 +117,17 @@ public class QRScanActivity extends AppCompatActivity {
 
     private void showEventPopup(Event event) {
         View content = LayoutInflater.from(this).inflate(R.layout.dialog_event_card, null, false);
+        content.setVisibility(View.INVISIBLE);
+        android.widget.FrameLayout popupCanvas = new android.widget.FrameLayout(this);
+        popupCanvas.addView(content);
+        android.widget.ProgressBar canvasSpinner = new android.widget.ProgressBar(this);
+        android.widget.FrameLayout.LayoutParams spinnerLp = new android.widget.FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        spinnerLp.gravity = android.view.Gravity.CENTER;
+        popupCanvas.addView(canvasSpinner, spinnerLp);
         TextView tvName = content.findViewById(R.id.tv_event_name);
-        TextView tvCategory = content.findViewById(R.id.tv_category_tag);
+        ImageView ivEventImage = content.findViewById(R.id.iv_event_image);
+        LinearLayout layoutCategoryTags = content.findViewById(R.id.layout_category_tags);
         TextView tvWaitlist = content.findViewById(R.id.tv_waitlist_count);
         TextView tvChevron = content.findViewById(R.id.tv_chevron);
         TextView tvDescription = content.findViewById(R.id.tv_description);
@@ -124,13 +145,38 @@ public class QRScanActivity extends AppCompatActivity {
         View closeInlineLayout = content.findViewById(R.id.layout_close_inline);
         TextView btnCloseInline = content.findViewById(R.id.btn_close_inline);
 
+        // Keep layout stable while async registration/status loads.
+        btnJoin.setVisibility(View.VISIBLE);
+        btnJoin.setEnabled(false);
+        btnJoin.setText("LOADING...");
+        btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
+        btnJoin.setAlpha(0.45f);
+
         tvName.setText(event.getName() != null ? event.getName() : "Event");
-        if (event.getCategory() != null && !event.getCategory().isEmpty()) {
-            tvCategory.setVisibility(View.VISIBLE);
-            tvCategory.setText(event.getCategory());
+        if (event.getPosterImageUrl() != null && !event.getPosterImageUrl().trim().isEmpty()) {
+            Glide.with(this)
+                    .load(event.getPosterImageUrl())
+                    .centerCrop()
+                    .placeholder(android.R.drawable.ic_menu_gallery)
+                    .into(ivEventImage);
         } else {
-            tvCategory.setVisibility(View.GONE);
+            ivEventImage.setImageResource(android.R.drawable.ic_menu_gallery);
         }
+        layoutCategoryTags.removeAllViews();
+        boolean hasTags = false;
+        if (event.isPrivate()) {
+            layoutCategoryTags.addView(createPrivateChip());
+            hasTags = true;
+        }
+        List<String> categories = event.getCategory();
+        if (categories != null && !categories.isEmpty()) {
+            for (String category : categories) {
+                if (category == null || category.trim().isEmpty()) continue;
+                layoutCategoryTags.addView(createCategoryChip(category.trim()));
+                hasTags = true;
+            }
+        }
+        layoutCategoryTags.setVisibility(hasTags ? View.VISIBLE : View.GONE);
         tvWaitlist.setVisibility(View.GONE); // not computing count in popup
         tvChevron.setVisibility(View.GONE);
         layoutExpanded.setVisibility(View.VISIBLE);
@@ -162,7 +208,7 @@ public class QRScanActivity extends AppCompatActivity {
 
         final androidx.appcompat.app.AlertDialog dialog =
                 new MaterialAlertDialogBuilder(this)
-                        .setView(content)
+                        .setView(popupCanvas)
                         .setCancelable(true)
                         .create();
         dialog.show();
@@ -199,32 +245,31 @@ public class QRScanActivity extends AppCompatActivity {
         }
 
         if (event.getEventId() != null && deviceId != null) {
-            waitingListDB.getActiveRegistrationForEvent(event.getEventId(), deviceId,
+            waitingListDB.getRegistrationForEventAnyStatus(event.getEventId(), deviceId,
                     reg -> {
-                        boolean isJoined = reg != null;
-                        applyJoinButtonState(btnJoin, isJoined);
-                        btnJoin.setOnClickListener(v -> {
-                            if (isJoined) {
-                                leaveWaitlist(event, btnJoin);
-                            } else {
-                                joinWaitlist(event, btnJoin);
-                            }
-                            dialog.dismiss(); // close after action
-                        });
+                        String baseStatus = reg != null ? reg.getStatus() : null;
+                        notificationDB.getNotificationsForRecipientAndEvent(deviceId, event.getEventId(),
+                                notifications -> {
+                                    String status = applyNotificationStatusOverride(baseStatus, notifications);
+                                    boolean isJoinedActive = isActiveStatus(status);
+                                    waitingListDB.getActiveCountForEvent(event.getEventId(),
+                                            count -> bindJoinButton(btnJoin, event, status, isJoinedActive, count, dialog, content, canvasSpinner),
+                                            e2 -> bindJoinButton(btnJoin, event, status, isJoinedActive, null, dialog, content, canvasSpinner));
+                                },
+                                e3 -> {
+                                    boolean isJoinedActive = isActiveStatus(baseStatus);
+                                    waitingListDB.getActiveCountForEvent(event.getEventId(),
+                                            count -> bindJoinButton(btnJoin, event, baseStatus, isJoinedActive, count, dialog, content, canvasSpinner),
+                                            e2 -> bindJoinButton(btnJoin, event, baseStatus, isJoinedActive, null, dialog, content, canvasSpinner));
+                                });
                     },
                     e -> {
-                        applyJoinButtonState(btnJoin, false);
-                        btnJoin.setOnClickListener(v -> {
-                            joinWaitlist(event, btnJoin);
-                            dialog.dismiss();
-                        });
+                        waitingListDB.getActiveCountForEvent(event.getEventId(),
+                                count -> bindJoinButton(btnJoin, event, null, false, count, dialog, content, canvasSpinner),
+                                e2 -> bindJoinButton(btnJoin, event, null, false, null, dialog, content, canvasSpinner));
                     });
         } else {
-            applyJoinButtonState(btnJoin, false);
-            btnJoin.setOnClickListener(v -> {
-                joinWaitlist(event, btnJoin);
-                dialog.dismiss();
-            });
+            bindJoinButton(btnJoin, event, null, false, null, dialog, content, canvasSpinner);
         }
     }
 
@@ -242,8 +287,108 @@ public class QRScanActivity extends AppCompatActivity {
         return p;
     }
 
-    private void applyJoinButtonState(TextView btn, boolean isJoined) {
-        if (isJoined) {
+    private TextView createCategoryChip(String label) {
+        TextView chip = new TextView(this);
+        chip.setText(label);
+        chip.setTextSize(11f);
+        chip.setTextColor(ContextCompat.getColor(this, R.color.header_teal));
+        chip.setBackgroundResource(R.drawable.bg_tag_teal);
+        int hPad = dpToPx(10);
+        int vPad = dpToPx(3);
+        chip.setPadding(hPad, vPad, hPad, vPad);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        lp.setMarginEnd(dpToPx(6));
+        chip.setLayoutParams(lp);
+        return chip;
+    }
+
+    private LinearLayout createPrivateChip() {
+        LinearLayout chip = new LinearLayout(this);
+        chip.setOrientation(LinearLayout.HORIZONTAL);
+        chip.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        chip.setBackgroundResource(R.drawable.bg_private_tag);
+        int hPad = dpToPx(8);
+        int vPad = dpToPx(2);
+        chip.setPadding(hPad, vPad, hPad, vPad);
+
+        ImageView icon = new ImageView(this);
+        icon.setImageResource(R.drawable.ic_lock_private);
+        LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(dpToPx(12), dpToPx(12));
+        icon.setLayoutParams(iconLp);
+
+        TextView label = new TextView(this);
+        label.setText(R.string.private_tag_label);
+        label.setTextSize(12f);
+        label.setTextColor(ContextCompat.getColor(this, R.color.private_tag_text));
+        label.setTypeface(label.getTypeface(), android.graphics.Typeface.BOLD);
+        LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        textLp.setMarginStart(dpToPx(4));
+        label.setLayoutParams(textLp);
+
+        LinearLayout.LayoutParams chipLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        chipLp.setMarginEnd(dpToPx(6));
+        chip.setLayoutParams(chipLp);
+
+        chip.addView(icon);
+        chip.addView(label);
+        return chip;
+    }
+
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
+    }
+
+    private void applyJoinButtonState(TextView btn, Event event, String status, boolean isJoined, Integer waitlistCount) {
+        Timestamp now = Timestamp.now();
+        boolean registrationClosed = event != null
+                && event.getRegistrationClose() != null
+                && event.getRegistrationClose().compareTo(now) < 0;
+        boolean upcoming = event != null
+                && event.getRegistrationOpen() != null
+                && event.getRegistrationOpen().compareTo(now) > 0
+                && event.getEventDate() != null
+                && event.getEventDate().compareTo(now) > 0;
+        int capacity = event != null ? event.getWaitingListCapacity() : 0;
+        // If you're already joined, you should be able to leave even when the waitlist is full.
+        boolean full = !isJoined && capacity > 0 && waitlistCount != null && waitlistCount >= capacity;
+
+        if (registrationClosed) {
+            btn.setText("REGISTRATION CLOSED");
+            btn.setBackgroundResource(R.drawable.bg_button_join_solid);
+            btn.setAlpha(0.45f);
+            btn.setEnabled(false);
+        } else if (upcoming) {
+            btn.setText("UPCOMING");
+            btn.setBackgroundResource(R.drawable.bg_button_upcoming);
+            btn.setAlpha(0.45f);
+            btn.setEnabled(false);
+        } else if (full) {
+            btn.setText("WAITLIST FULL");
+            btn.setBackgroundResource(R.drawable.bg_button_join_solid);
+            btn.setAlpha(0.45f);
+            btn.setEnabled(false);
+        } else if (event != null && event.isPrivate() && !isJoined) {
+            btn.setText("PRIVATE EVENT");
+            btn.setBackgroundResource(R.drawable.bg_button_join_solid);
+            btn.setAlpha(0.45f);
+            btn.setEnabled(false);
+        } else if (WaitingList.STATUS_ENROLLED.equals(status)) {
+            btn.setText("ENROLLED");
+            btn.setBackgroundResource(R.drawable.bg_button_join_solid);
+            btn.setAlpha(0.45f);
+            btn.setEnabled(false);
+        } else if (isDeclinedStyleStatus(status)) {
+            btn.setText("DECLINED");
+            btn.setBackgroundResource(R.drawable.bg_button_join_solid);
+            btn.setAlpha(0.45f);
+            btn.setEnabled(false);
+        } else if (isJoined) {
             btn.setText("LEAVE WAITLIST");
             btn.setBackgroundResource(R.drawable.bg_button_red_pill);
             btn.setAlpha(1.0f);
@@ -256,8 +401,74 @@ public class QRScanActivity extends AppCompatActivity {
         }
     }
 
+    private void bindJoinButton(TextView btn, Event event, String status, boolean isJoinedActive,
+                                Integer waitlistCount, androidx.appcompat.app.AlertDialog dialog,
+                                View content, View canvasSpinner) {
+        if (canvasSpinner != null) canvasSpinner.setVisibility(View.GONE);
+        content.setVisibility(View.VISIBLE);
+        applyJoinButtonState(btn, event, status, isJoinedActive, waitlistCount);
+        btn.setOnClickListener(v -> {
+            if (!btn.isEnabled()) return;
+            if (isJoinedActive) {
+                leaveWaitlist(event, btn);
+            } else {
+                joinWaitlist(event, btn);
+            }
+            dialog.dismiss();
+        });
+    }
+
+    private boolean isActiveStatus(String status) {
+        return WaitingList.STATUS_PENDING.equals(status)
+                || WaitingList.STATUS_SELECTED.equals(status)
+                || WaitingList.STATUS_NOT_SELECTED.equals(status)
+                || WaitingList.STATUS_ENROLLED.equals(status);
+    }
+
+    private boolean isDeclinedStyleStatus(String status) {
+        return WaitingList.STATUS_DECLINED.equals(status)
+                || "rejected".equals(status);
+    }
+
+    private String applyNotificationStatusOverride(String baseStatus, List<Notification> notifications) {
+        if (notifications == null || notifications.isEmpty()) return baseStatus;
+        for (Notification n : notifications) {
+            if (n == null || n.getType() == null) continue;
+            String type = n.getType();
+            String response = n.getResponse();
+            // X (not-selected) means the user wasn't selected, but they remain on the waitlist.
+            if (Notification.TYPE_NOT_SELECTED.equals(type)) {
+                if (baseStatus == null) return null;
+                // Never override a real/final DB decision (e.g. rejected/declined).
+                if (WaitingList.STATUS_DECLINED.equals(baseStatus)) return baseStatus;
+                if (WaitingList.STATUS_ENROLLED.equals(baseStatus) || WaitingList.STATUS_SELECTED.equals(baseStatus)) {
+                    return baseStatus;
+                }
+                return WaitingList.STATUS_NOT_SELECTED;
+            }
+            if (Notification.TYPE_PRIVATE_EVENT.equals(type)) {
+                // Private invitations should not force join/leave state in the QR popup
+                // until the user presses accept/decline and a waitlist entry exists.
+                return baseStatus;
+            }
+            if (Notification.TYPE_SELECTED.equals(type) || Notification.TYPE_GOT_OFF_WAITLIST.equals(type)) {
+                if (Notification.RESPONSE_ACCEPTED.equals(response)) return WaitingList.STATUS_ENROLLED;
+                if (Notification.RESPONSE_DECLINED.equals(response)) return WaitingList.STATUS_DECLINED;
+                // Pending selected/star must not force join/leave UI.
+                return baseStatus;
+            }
+        }
+        return baseStatus;
+    }
+
     private void joinWaitlist(Event event, TextView btn) {
         if (event == null || event.getEventId() == null) return;
+        if (!isNetworkAvailable()) {
+            android.widget.Toast.makeText(this,
+                    "Failed to join: No internet connection.",
+                    android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (currentEntrant == null || !currentEntrant.isValidName() || !currentEntrant.isValidEmail()) {
             android.widget.Toast.makeText(this, "Complete your name and email in Account settings first.", android.widget.Toast.LENGTH_LONG).show();
             startActivity(new Intent(this, AccountSettingsActivity.class));
@@ -324,9 +535,39 @@ public class QRScanActivity extends AppCompatActivity {
 
     private void leaveWaitlist(Event event, TextView btn) {
         if (event == null || event.getEventId() == null || deviceId == null) return;
-        waitingListDB.deleteRegistration(event.getEventId(), deviceId,
-                unused -> android.widget.Toast.makeText(this, "Left waitlist for " + (event.getName() != null ? event.getName() : "event"), android.widget.Toast.LENGTH_SHORT).show(),
-                e -> android.widget.Toast.makeText(this, "Failed to leave: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show());
+        if (!isNetworkAvailable()) {
+            android.widget.Toast.makeText(this,
+                    "Failed to leave waitlist: No internet connection.",
+                    android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
+        notificationDB.getNotificationsForRecipientAndEvent(deviceId, event.getEventId(),
+                notifications -> {
+                    boolean hasSelectionNotification = false;
+                    if (notifications != null) {
+                        for (Notification n : notifications) {
+                            if (n == null || n.getType() == null) continue;
+                            String type = n.getType();
+                            if (Notification.TYPE_SELECTED.equals(type)
+                                    || Notification.TYPE_GOT_OFF_WAITLIST.equals(type)) {
+                                hasSelectionNotification = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (hasSelectionNotification) {
+                        android.widget.Toast.makeText(this,
+                                "Cannot leave waitlist was selected for enrollment.",
+                                android.widget.Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    waitingListDB.deleteRegistration(event.getEventId(), deviceId,
+                            unused -> android.widget.Toast.makeText(this, "Left waitlist for " + (event.getName() != null ? event.getName() : "event"), android.widget.Toast.LENGTH_SHORT).show(),
+                            e -> android.widget.Toast.makeText(this, "Failed to leave: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show());
+                },
+                e -> android.widget.Toast.makeText(this,
+                        "Unable to verify selection status. Please try again.",
+                        android.widget.Toast.LENGTH_SHORT).show());
     }
     private void setupBottomNavigation() {
         findViewById(R.id.nav_events).setOnClickListener(v -> {
@@ -357,5 +598,16 @@ public class QRScanActivity extends AppCompatActivity {
         TextView text = findViewById(textId);
         if (icon != null) icon.setColorFilter(color);
         if (text != null) text.setTextColor(color);
+    }
+
+    private boolean isNetworkAvailable() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) return false;
+        Network network = cm.getActiveNetwork();
+        if (network == null) return false;
+        NetworkCapabilities caps = cm.getNetworkCapabilities(network);
+        return caps != null && (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                || caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+                || caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
     }
 }

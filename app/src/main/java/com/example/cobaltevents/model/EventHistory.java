@@ -24,7 +24,7 @@ public class EventHistory {
     /** @return The associated registration details. */
     public WaitingList getRegistration() { return registration; }
     
-    /** @return The registration status as a string (e.g., "invited", "accepted"). */
+    /** @return The registration status as a string (e.g., "invited", "enrolled"). */
     public String getStatus() {
         return registration != null ? registration.getStatus() : "unknown";
     }

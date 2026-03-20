@@ -7,8 +7,6 @@ public class WaitingList {
     public static final String STATUS_PENDING = "pending";
     public static final String STATUS_SELECTED = "selected";
     public static final String STATUS_NOT_SELECTED = "not_selected";
-    public static final String STATUS_CANCELLED = "cancelled";
-    public static final String STATUS_WITHDRAWN = "withdrawn";
     public static final String STATUS_ENROLLED = "enrolled";
     public static final String STATUS_DECLINED = "declined";
 
