@@ -82,22 +82,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     }
 
 
-    /** Call after updating notificationsAllowed in Firestore so the card reflects the new value. */
-    public void updateNotificationsAllowedForEvent(String eventId, boolean enabled) {
-        if (activeRegistrationsByEventId != null) {
-            WaitingList reg = activeRegistrationsByEventId.get(eventId);
-            if (reg != null) {
-                reg.setNotificationsAllowed(enabled);
-                for (int i = 0; i < events.size(); i++) {
-                    if (eventId.equals(events.get(i).getEventId())) {
-                        notifyItemChanged(i);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
     @NonNull
     @Override
     public EventViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -284,7 +268,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                     : "No special criteria.";
             holder.tvCriteriaDescription.setText(criteriaText);
             holder.layoutGeoNote.setVisibility(View.GONE);
-            holder.layoutEventNotifications.setVisibility(View.GONE);
         }
 
         View.OnClickListener toggleExpand = v -> {
@@ -389,8 +372,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         TextView btnJoin;
         TextView tvWaitlistCount;
         TextView tvDescription, tvDetailDate, tvDetailTime, tvDetailLocation, tvPrice, tvCapacity, tvRegClose, tvGeoNote, tvCriteriaDescription;
-        LinearLayout layoutExpandedDetails, layoutGeoNote, layoutEventNotifications;
-        androidx.appcompat.widget.SwitchCompat switchEventNotifications;
+        LinearLayout layoutExpandedDetails, layoutGeoNote;
 
         EventViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -412,8 +394,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             layoutGeoNote = itemView.findViewById(R.id.layout_geo_note);
             tvGeoNote = itemView.findViewById(R.id.tv_geo_note);
             tvCriteriaDescription = itemView.findViewById(R.id.tv_criteria_description);
-            layoutEventNotifications = itemView.findViewById(R.id.layout_event_notifications);
-            switchEventNotifications = itemView.findViewById(R.id.switch_event_notifications);
         }
     }
 }

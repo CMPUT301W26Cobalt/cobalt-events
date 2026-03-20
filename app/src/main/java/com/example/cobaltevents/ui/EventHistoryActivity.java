@@ -57,6 +57,8 @@ public class EventHistoryActivity extends AppCompatActivity {
     private EventController eventController;
     private boolean refreshFromUserGesture = false;
     private java.util.Map<String, String> effectiveStatusByEventId = new java.util.HashMap<>();
+    // Prevent accidental navigation to EventDetailActivity while the delete/leave dialog is showing.
+    private volatile boolean historyDeleteDialogShowing = false;
     private enum Tab { UPCOMING, PAST }
     private Tab currentTab = Tab.UPCOMING;
     
@@ -334,9 +336,8 @@ public class EventHistoryActivity extends AppCompatActivity {
     }
     
     private void onEventClick(EventHistory history) {
-        Intent intent = new Intent(this, EventDetailActivity.class);
-        intent.putExtra("eventId", history.getEvent().getEventId());
-        startActivity(intent);
+        // Legacy EventDetailActivity removed; keep My Events screen non-navigational.
+        // If you want a new detail behavior, we can wire it up here.
     }
 
     private void confirmRemoveFromWaitlist(EventHistory history) {
@@ -415,6 +416,8 @@ public class EventHistoryActivity extends AppCompatActivity {
         });
 
         dialog.show();
+        historyDeleteDialogShowing = true;
+        dialog.setOnDismissListener(d -> historyDeleteDialogShowing = false);
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }

@@ -115,7 +115,7 @@ public class NotificationDB {
 
     /**
      * Listen for all notifications for a recipient. Status (pending/accepted/rejected) is
-     * sourced from waitlist entry status; merge with WaitingListDB.getWaitlistStatusesForDevice when displaying.
+     * sourced from waitlist entry status.
      */
     public ListenerRegistration listenForNotifications(String recipientId,
                                                        OnNotificationListener listener) {

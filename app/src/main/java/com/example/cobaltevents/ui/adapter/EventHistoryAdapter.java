@@ -3,6 +3,7 @@ package com.example.cobaltevents.ui.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.MotionEvent;
 import android.widget.TextView;
 import android.widget.ImageView;
 
@@ -87,7 +88,20 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
                 || "selected".equals(status)
                 || "not_selected".equals(status);
         holder.ivDelete.setVisibility(canLeave ? View.VISIBLE : View.GONE);
-        holder.ivDelete.setOnClickListener(canLeave ? v -> listener.onDeleteClick(history) : null);
+        holder.ivDelete.setOnClickListener(null);
+        if (canLeave) {
+            // Consume touch events so tapping the trash does not also trigger the parent row click
+            // (which navigates to EventDetailActivity).
+            holder.ivDelete.setOnTouchListener((v, event) -> {
+                if (event == null) return false;
+                if (event.getAction() == MotionEvent.ACTION_UP) {
+                    if (listener != null) listener.onDeleteClick(history);
+                }
+                return true;
+            });
+        } else {
+            holder.ivDelete.setOnTouchListener(null);
+        }
     }
     
     @Override

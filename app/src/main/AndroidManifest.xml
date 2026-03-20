@@ -26,7 +26,6 @@
         <activity android:name=".ui.EntrantActivity" />
         <activity android:name=".ui.EntrantEditActivity" />
         <activity android:name=".ui.EventListActivity" />
-        <activity android:name=".ui.EventDetailActivity" />
         <activity android:name=".ui.JoinWaitlistActivity" />
         <activity android:name=".ui.EventCreateActivity" />
         <activity android:name=".ui.EventHistoryActivity" />

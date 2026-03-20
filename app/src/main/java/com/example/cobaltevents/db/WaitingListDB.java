@@ -1,7 +1,6 @@
 package com.example.cobaltevents.db;
 
 import com.example.cobaltevents.model.WaitingList;
-import com.example.cobaltevents.model.WaitlistEntryInfo;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -147,17 +146,6 @@ public class WaitingListDB {
                 .addOnFailureListener(onFailure);
     }
 
-    public void updateNotificationsAllowed(String eventId, String deviceId, boolean notificationsAllowed,
-                                           OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
-        db.collection(COLLECTION_WAITLISTS)
-                .document(eventId)
-                .collection(SUBCOLLECTION_ENTRIES)
-                .document(deviceId)
-                .update("notificationsAllowed", notificationsAllowed)
-                .addOnSuccessListener(onSuccess)
-                .addOnFailureListener(onFailure);
-    }
-
     public void deleteRegistration(String eventId, String deviceId, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
         db.collection(COLLECTION_WAITLISTS)
                 .document(eventId)
@@ -235,44 +223,6 @@ public class WaitingListDB {
                 .addOnFailureListener(onFailure);
     }
 
-    public void getWaitlistInfoForEvents(String deviceId,
-                                         List<String> eventIds,
-                                         OnSuccessListener<Map<String, WaitlistEntryInfo>> onSuccess,
-                                         OnFailureListener onFailure) {
-        if (eventIds == null || eventIds.isEmpty()) {
-            onSuccess.onSuccess(new HashMap<>());
-            return;
-        }
-        Map<String, WaitlistEntryInfo> result = new HashMap<>();
-        AtomicInteger pending = new AtomicInteger(eventIds.size());
-
-        for (String eventId : eventIds) {
-            if (eventId == null || eventId.isEmpty()) {
-                if (pending.decrementAndGet() == 0) onSuccess.onSuccess(result);
-                continue;
-            }
-            db.collection(COLLECTION_WAITLISTS)
-                    .document(eventId)
-                    .collection(SUBCOLLECTION_ENTRIES)
-                    .document(deviceId)
-                    .get()
-                    .addOnSuccessListener(doc -> {
-                        if (doc != null && doc.exists()) {
-                            String status = doc.getString("status");
-                            if (status == null) status = WaitingList.STATUS_PENDING;
-                            boolean notificationsAllowed = doc.contains("notificationsAllowed")
-                                    ? Boolean.TRUE.equals(doc.getBoolean("notificationsAllowed"))
-                                    : true;
-                            result.put(eventId, new WaitlistEntryInfo(status, notificationsAllowed));
-                        }
-                        if (pending.decrementAndGet() == 0) onSuccess.onSuccess(result);
-                    })
-                    .addOnFailureListener(e -> {
-                        if (pending.decrementAndGet() == 0) onSuccess.onSuccess(result);
-                    });
-        }
-    }
-
     public void saveLocation(String eventId, String deviceId,
                              double latitude, double longitude,
                              OnSuccessListener<Void> onSuccess,
@@ -286,49 +236,6 @@ public class WaitingListDB {
                 .document(deviceId)
                 .update(update)
                 .addOnSuccessListener(onSuccess)
-                .addOnFailureListener(onFailure);
-    }
-
-    public void getWaitlistInfoForDevice(String deviceId,
-                                         OnSuccessListener<Map<String, WaitlistEntryInfo>> onSuccess,
-                                         OnFailureListener onFailure) {
-        db.collectionGroup(SUBCOLLECTION_ENTRIES)
-                .whereEqualTo("deviceId", deviceId)
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    Map<String, WaitlistEntryInfo> map = new HashMap<>();
-                    for (QueryDocumentSnapshot doc : querySnapshot) {
-                        String eventId = doc.getReference().getParent().getId();
-                        if (eventId == null) continue;
-                        String status = doc.getString("status");
-                        if (status == null) status = WaitingList.STATUS_PENDING;
-                        boolean notificationsAllowed = doc.contains("notificationsAllowed")
-                                ? Boolean.TRUE.equals(doc.getBoolean("notificationsAllowed"))
-                                : true;
-                        map.put(eventId, new WaitlistEntryInfo(status, notificationsAllowed));
-                    }
-                    onSuccess.onSuccess(map);
-                })
-                .addOnFailureListener(onFailure);
-    }
-
-    public void getWaitlistStatusesForDevice(String deviceId,
-                                             OnSuccessListener<Map<String, String>> onSuccess,
-                                             OnFailureListener onFailure) {
-        db.collectionGroup(SUBCOLLECTION_ENTRIES)
-                .whereEqualTo("deviceId", deviceId)
-                .get()
-                .addOnSuccessListener(querySnapshot -> {
-                    Map<String, String> eventIdToStatus = new HashMap<>();
-                    for (QueryDocumentSnapshot doc : querySnapshot) {
-                        String eventId = doc.getReference().getParent().getId();
-                        String status = doc.getString("status");
-                        if (eventId != null) {
-                            eventIdToStatus.put(eventId, status != null ? status : WaitingList.STATUS_PENDING);
-                        }
-                    }
-                    onSuccess.onSuccess(eventIdToStatus);
-                })
                 .addOnFailureListener(onFailure);
     }
 

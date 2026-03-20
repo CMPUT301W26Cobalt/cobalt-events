@@ -26,15 +26,12 @@
     <string name="join_waitlist">Join Waitlist</string>
     <string name="join_waitlist_button">JOIN WAITLIST</string>
     <string name="leave_waitlist_button">LEAVE WAITLIST</string>
-    <string name="event_notifications">Event Notifications</string>
-    <string name="event_notifications_subtitle">You won\'t receive updates about this event</string>
     <string name="notification_settings">Notification Settings</string>
     <string name="notifications_enabled">Notifications enabled</string>
     <string name="general_app_notifications">General App Notifications</string>
     <string name="general_app_notifications_desc">Receive notifications about app updates and announcements.</string>
     <string name="event_update_notifications">Event Update Notifications</string>
     <string name="event_update_notifications_desc">Receive updates from events you\'ve joined.</string>
-    <string name="my_event_notifications">My Event Notifications</string>
     <string name="dialog_join_waitlist_title">Join Waitlist</string>
     <string name="dialog_join_waitlist_subtitle">Are you sure you want to join this event\'s waitlist?</string>
     <string name="dialog_join_waitlist_guidelines_title">Lottery Guidelines:</string>

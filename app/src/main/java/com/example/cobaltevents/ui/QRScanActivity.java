@@ -140,7 +140,6 @@ public class QRScanActivity extends AppCompatActivity {
         TextView tvCriteria = content.findViewById(R.id.tv_criteria_description);
         View layoutExpanded = content.findViewById(R.id.layout_expanded_details);
         View layoutGeo = content.findViewById(R.id.layout_geo_note);
-        View layoutEventNotifs = content.findViewById(R.id.layout_event_notifications);
         TextView btnJoin = content.findViewById(R.id.btn_join);
         View closeInlineLayout = content.findViewById(R.id.layout_close_inline);
         TextView btnCloseInline = content.findViewById(R.id.btn_close_inline);
@@ -181,7 +180,6 @@ public class QRScanActivity extends AppCompatActivity {
         tvChevron.setVisibility(View.GONE);
         layoutExpanded.setVisibility(View.VISIBLE);
         layoutGeo.setVisibility(View.GONE);
-        layoutEventNotifs.setVisibility(View.GONE);
         btnJoin.setVisibility(View.VISIBLE);
         closeInlineLayout.setVisibility(View.VISIBLE);
 
