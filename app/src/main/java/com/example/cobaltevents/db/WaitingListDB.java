@@ -105,8 +105,6 @@ public class WaitingListDB {
                     onSuccess.onSuccess(registrations);
                 })
                 .addOnFailureListener(err -> {
-                    // Fallback path avoids collectionGroup/index/rules edge-cases:
-                    // scan event IDs, then read waitlists/{eventId}/entries/{deviceId} directly.
                     getEntrantHistoryByEventScan(deviceId, onSuccess, onFailure);
                 });
     }
@@ -153,7 +151,6 @@ public class WaitingListDB {
                                     }
                                 })
                                 .addOnFailureListener(e -> {
-                                    // Continue scanning other events; one missing doc/read should not fail all history.
                                     if (pending.decrementAndGet() == 0) {
                                         onSuccess.onSuccess(registrations);
                                     }
