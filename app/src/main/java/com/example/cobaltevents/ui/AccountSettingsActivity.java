@@ -136,6 +136,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
         editName.setText(currentEntrant.getName());
         editEmail.setText(currentEntrant.getEmail());
         editPhone.setText(currentEntrant.getPhone() != null && !currentEntrant.getPhone().isEmpty() ? currentEntrant.getPhone() : "");
+        clearEditErrors();
         profileViewPanel.setVisibility(View.GONE);
         profileEditPanel.setVisibility(View.VISIBLE);
     }
@@ -146,13 +147,35 @@ public class AccountSettingsActivity extends AppCompatActivity {
     }
 
     private void saveAndSwitchToViewMode() {
-        String name = editName.getText().toString().trim();
-        String email = editEmail.getText().toString().trim();
-        String phone = editPhone.getText().toString().trim();
-        if (name.isEmpty() || email.isEmpty()) {
-            Toast.makeText(this, "Name and Email are required", Toast.LENGTH_SHORT).show();
+        clearEditErrors();
+
+        String name = editName.getText() == null ? "" : editName.getText().toString().trim();
+        String email = editEmail.getText() == null ? "" : editEmail.getText().toString().trim();
+        String phone = editPhone.getText() == null ? "" : editPhone.getText().toString().trim();
+
+        boolean hasError = false;
+        String nameError = controller.validateName(name);
+        if (nameError != null) {
+            editName.setError(nameError);
+            if (!hasError) editName.requestFocus();
+            hasError = true;
+        }
+        String emailError = controller.validateEmail(email);
+        if (emailError != null) {
+            editEmail.setError(emailError);
+            if (!hasError) editEmail.requestFocus();
+            hasError = true;
+        }
+        String phoneError = controller.validatePhone(phone);
+        if (phoneError != null) {
+            editPhone.setError(phoneError);
+            if (!hasError) editPhone.requestFocus();
+            hasError = true;
+        }
+        if (hasError) {
             return;
         }
+
         Entrant updatedEntrant = new Entrant(entrantDB.getEntrant().getDeviceId(), name, email, phone, currentEntrant.getProfilePictureUrl());
         if (controller.saveEntrant(updatedEntrant)) {
             currentEntrant = updatedEntrant;
@@ -162,6 +185,12 @@ public class AccountSettingsActivity extends AppCompatActivity {
         } else {
             Toast.makeText(this, "Failed to update profile", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void clearEditErrors() {
+        editName.setError(null);
+        editEmail.setError(null);
+        editPhone.setError(null);
     }
 
     private void displayProfile() {

@@ -1,0 +1,53 @@
+rules_version = '2';
+
+/**
+ * Cobalt Events — Firestore security rules.
+ *
+ * The Android app uses device-scoped identity in documents (deviceId / userId strings),
+ * not necessarily Firebase Auth. These rules are permissive so the client works out of the box.
+ * Tighten for production (Firebase Auth, field validation, ownership checks).
+ *
+ * Deploy: firebase deploy --only firestore
+ * (Requires Firebase CLI and a linked project: firebase login && firebase use <projectId>)
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Events (catalog, organizer fields, QR data, etc.) ─────────────────────
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, update, delete: if true;
+
+      // Discussion: events/{eventId}/comments/{commentId}
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if true;
+        allow update: if true;
+        allow delete: if true;
+
+        // Nested: .../comments/{commentId}/replies/{replyId}
+        match /replies/{replyId} {
+          allow read: if true;
+          allow create: if true;
+          allow update: if true;
+          allow delete: if true;
+        }
+      }
+    }
+
+    // ── Waitlists: waitlists/{eventId}/entries/{deviceId} ───────────────────
+    match /waitlists/{eventId}/entries/{entryId} {
+      allow read, write: if true;
+    }
+
+    // ── Notifications ─────────────────────────────────────────────────────────
+    match /notifications/{notificationId} {
+      allow read, write: if true;
+    }
+
+    // ── User profiles ───────────────────────────────────────────────────────
+    match /profiles/{profileId} {
+      allow read, write: if true;
+    }
+  }
+}

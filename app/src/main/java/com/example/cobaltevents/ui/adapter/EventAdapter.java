@@ -14,6 +14,8 @@ import com.bumptech.glide.Glide;
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.WaitingList;
+import com.example.cobaltevents.ui.comments.EventCommentsUiBinder;
+import com.example.cobaltevents.ui.waitlist.WaitlistStatusUi;
 import com.google.firebase.Timestamp;
 
 import java.text.SimpleDateFormat;
@@ -30,6 +32,10 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         void onEventClick(Event event, boolean isJoined);
     }
 
+    /** Fired when local comments/replies change so the row can refresh. */
+    public interface OnEventCommentsChangedListener {
+        void onEventCommentsChanged(String eventId);
+    }
 
     private List<Event> events;
     private final OnEventClickListener listener;
@@ -39,6 +45,8 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     private Map<String, Integer> waitlistCountByEventId;
     private Map<String, String> effectiveStatusByEventId;
     private String deviceId;
+    private String commentAuthorName = "You";
+    private OnEventCommentsChangedListener onEventCommentsChangedListener;
 
     private static final SimpleDateFormat DATE_FORMAT =
             new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
@@ -57,30 +65,80 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         notifyDataSetChanged();
     }
 
+    /** Sets map without triggering a redraw; call {@link #notifyDataSetChanged()} once when all maps are ready. */
     public void setActiveRegistrationsByEventId(Map<String, WaitingList> map) {
         this.activeRegistrationsByEventId = map;
-        notifyDataSetChanged();
     }
 
+    /** Sets map without triggering a redraw; call {@link #notifyDataSetChanged()} once when all maps are ready. */
     public void setRegistrationsByEventId(Map<String, WaitingList> map) {
         this.registrationsByEventId = map;
-        notifyDataSetChanged();
     }
 
+    /** Sets map without triggering a redraw; call {@link #notifyDataSetChanged()} once when all maps are ready. */
     public void setWaitlistCountByEventId(Map<String, Integer> map) {
         this.waitlistCountByEventId = map;
-        notifyDataSetChanged();
     }
 
+    /** Sets map without triggering a redraw; call {@link #notifyDataSetChanged()} once when all maps are ready. */
     public void setEffectiveStatusByEventId(Map<String, String> map) {
         this.effectiveStatusByEventId = map;
-        notifyDataSetChanged();
     }
 
     public void setDeviceId(String deviceId) {
         this.deviceId = deviceId;
     }
 
+    public void setCommentAuthorName(String name) {
+        this.commentAuthorName = (name != null && !name.trim().isEmpty()) ? name.trim() : "You";
+    }
+
+    public void setOnEventCommentsChangedListener(OnEventCommentsChangedListener listener) {
+        this.onEventCommentsChangedListener = listener;
+    }
+
+    /** Position in the current (filtered) list, or -1. */
+    public int findPositionByEventId(String eventId) {
+        if (eventId == null || events == null) {
+            return -1;
+        }
+        for (int i = 0; i < events.size(); i++) {
+            Event e = events.get(i);
+            if (e != null && eventId.equals(e.getEventId())) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Whether the user is treated as on the waitlist for join/leave UI (aligned with {@link #onBindViewHolder}).
+     * Used when re-checking server state before joining (e.g. event switched to private).
+     */
+    public boolean isEffectivelyJoinedOnWaitlist(Event event) {
+        if (event == null || event.getEventId() == null) {
+            return false;
+        }
+        String eventId = event.getEventId();
+        boolean isJoined = activeRegistrationsByEventId != null
+                && activeRegistrationsByEventId.containsKey(eventId);
+        WaitingList anyReg = (registrationsByEventId != null)
+                ? registrationsByEventId.get(eventId)
+                : null;
+        String anyStatusDb = anyReg != null ? anyReg.getStatus() : null;
+        String anyStatus = anyStatusDb;
+        if (anyStatusDb != null && effectiveStatusByEventId != null && event.getEventId() != null) {
+            String effective = effectiveStatusByEventId.get(eventId);
+            anyStatus = WaitlistStatusUi.mergeDbStatusWithEffectiveOverride(anyStatusDb, effective);
+        }
+        boolean isJoinedEffective = isJoined;
+        if (effectiveStatusByEventId != null && event.getEventId() != null) {
+            if (anyStatus != null) {
+                isJoinedEffective = isActiveStatusForUi(anyStatus);
+            }
+        }
+        return isJoinedEffective;
+    }
 
     @NonNull
     @Override
@@ -107,18 +165,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         // This prevents "leave waitlist" UI appearing for events where the registration is missing.
         if (anyStatusDb != null && effectiveStatusByEventId != null && event.getEventId() != null) {
             String effective = effectiveStatusByEventId.get(event.getEventId());
-            if (effective != null) {
-                // Never let an X/not-selected notification overwrite a final declined/enrolled DB status.
-                if (WaitingList.STATUS_NOT_SELECTED.equals(effective)
-                        && (WaitingList.STATUS_DECLINED.equals(anyStatusDb) || "declined".equalsIgnoreCase(anyStatusDb))) {
-                    anyStatus = anyStatusDb;
-                } else if (WaitingList.STATUS_NOT_SELECTED.equals(effective)
-                        && (WaitingList.STATUS_ENROLLED.equals(anyStatusDb) || WaitingList.STATUS_SELECTED.equals(anyStatusDb))) {
-                    anyStatus = anyStatusDb;
-                } else {
-                    anyStatus = effective;
-                }
-            }
+            anyStatus = WaitlistStatusUi.mergeDbStatusWithEffectiveOverride(anyStatusDb, effective);
         }
 
         boolean isJoinedEffective = isJoined;
@@ -268,6 +315,12 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                     : "No special criteria.";
             holder.tvCriteriaDescription.setText(criteriaText);
             holder.layoutGeoNote.setVisibility(View.GONE);
+
+            EventCommentsUiBinder.bind(holder.itemView, event, deviceId, commentAuthorName, () -> {
+                if (onEventCommentsChangedListener != null && event.getEventId() != null) {
+                    onEventCommentsChangedListener.onEventCommentsChanged(event.getEventId());
+                }
+            });
         }
 
         View.OnClickListener toggleExpand = v -> {

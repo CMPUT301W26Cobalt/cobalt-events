@@ -32,10 +32,27 @@ public class EventController {
         eventDB.getAllEvents(onSuccess, onFailure);
     }
 
+    /**
+     * @param onUsedLocalCacheFallback invoked when the catalog is served from local Firestore cache
+     *                                 after a failed server read (e.g. offline); use for UI messaging.
+     */
+    public void getAllEvents(OnSuccessListener<List<Event>> onSuccess,
+                             OnFailureListener onFailure,
+                             Runnable onUsedLocalCacheFallback) {
+        eventDB.getAllEvents(onSuccess, onFailure, onUsedLocalCacheFallback);
+    }
+
     public void getEvent(String eventId,
                          OnSuccessListener<Event> onSuccess,
                          OnFailureListener onFailure) {
         eventDB.getEvent(eventId, onSuccess, onFailure);
+    }
+
+    /** Server-only fetch for join-time validation (geolocation, capacity, registration close). */
+    public void getEventFromServer(String eventId,
+                                   OnSuccessListener<Event> onSuccess,
+                                   OnFailureListener onFailure) {
+        eventDB.getEventFromServer(eventId, onSuccess, onFailure);
     }
 
     public void getEventsByOrganizer(String organizerDeviceId,

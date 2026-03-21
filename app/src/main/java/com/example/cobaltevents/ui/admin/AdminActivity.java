@@ -311,7 +311,8 @@ public class AdminActivity extends AppCompatActivity {
             Toast.makeText(this, "Failed to load events", Toast.LENGTH_SHORT).show();
             allItems.clear();
             filterCurrentList();
-        });
+        }, () -> runOnUiThread(() ->
+                Toast.makeText(this, R.string.admin_in_memory_cache_message, Toast.LENGTH_LONG).show()));
     }
 
     // =========================================================================
@@ -415,7 +416,8 @@ public class AdminActivity extends AppCompatActivity {
             Toast.makeText(this, "Failed to load images", Toast.LENGTH_SHORT).show();
             allItems.clear();
             filterCurrentList();
-        });
+        }, () -> runOnUiThread(() ->
+                Toast.makeText(this, R.string.admin_in_memory_cache_message, Toast.LENGTH_LONG).show()));
     }
 
     // =========================================================================
@@ -430,6 +432,13 @@ public class AdminActivity extends AppCompatActivity {
         setSelectedTab(tabOrganizers);
         tvSectionTitle.setText("Browse & Manage Organizers");
         showLoading();
+
+        final boolean[] adminCacheToastShown = { false };
+        Runnable onAdminSessionCache = () -> runOnUiThread(() -> {
+            if (adminCacheToastShown[0]) return;
+            adminCacheToastShown[0] = true;
+            Toast.makeText(this, R.string.admin_in_memory_cache_message, Toast.LENGTH_LONG).show();
+        });
 
         adminController.getAllOrganizers(organizers -> {
             List<AdminAdapter.AdminItem> newItems = new ArrayList<>();
@@ -462,7 +471,7 @@ public class AdminActivity extends AppCompatActivity {
             Toast.makeText(this, "Failed to load organizers", Toast.LENGTH_SHORT).show();
             allItems.clear();
             filterCurrentList();
-        });
+        }, onAdminSessionCache);
     }
 
     // =========================================================================

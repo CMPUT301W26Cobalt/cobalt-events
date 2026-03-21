@@ -296,7 +296,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="48dp"
                             android:layout_marginTop="24dp"
-                            android:background="@drawable/bg_button_primary_account"
+                            android:background="@drawable/bg_button_primary_account_solid"
                             android:gravity="center"
                             android:text="SAVE CHANGES"
                             android:textAllCaps="true"

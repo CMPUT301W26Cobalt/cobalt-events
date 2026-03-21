@@ -34,9 +34,9 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
         this.listener = listener;
     }
 
+    /** Sets map without triggering a redraw; the subsequent {@link #updateHistory} call will notify. */
     public void setEffectiveStatusByEventId(java.util.Map<String, String> effectiveStatusByEventId) {
         this.effectiveStatusByEventId = effectiveStatusByEventId;
-        notifyDataSetChanged();
     }
     
     @NonNull

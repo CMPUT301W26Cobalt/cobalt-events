@@ -32,10 +32,13 @@ import com.example.cobaltevents.model.WaitingList;
 import com.example.cobaltevents.ui.adapter.EventHistoryAdapter;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * US 01.02.03: Display entrant's event registration history
@@ -88,6 +91,8 @@ public class EventHistoryActivity extends AppCompatActivity {
             }
         });
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setItemViewCacheSize(12);
         recyclerView.setAdapter(adapter);
 
         setupBottomNavigation();
@@ -185,50 +190,140 @@ public class EventHistoryActivity extends AppCompatActivity {
                 refreshFromUserGesture = false;
                 return;
             }
-            final int total = events.size();
-            final int[] processed = {0};
-            List<EventHistory> temp = new ArrayList<>();
-            for (Event event : events) {
-                if (event == null || event.getEventId() == null) {
-                    if (++processed[0] == total) finishHistoryLoad(temp);
-                    continue;
-                }
-                waitingListDB.getRegistrationForEventAnyStatus(event.getEventId(), deviceId, reg -> {
-                    if (reg != null) {
-                        temp.add(new EventHistory(event, reg));
-                    }
-                    if (++processed[0] == total) finishHistoryLoad(temp);
-                }, e -> {
-                    if (++processed[0] == total) finishHistoryLoad(temp);
-                });
+            final List<Event> eventList = events;
+
+            if (deviceId == null || deviceId.isEmpty()) {
+                effectiveStatusByEventId.clear();
+                completeHistoryUiRefresh(new ArrayList<>());
+                return;
             }
+
+            final AtomicInteger completed = new AtomicInteger(0);
+            final List<WaitingList>[] historyHolder = new List[1];
+            final List<Notification>[] notificationsHolder = new List[1];
+            final List<EventHistory>[] legacyHistoryResult = new List[1];
+            final boolean[] historyFailed = { false };
+            final boolean[] notificationsFailed = { false };
+
+            Runnable mergeWhenBothDone = () -> {
+                if (completed.incrementAndGet() != 2) return;
+                runOnUiThread(() -> completeHistoryParallelMerge(
+                        eventList,
+                        historyHolder[0],
+                        historyFailed[0],
+                        notificationsHolder[0],
+                        notificationsFailed[0],
+                        legacyHistoryResult));
+            };
+
+            waitingListDB.getEntrantHistory(deviceId,
+                    list -> {
+                        historyHolder[0] = list;
+                        mergeWhenBothDone.run();
+                    },
+                    err -> {
+                        historyFailed[0] = true;
+                        loadHistoryRegistrationsLegacy(eventList, legacyHistoryResult, mergeWhenBothDone);
+                    });
+
+            notificationDB.getNotificationsForRecipient(deviceId,
+                    list -> {
+                        notificationsHolder[0] = list;
+                        mergeWhenBothDone.run();
+                    },
+                    err -> {
+                        notificationsFailed[0] = true;
+                        mergeWhenBothDone.run();
+                    });
         }, e -> {
             progressBar.setVisibility(View.GONE);
             if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
             refreshFromUserGesture = false;
             Toast.makeText(this, "Failed to load history: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        });
+        }, () -> runOnUiThread(() ->
+                Toast.makeText(this, R.string.firebase_cache_fallback_message, Toast.LENGTH_LONG).show()));
     }
 
-    private void finishHistoryLoad(List<EventHistory> historyList) {
-        applyNotificationEffectiveStatusesThenFinish(historyList);
-    }
-
-    private void applyNotificationEffectiveStatusesThenFinish(List<EventHistory> historyList) {
-        if (deviceId == null || deviceId.isEmpty()) {
-            completeHistoryUiRefresh(historyList);
+    /** Per-event registration fetch when collection-group query fails (matches pre-optimization behavior). */
+    private void loadHistoryRegistrationsLegacy(List<Event> eventList,
+                                                List<EventHistory>[] out,
+                                                Runnable whenDone) {
+        if (eventList == null || eventList.isEmpty()) {
+            out[0] = new ArrayList<>();
+            whenDone.run();
             return;
         }
-        effectiveStatusByEventId.clear();
-        notificationDB.getNotificationsForRecipient(deviceId,
-                notifications -> {
-                    applyNotificationEffectiveStatuses(notifications);
-                    completeHistoryUiRefresh(historyList);
-                },
-                e -> {
-                    effectiveStatusByEventId.clear();
-                    completeHistoryUiRefresh(historyList);
+        runOnUiThread(() -> Toast.makeText(this, R.string.registration_history_fallback_message,
+                Toast.LENGTH_LONG).show());
+        final List<EventHistory> temp = new ArrayList<>();
+        final AtomicInteger pending = new AtomicInteger(eventList.size());
+        for (Event event : eventList) {
+            if (event == null || event.getEventId() == null) {
+                runOnUiThread(() -> {
+                    if (pending.decrementAndGet() == 0) {
+                        out[0] = temp;
+                        whenDone.run();
+                    }
                 });
+                continue;
+            }
+            final String eventId = event.getEventId();
+            waitingListDB.getRegistrationForEventAnyStatus(eventId, deviceId,
+                    reg -> runOnUiThread(() -> {
+                        if (reg != null) {
+                            temp.add(new EventHistory(event, reg));
+                        }
+                        if (pending.decrementAndGet() == 0) {
+                            out[0] = temp;
+                            whenDone.run();
+                        }
+                    }),
+                    e -> runOnUiThread(() -> {
+                        if (pending.decrementAndGet() == 0) {
+                            out[0] = temp;
+                            whenDone.run();
+                        }
+                    }));
+        }
+    }
+
+    /**
+     * Join catalog events with one collection-group registration query and notification overrides
+     * (same result as N per-event reads + sequential notifications).
+     */
+    private void completeHistoryParallelMerge(List<Event> eventList,
+                                              List<WaitingList> history,
+                                              boolean historyFailed,
+                                              List<Notification> notifications,
+                                              boolean notificationsFailed,
+                                              List<EventHistory>[] legacyHistoryResult) {
+        List<EventHistory> temp = new ArrayList<>();
+        if (historyFailed) {
+            if (legacyHistoryResult != null && legacyHistoryResult[0] != null) {
+                temp = legacyHistoryResult[0];
+                legacyHistoryResult[0] = null;
+            }
+        } else if (history != null) {
+            Map<String, WaitingList> byEventId = new HashMap<>();
+            for (WaitingList w : history) {
+                if (w == null || w.getEventId() == null) continue;
+                byEventId.put(w.getEventId(), w);
+            }
+            for (Event event : eventList) {
+                if (event == null || event.getEventId() == null) continue;
+                WaitingList reg = byEventId.get(event.getEventId());
+                if (reg != null) {
+                    temp.add(new EventHistory(event, reg));
+                }
+            }
+        }
+
+        effectiveStatusByEventId.clear();
+        if (!notificationsFailed && notifications != null) {
+            applyNotificationEffectiveStatuses(notifications);
+        }
+
+        completeHistoryUiRefresh(temp);
     }
 
     private void applyNotificationEffectiveStatuses(List<Notification> notifications) {

@@ -1,6 +1,11 @@
 package com.example.cobaltevents.ui;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -15,13 +20,21 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.db.EntrantDB;
+import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.db.NotificationDB;
 import com.example.cobaltevents.db.WaitingListDB;
+import com.example.cobaltevents.model.Notification;
 import com.example.cobaltevents.model.WaitingList;
 import com.example.cobaltevents.ui.adapter.NotificationListAdapter;
 
 public class NotificationsActivity extends AppCompatActivity {
+
+    private static final String SEED_PREFS = "notifications_one_time_seed";
+    /** Bump this string when you need another one-time push for all installs. */
+    private static final String KEY_SEEDED_TRIPLE_MAR_2026 = "seeded_triple_private_notselected_star_v3";
+
     private NotificationDB notificationDB;
+    private EventDB eventDB;
     private WaitingListDB waitingListDB;
     private NotificationListAdapter adapter;
     private String deviceId;
@@ -41,6 +54,7 @@ public class NotificationsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_notifications);
 
         notificationDB = new NotificationDB();
+        eventDB = new EventDB();
         waitingListDB = new WaitingListDB();
         deviceId = new EntrantDB(this).getEntrant().getDeviceId();
 
@@ -70,6 +84,11 @@ public class NotificationsActivity extends AppCompatActivity {
             @Override
             public void onReject(com.example.cobaltevents.model.Notification notification) {
                 if (notificationActionInProgress) return;
+                if (!isNetworkAvailable()) {
+                    Toast.makeText(NotificationsActivity.this, R.string.notification_no_internet,
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
                 notificationActionInProgress = true;
                 if (isCoOrganizerType(notification)) {
                     updateResponseOnly(
@@ -95,8 +114,63 @@ public class NotificationsActivity extends AppCompatActivity {
         }
 
         setupBottomNavigation();
-        // Ensure notifications load immediately on entry (manual swipe refresh should be optional).
-        loadNotifications();
+        // One-time sample trio (private-event → not-selected → got-off-waitlist), then load list.
+        maybeSeedOneTimeTripleNotifications(this::loadNotifications);
+    }
+
+    /**
+     * Pushes three sample notifications once per install, in order: private-event, not-selected, got-off-waitlist.
+     */
+    private void maybeSeedOneTimeTripleNotifications(Runnable after) {
+        if (deviceId == null || deviceId.isEmpty()) {
+            after.run();
+            return;
+        }
+        SharedPreferences prefs = getSharedPreferences(SEED_PREFS, MODE_PRIVATE);
+        if (prefs.getBoolean(KEY_SEEDED_TRIPLE_MAR_2026, false)) {
+            after.run();
+            return;
+        }
+
+        final String evPrivate = "1dCPXQLN0wdTfaFfn9Y1";
+        final String evOther = "2a383654-728c-446f-9c53-20ed48e671af";
+
+        Notification n1 = new Notification(deviceId, evPrivate,
+                "Private event invitation",
+                "You've been invited to a private event. Accept or decline to continue.",
+                Notification.TYPE_PRIVATE_EVENT);
+
+        notificationDB.saveNotification(n1,
+                id1 -> {
+                    Notification n2 = new Notification(deviceId, evOther,
+                            "Not selected",
+                            "You were not selected for this draw. You remain on the waitlist.",
+                            Notification.TYPE_NOT_SELECTED);
+                    notificationDB.saveNotification(n2,
+                            id2 -> {
+                                Notification n3 = new Notification(deviceId, evOther,
+                                        "Off the waitlist",
+                                        "Good news — you're off the waitlist for this event. Please accept or decline enrollment.",
+                                        Notification.TYPE_GOT_OFF_WAITLIST);
+                                notificationDB.saveNotification(n3,
+                                        id3 -> {
+                                            prefs.edit().putBoolean(KEY_SEEDED_TRIPLE_MAR_2026, true).apply();
+                                            after.run();
+                                        },
+                                        e3 -> {
+                                            Log.e("NotificationsActivity", "Sample seed 3 failed", e3);
+                                            after.run();
+                                        });
+                            },
+                            e2 -> {
+                                Log.e("NotificationsActivity", "Sample seed 2 failed", e2);
+                                after.run();
+                            });
+                },
+                e1 -> {
+                    Log.e("NotificationsActivity", "Sample seed 1 failed", e1);
+                    after.run();
+                });
     }
 
     private void loadNotifications() {
@@ -403,23 +477,39 @@ public class NotificationsActivity extends AppCompatActivity {
                         // For faster feedback, update the response badge locally now.
                         currentEventIdToStatus.put(eventId, waitlistStatus);
                         applyLocalResponseUpdate(notification, newResponse);
-                        waitingListDB.addRegistration(newReg,
-                                unused -> notificationDB.updateResponse(notificationId, newResponse,
-                                        unused2 -> {
-                                            loadNotifications();
-                                            notificationActionInProgress = false;
-                                        },
-                                        e2 -> {
-                                            loadNotifications();
-                                            notificationActionInProgress = false;
-                                        }),
-                                e -> {
-                                    Toast.makeText(this,
-                                            "Failed to update waitlist status",
-                                            Toast.LENGTH_LONG).show();
-                                    loadNotifications();
-                                    notificationActionInProgress = false;
-                                });
+                        eventDB.getEvent(eventId, event -> {
+                            int cap = event != null ? event.getWaitingListCapacity() : 0;
+                            waitingListDB.addRegistrationWithJoinChecks(newReg, cap,
+                                    event != null ? event.getRegistrationClose() : null,
+                                    unused -> notificationDB.updateResponse(notificationId, newResponse,
+                                            unused2 -> {
+                                                loadNotifications();
+                                                notificationActionInProgress = false;
+                                            },
+                                            e2 -> {
+                                                loadNotifications();
+                                                notificationActionInProgress = false;
+                                            }),
+                                    err -> {
+                                        if (WaitingListDB.REASON_WAITLIST_FULL.equals(err.getMessage())) {
+                                            Toast.makeText(this, R.string.waitlist_full_capacity, Toast.LENGTH_LONG).show();
+                                        } else if (WaitingListDB.REASON_REGISTRATION_CLOSED.equals(err.getMessage())) {
+                                            Toast.makeText(this, R.string.waitlist_registration_closed, Toast.LENGTH_LONG).show();
+                                        } else {
+                                            Toast.makeText(this,
+                                                    "Failed to update waitlist status",
+                                                    Toast.LENGTH_LONG).show();
+                                        }
+                                        loadNotifications();
+                                        notificationActionInProgress = false;
+                                    });
+                        }, err -> {
+                            Toast.makeText(this,
+                                    "Failed to load event",
+                                    Toast.LENGTH_LONG).show();
+                            loadNotifications();
+                            notificationActionInProgress = false;
+                        });
                     }
                 },
                 e -> {
@@ -527,6 +617,18 @@ public class NotificationsActivity extends AppCompatActivity {
                     loadNotifications();
                     notificationActionInProgress = false;
                 });
+    }
+
+    /** Same connectivity check as join/leave waitlist (Wi‑Fi, cellular, or Ethernet). */
+    private boolean isNetworkAvailable() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) return false;
+        Network network = cm.getActiveNetwork();
+        if (network == null) return false;
+        NetworkCapabilities caps = cm.getNetworkCapabilities(network);
+        return caps != null && (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                || caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+                || caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
     }
 
 }

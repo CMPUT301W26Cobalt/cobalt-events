@@ -42,15 +42,19 @@ import com.example.cobaltevents.model.WaitingList;
 import com.example.cobaltevents.model.Entrant;
 import com.example.cobaltevents.controller.GeolocationController;
 import com.example.cobaltevents.ui.adapter.EventAdapter;
+import com.example.cobaltevents.ui.waitlist.RegistrationPeriodUi;
+import com.example.cobaltevents.ui.waitlist.WaitlistStatusUi;
 import com.google.firebase.Timestamp;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 public class EventListActivity extends AppCompatActivity {
 
@@ -88,16 +92,41 @@ public class EventListActivity extends AppCompatActivity {
                 if (granted) {
                     geolocationController.fetchLocationOnStartup(this);
                     if (pendingGeoJoinEvent != null) {
-                        joinAndRecordLocation(pendingGeoJoinEvent);
+                        final String pendingEventId = pendingGeoJoinEvent.getEventId();
+                        pendingGeoJoinEvent = null;
+                        eventController.getEventFromServer(pendingEventId, fresh -> runOnUiThread(() -> {
+                            if (fresh == null) {
+                                Toast.makeText(this, "Could not load event.", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            mergeServerEventIntoAllEvents(fresh);
+                            applyFilters();
+                            if (fresh.isPrivate() && !adapter.isEffectivelyJoinedOnWaitlist(fresh)) {
+                                Toast.makeText(this, R.string.event_switched_to_private, Toast.LENGTH_LONG).show();
+                                refreshEventRowUi(fresh.getEventId());
+                                return;
+                            }
+                            if (!RegistrationPeriodUi.isNowWithinRegistrationWindow(fresh)) {
+                                Toast.makeText(this, R.string.waitlist_registration_period_altered, Toast.LENGTH_LONG).show();
+                                refreshEventRowUi(fresh.getEventId());
+                                return;
+                            }
+                            checkCapacityThenProceedJoin(fresh, () -> joinAndRecordLocation(fresh));
+                        }), e -> runOnUiThread(() ->
+                                Toast.makeText(this, "Could not load event.", Toast.LENGTH_SHORT).show()));
                     }
                 } else {
                     Toast.makeText(this, "Location permission denied — cannot join this event.", Toast.LENGTH_LONG).show();
+                    pendingGeoJoinEvent = null;
                 }
-                pendingGeoJoinEvent = null;
             });
     private final Map<String, WaitingList> activeRegistrationsByEventId = new HashMap<>();
     private final Map<String, WaitingList> registrationsByEventId = new HashMap<>();
     private final Map<String, Integer> waitlistCountByEventId = new HashMap<>();
+    /** Timestamp (millis) of the last successful full load; used to debounce onResume reloads. */
+    private long lastFullLoadTimestamp = 0;
+    /** Skip redundant reload only when the last full load just finished (keeps resume snappy). */
+    private static final long RESUME_DEBOUNCE_MS = 2_000;
 
     private List<Event> allEvents = new ArrayList<>();
     private String currentQuery = "";
@@ -139,8 +168,17 @@ public class EventListActivity extends AppCompatActivity {
 
         adapter = new EventAdapter(new ArrayList<>(), this::handleJoinOrLeave);
         adapter.setDeviceId(deviceId);
+        adapter.setCommentAuthorName(resolveCommentAuthorName());
+        adapter.setOnEventCommentsChangedListener(eventId -> {
+            int pos = adapter.findPositionByEventId(eventId);
+            if (pos >= 0) {
+                adapter.notifyItemChanged(pos);
+            }
+        });
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setItemViewCacheSize(12);
         recyclerView.setAdapter(adapter);
 
         EditText etSearch = findViewById(R.id.et_search);
@@ -200,6 +238,12 @@ public class EventListActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        if (adapter != null) {
+            adapter.setCommentAuthorName(resolveCommentAuthorName());
+        }
+        if (System.currentTimeMillis() - lastFullLoadTimestamp < RESUME_DEBOUNCE_MS) {
+            return;
+        }
         loadEvents();
     }
 
@@ -209,121 +253,250 @@ public class EventListActivity extends AppCompatActivity {
         if (recyclerView != null) recyclerView.setVisibility(View.INVISIBLE);
         if (tvEmpty != null) tvEmpty.setVisibility(View.GONE);
         if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+
+        // Overlap: events catalog + entrant history + notifications (same merge as before; wall-clock ~max of the three).
+        final int bootstrapParts = (deviceId != null && !deviceId.isEmpty()) ? 3 : 1;
+        final java.util.concurrent.atomic.AtomicInteger bootstrapRemaining = new java.util.concurrent.atomic.AtomicInteger(bootstrapParts);
+        final boolean[] eventsLoadOk = { true };
+        final List<Event>[] eventsHolder = new List[1];
+        final List<WaitingList>[] historyHolder = new List[1];
+        final List<Notification>[] notificationsHolder = new List[1];
+        final boolean[] historyFailed = { false };
+        final boolean[] notificationsFailed = { false };
+
+        Runnable bootstrapPartDone = () -> {
+            if (bootstrapRemaining.decrementAndGet() != 0) return;
+            runOnUiThread(() -> completeParallelEventsBootstrap(
+                    eventsLoadOk[0],
+                    eventsHolder[0],
+                    historyHolder[0],
+                    historyFailed[0],
+                    notificationsHolder[0],
+                    notificationsFailed[0]));
+        };
+
         eventController.getAllEvents(events -> {
             if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
-            allEvents = events != null ? events : new ArrayList<>();
-        loadActiveRegistrationsThenApplyFilters();
+            eventsHolder[0] = events != null ? events : new ArrayList<>();
+            bootstrapPartDone.run();
         }, e -> {
-            progressBar.setVisibility(View.GONE);
             if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+            eventsLoadOk[0] = false;
+            progressBar.setVisibility(View.GONE);
             eventsLoading = false;
             if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
             Toast.makeText(this, "Failed to load events: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        });
+            bootstrapPartDone.run();
+        }, () -> runOnUiThread(() ->
+                Toast.makeText(this, R.string.firebase_cache_fallback_message, Toast.LENGTH_LONG).show()));
+
+        if (deviceId != null && !deviceId.isEmpty()) {
+            waitingListDB.getEntrantHistory(deviceId,
+                    list -> {
+                        historyHolder[0] = list;
+                        bootstrapPartDone.run();
+                    },
+                    err -> {
+                        historyFailed[0] = true;
+                        bootstrapPartDone.run();
+                    });
+
+            notificationDB.getNotificationsForRecipient(deviceId,
+                    list -> {
+                        notificationsHolder[0] = list;
+                        bootstrapPartDone.run();
+                    },
+                    err -> {
+                        notificationsFailed[0] = true;
+                        bootstrapPartDone.run();
+                    });
+        }
     }
 
+    private void completeParallelEventsBootstrap(boolean eventsLoadOk,
+                                                 List<Event> events,
+                                                 List<WaitingList> history,
+                                                 boolean historyFailed,
+                                                 List<Notification> notifications,
+                                                 boolean notificationsFailed) {
+        if (!eventsLoadOk) {
+            return;
+        }
+        allEvents = events != null ? events : new ArrayList<>();
+        mergeRegistrationsNotificationsAndFinalizeUi(history, historyFailed, notifications, notificationsFailed);
+    }
+
+    /**
+     * Refresh registrations + notification-derived status, then waitlist counts (after join/leave, etc.).
+     * Fetches entrant history + notifications (unlike loadEvents, which may pass pre-fetched lists).
+     */
     private void loadActiveRegistrationsThenApplyFilters() {
+        if (allEvents == null || allEvents.isEmpty()) {
+            activeRegistrationsByEventId.clear();
+            registrationsByEventId.clear();
+            adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+            adapter.setRegistrationsByEventId(registrationsByEventId);
+            adapter.setEffectiveStatusByEventId(new HashMap<>());
+            loadWaitlistCountsThenFinalize();
+            return;
+        }
+
+        if (deviceId == null || deviceId.isEmpty()) {
+            activeRegistrationsByEventId.clear();
+            registrationsByEventId.clear();
+            adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+            adapter.setRegistrationsByEventId(registrationsByEventId);
+            adapter.setEffectiveStatusByEventId(new HashMap<>());
+            loadWaitlistCountsThenFinalize();
+            return;
+        }
+
+        final java.util.concurrent.atomic.AtomicInteger completed = new java.util.concurrent.atomic.AtomicInteger(0);
+        final List<WaitingList>[] historyHolder = new List[1];
+        final List<Notification>[] notificationsHolder = new List[1];
+        final boolean[] historyFailed = { false };
+        final boolean[] notificationsFailed = { false };
+
+        Runnable mergeWhenBothDone = () -> {
+            if (completed.incrementAndGet() != 2) return;
+            runOnUiThread(() -> mergeRegistrationsNotificationsAndFinalizeUi(
+                    historyHolder[0],
+                    historyFailed[0],
+                    notificationsHolder[0],
+                    notificationsFailed[0]));
+        };
+
+        waitingListDB.getEntrantHistory(deviceId,
+                list -> {
+                    historyHolder[0] = list;
+                    mergeWhenBothDone.run();
+                },
+                e -> {
+                    historyFailed[0] = true;
+                    loadRegistrationsPerEventForMerge(mergeWhenBothDone);
+                });
+
+        notificationDB.getNotificationsForRecipient(deviceId,
+                list -> {
+                    notificationsHolder[0] = list;
+                    mergeWhenBothDone.run();
+                },
+                e -> {
+                    notificationsFailed[0] = true;
+                    mergeWhenBothDone.run();
+                });
+    }
+
+    private void applyEffectiveStatusAdaptersAndWaitlistCounts(List<Notification> notifications,
+                                                               boolean notificationsFailed) {
+        Map<String, String> effective = new HashMap<>();
+        if (!notificationsFailed && notifications != null) {
+            effective = computeEffectiveStatusByEventId(notifications);
+        }
+        adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+        adapter.setRegistrationsByEventId(registrationsByEventId);
+        adapter.setEffectiveStatusByEventId(effective);
+        loadWaitlistCountsThenFinalize();
+    }
+
+    /**
+     * Same UI outcome as the pre-overlap flow: build reg maps, merge notification overrides, then counts + filters.
+     */
+    private void mergeRegistrationsNotificationsAndFinalizeUi(List<WaitingList> history,
+                                                              boolean historyFailed,
+                                                              List<Notification> notifications,
+                                                              boolean notificationsFailed) {
         activeRegistrationsByEventId.clear();
         registrationsByEventId.clear();
+
         if (allEvents == null || allEvents.isEmpty()) {
             adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
             adapter.setRegistrationsByEventId(registrationsByEventId);
+            adapter.setEffectiveStatusByEventId(new HashMap<>());
             loadWaitlistCountsThenFinalize();
-            applyFilters();
             return;
         }
-        java.util.concurrent.atomic.AtomicInteger pending = new java.util.concurrent.atomic.AtomicInteger(allEvents.size());
+
+        if (deviceId == null || deviceId.isEmpty()) {
+            adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+            adapter.setRegistrationsByEventId(registrationsByEventId);
+            adapter.setEffectiveStatusByEventId(new HashMap<>());
+            loadWaitlistCountsThenFinalize();
+            return;
+        }
+
+        if (!historyFailed) {
+            fillRegistrationMapsFromEntrantHistory(history, false);
+            applyEffectiveStatusAdaptersAndWaitlistCounts(notifications, notificationsFailed);
+        } else {
+            loadRegistrationsPerEventForMerge(() -> runOnUiThread(() ->
+                    applyEffectiveStatusAdaptersAndWaitlistCounts(notifications, notificationsFailed)));
+        }
+    }
+
+    /**
+     * Legacy path: same as pre-optimization behavior when getEntrantHistory fails.
+     */
+    private void loadRegistrationsPerEventForMerge(Runnable whenAllRegistrationsLoaded) {
+        if (allEvents == null || allEvents.isEmpty()) {
+            runOnUiThread(whenAllRegistrationsLoaded);
+            return;
+        }
+        runOnUiThread(() -> Toast.makeText(this, R.string.registration_history_fallback_message,
+                Toast.LENGTH_LONG).show());
+        final java.util.concurrent.atomic.AtomicInteger pending = new java.util.concurrent.atomic.AtomicInteger(allEvents.size());
         for (Event event : allEvents) {
             if (event == null || event.getEventId() == null) {
-                if (pending.decrementAndGet() == 0) finishLoadingRegistrations();
+                runOnUiThread(() -> {
+                    if (pending.decrementAndGet() == 0) whenAllRegistrationsLoaded.run();
+                });
                 continue;
             }
-            String eventId = event.getEventId();
+            final String eventId = event.getEventId();
             waitingListDB.getRegistrationForEventAnyStatus(eventId, deviceId,
-                    reg -> {
+                    reg -> runOnUiThread(() -> {
                         if (reg != null) {
                             registrationsByEventId.put(eventId, reg);
                             if (isActiveStatus(reg.getStatus())) {
                                 activeRegistrationsByEventId.put(eventId, reg);
                             }
                         }
-                        if (pending.decrementAndGet() == 0) finishLoadingRegistrations();
-                    },
-                    e -> {
-                        if (pending.decrementAndGet() == 0) finishLoadingRegistrations();
-                    });
+                        if (pending.decrementAndGet() == 0) whenAllRegistrationsLoaded.run();
+                    }),
+                    err -> runOnUiThread(() -> {
+                        if (pending.decrementAndGet() == 0) whenAllRegistrationsLoaded.run();
+                    }));
         }
     }
 
-    private void finishLoadingRegistrations() {
-        adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
-        adapter.setRegistrationsByEventId(registrationsByEventId);
-        applyNotificationEffectiveStatusToAdapter();
-    }
-
-    private void applyNotificationEffectiveStatusToAdapter() {
-        if (deviceId == null || deviceId.isEmpty()) {
-            adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
-            adapter.setRegistrationsByEventId(registrationsByEventId);
-            adapter.setEffectiveStatusByEventId(new java.util.HashMap<>());
-            loadWaitlistCountsThenFinalize();
+    private void fillRegistrationMapsFromEntrantHistory(List<WaitingList> history, boolean historyFailed) {
+        activeRegistrationsByEventId.clear();
+        registrationsByEventId.clear();
+        if (historyFailed || history == null || allEvents == null) {
             return;
         }
-        notificationDB.getNotificationsForRecipient(deviceId,
-                notifications -> {
-                    adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
-                    adapter.setRegistrationsByEventId(registrationsByEventId);
-                    adapter.setEffectiveStatusByEventId(computeEffectiveStatusByEventId(notifications));
-                    loadWaitlistCountsThenFinalize();
-                },
-                e -> {
-                    adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
-                    adapter.setRegistrationsByEventId(registrationsByEventId);
-                    adapter.setEffectiveStatusByEventId(new java.util.HashMap<>());
-                    loadWaitlistCountsThenFinalize();
-                });
+        Map<String, WaitingList> byEventId = new HashMap<>();
+        for (WaitingList w : history) {
+            if (w == null || w.getEventId() == null) continue;
+            byEventId.put(w.getEventId(), w);
+        }
+        Set<String> knownEventIds = new HashSet<>();
+        for (Event event : allEvents) {
+            if (event == null || event.getEventId() == null) continue;
+            knownEventIds.add(event.getEventId());
+        }
+        for (String eventId : knownEventIds) {
+            WaitingList reg = byEventId.get(eventId);
+            if (reg == null) continue;
+            registrationsByEventId.put(eventId, reg);
+            if (isActiveStatus(reg.getStatus())) {
+                activeRegistrationsByEventId.put(eventId, reg);
+            }
+        }
     }
 
     private java.util.Map<String, String> computeEffectiveStatusByEventId(List<Notification> notifications) {
-        java.util.Map<String, String> effective = new java.util.HashMap<>();
-        if (notifications == null) return effective;
-        java.util.Set<String> processedEventIds = new java.util.HashSet<>();
-        for (Notification n : notifications) {
-            if (n == null || n.getEventId() == null || n.getType() == null) continue;
-            String eventId = n.getEventId();
-            if (processedEventIds.contains(eventId)) continue;
-            String effectiveStatus = getOverrideStatusFromNotification(n);
-            if (effectiveStatus == null) continue;
-            processedEventIds.add(eventId);
-            effective.put(eventId, effectiveStatus);
-        }
-        return effective;
-    }
-
-    private String getOverrideStatusFromNotification(Notification n) {
-        if (n == null || n.getType() == null) return null;
-        String type = n.getType();
-        String response = n.getResponse();
-        if (Notification.TYPE_CO_ORGANIZER.equals(type)) {
-            // No waitlist connection for co-organization.
-            return null;
-        }
-        if (Notification.TYPE_NOT_SELECTED.equals(type)) {
-            // Still in the waitlist; only indicates you weren't selected.
-            return WaitingList.STATUS_NOT_SELECTED;
-        }
-        if (Notification.TYPE_PRIVATE_EVENT.equals(type)) {
-            // Private invitations should not force event-list join/leave state
-            // until the user actually presses accept/decline and a waitlist entry exists.
-            return null;
-        }
-        if (Notification.TYPE_SELECTED.equals(type) || Notification.TYPE_GOT_OFF_WAITLIST.equals(type)) {
-            if (Notification.RESPONSE_ACCEPTED.equals(response)) return WaitingList.STATUS_ENROLLED;
-            if (Notification.RESPONSE_DECLINED.equals(response)) return WaitingList.STATUS_DECLINED;
-            // Pending selected/star must not flip JOIN/LEAVE UI by itself.
-            return null;
-        }
-        return null;
+        return WaitlistStatusUi.effectiveStatusByEventIdFromNotifications(notifications);
     }
 
     private boolean isActiveStatus(String status) {
@@ -342,14 +515,15 @@ public class EventListActivity extends AppCompatActivity {
         java.util.List<String> eventIds = new java.util.ArrayList<>();
         for (Event e : allEvents) {
             if (e == null || e.getEventId() == null) continue;
-            // Unlimited capacity events never need counts for "full" UI or capacity filtering logic.
-            if (e.getWaitingListCapacity() <= 0) continue;
+            // Fetch count for every event so "N on waitlist" is visible even when capacity is 0 (unlimited).
+            // JOIN/WAITLIST FULL still only applies when capacity > 0 (see EventAdapter).
             eventIds.add(e.getEventId());
         }
 
         if (eventIds.isEmpty()) {
             adapter.setWaitlistCountByEventId(waitlistCountByEventId);
             eventsLoading = false;
+            lastFullLoadTimestamp = System.currentTimeMillis();
             applyFilters();
             progressBar.setVisibility(View.GONE);
             if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
@@ -358,7 +532,8 @@ public class EventListActivity extends AppCompatActivity {
         }
 
         // Fetch waitlist counts with limited parallelism to avoid Firestore throttling/timeouts.
-        final int maxConcurrent = 5;
+        // Count() aggregation is lightweight (no doc downloads), so higher concurrency is safe.
+        final int maxConcurrent = 10;
         java.util.concurrent.atomic.AtomicInteger nextIndex = new java.util.concurrent.atomic.AtomicInteger(0);
         java.util.concurrent.atomic.AtomicInteger inFlight = new java.util.concurrent.atomic.AtomicInteger(0);
         java.util.concurrent.atomic.AtomicInteger remaining = new java.util.concurrent.atomic.AtomicInteger(eventIds.size());
@@ -385,6 +560,7 @@ public class EventListActivity extends AppCompatActivity {
                                         && finalized.compareAndSet(false, true)) {
                                     adapter.setWaitlistCountByEventId(waitlistCountByEventId);
                                     eventsLoading = false;
+                                    lastFullLoadTimestamp = System.currentTimeMillis();
                                     applyFilters();
                                     progressBar.setVisibility(View.GONE);
                                     if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
@@ -399,6 +575,7 @@ public class EventListActivity extends AppCompatActivity {
                                         && finalized.compareAndSet(false, true)) {
                                     adapter.setWaitlistCountByEventId(waitlistCountByEventId);
                                     eventsLoading = false;
+                                    lastFullLoadTimestamp = System.currentTimeMillis();
                                     applyFilters();
                                     progressBar.setVisibility(View.GONE);
                                     if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
@@ -413,6 +590,23 @@ public class EventListActivity extends AppCompatActivity {
 
         // Kick off initial tasks.
         if (startMoreRef[0] != null) runOnUiThread(startMoreRef[0]);
+    }
+
+    /**
+     * After join/leave for one event, refresh only that event's active waitlist count (not the full list).
+     */
+    private void refreshWaitlistCountForEventId(String eventId) {
+        if (eventId == null || eventId.isEmpty()) {
+            return;
+        }
+        waitingListDB.getActiveCountForEvent(eventId,
+                count -> runOnUiThread(() -> {
+                    waitlistCountByEventId.put(eventId, count);
+                    adapter.setWaitlistCountByEventId(waitlistCountByEventId);
+                    applyFilters();
+                }),
+                e -> runOnUiThread(() ->
+                        Toast.makeText(this, "Could not refresh waitlist count.", Toast.LENGTH_SHORT).show()));
     }
 
     private void setupBottomNavigation() {
@@ -857,6 +1051,27 @@ public class EventListActivity extends AppCompatActivity {
         }
     }
 
+    private String resolveCommentAuthorName() {
+        Entrant e = entrantDB.getEntrant();
+        if (e != null && e.getName() != null && !e.getName().trim().isEmpty()) {
+            return e.getName().trim();
+        }
+        return "You";
+    }
+
+    private void mergeServerEventIntoAllEvents(Event fresh) {
+        if (fresh == null || fresh.getEventId() == null) {
+            return;
+        }
+        for (int i = 0; i < allEvents.size(); i++) {
+            Event e = allEvents.get(i);
+            if (e != null && fresh.getEventId().equals(e.getEventId())) {
+                allEvents.set(i, fresh);
+                return;
+            }
+        }
+    }
+
     private void joinWaitlist(Event event) {
         if (event == null || event.getEventId() == null) {
             Toast.makeText(this, "Invalid event", Toast.LENGTH_SHORT).show();
@@ -866,28 +1081,78 @@ public class EventListActivity extends AppCompatActivity {
             Toast.makeText(this, getString(R.string.waitlist_fail) + " No internet connection.", Toast.LENGTH_SHORT).show();
             return;
         }
+        eventController.getEventFromServer(event.getEventId(), fresh -> runOnUiThread(() -> {
+            if (fresh == null) {
+                Toast.makeText(this, "Could not load event.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            mergeServerEventIntoAllEvents(fresh);
+            applyFilters();
+            proceedJoinAfterFreshEvent(fresh);
+        }), e -> runOnUiThread(() ->
+                Toast.makeText(this, "Could not load event.", Toast.LENGTH_SHORT).show()));
+    }
+
+    private void proceedJoinAfterFreshEvent(Event event) {
         Entrant entrant = entrantDB.getEntrant();
         if (!entrant.isValidName() || !entrant.isValidEmail()) {
             Toast.makeText(this, "Please complete your name and email in Account settings before joining a waitlist.", Toast.LENGTH_LONG).show();
             startActivity(new Intent(this, AccountSettingsActivity.class));
             return;
         }
-        if (event.isGeolocationRequired()) {
-            if (geolocationController.hasLocationPermission(this)) {
-                joinAndRecordLocation(event);
-            } else {
-                pendingGeoJoinEvent = event;
-                new androidx.appcompat.app.AlertDialog.Builder(this)
-                        .setTitle("Location Required")
-                        .setMessage("This event requires your location to be recorded when joining the waitlist.")
-                        .setPositiveButton("Allow", (d, w) ->
-                                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION))
-                        .setNegativeButton("Cancel", null)
-                        .show();
-            }
+        if (!RegistrationPeriodUi.isNowWithinRegistrationWindow(event)) {
+            Toast.makeText(this, R.string.waitlist_registration_period_altered, Toast.LENGTH_LONG).show();
+            refreshEventRowUi(event.getEventId());
             return;
         }
-        performJoinWaitlist(event);
+        if (event.isPrivate() && !adapter.isEffectivelyJoinedOnWaitlist(event)) {
+            Toast.makeText(this, R.string.event_switched_to_private, Toast.LENGTH_LONG).show();
+            refreshEventRowUi(event.getEventId());
+            return;
+        }
+        checkCapacityThenProceedJoin(event, () -> {
+            if (event.isGeolocationRequired()) {
+                if (geolocationController.hasLocationPermission(this)) {
+                    joinAndRecordLocation(event);
+                } else {
+                    pendingGeoJoinEvent = event;
+                    new androidx.appcompat.app.AlertDialog.Builder(this)
+                            .setTitle("Location Required")
+                            .setMessage("This event requires your location to be recorded when joining the waitlist.")
+                            .setPositiveButton("Allow", (d, w) ->
+                                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION))
+                            .setNegativeButton("Cancel", null)
+                            .show();
+                }
+            } else {
+                performJoinWaitlist(event);
+            }
+        });
+    }
+
+    /**
+     * Server-side active count vs capacity (organizer may have lowered capacity after the list was shown).
+     */
+    private void checkCapacityThenProceedJoin(Event event, Runnable proceed) {
+        if (event == null || event.getEventId() == null) {
+            return;
+        }
+        int cap = event.getWaitingListCapacity();
+        if (cap <= 0) {
+            proceed.run();
+            return;
+        }
+        waitingListDB.getActiveCountForEvent(event.getEventId(),
+                count -> runOnUiThread(() -> {
+                    if (count >= cap) {
+                        Toast.makeText(this, R.string.waitlist_capacity_altered, Toast.LENGTH_LONG).show();
+                        refreshEventFromServerAfterWaitlistMutation(event.getEventId());
+                    } else {
+                        proceed.run();
+                    }
+                }),
+                e -> runOnUiThread(() ->
+                        Toast.makeText(this, "Could not verify waitlist capacity.", Toast.LENGTH_SHORT).show()));
     }
 
     private void joinAndRecordLocation(Event event) {
@@ -895,10 +1160,12 @@ public class EventListActivity extends AppCompatActivity {
                 new GeolocationController.GeoJoinCallback() {
                     @Override
                     public void onAllowed(android.location.Location userLocation) {
-                        performJoinWaitlist(event);
-                        geolocationController.recordLocationForEvent(
-                                EventListActivity.this, deviceId, event.getEventId(),
-                                userLocation, unused -> {}, e -> {});
+                        checkCapacityThenProceedJoin(event, () -> {
+                            performJoinWaitlist(event);
+                            geolocationController.recordLocationForEvent(
+                                    EventListActivity.this, deviceId, event.getEventId(),
+                                    userLocation, unused -> {}, e -> {});
+                        });
                     }
                     @Override
                     public void onBlocked(float distanceMeters) {
@@ -906,12 +1173,45 @@ public class EventListActivity extends AppCompatActivity {
                         Toast.makeText(EventListActivity.this,
                                 "You are " + km + "km away. Must be within 30km to join.",
                                 Toast.LENGTH_LONG).show();
+                        refreshEventRowUi(event.getEventId());
                     }
                     @Override
                     public void onError(String message) {
                         Toast.makeText(EventListActivity.this, message, Toast.LENGTH_LONG).show();
+                        refreshEventRowUi(event.getEventId());
                     }
                 });
+    }
+
+    private void refreshEventRowUi(String eventId) {
+        if (eventId == null) {
+            return;
+        }
+        int pos = adapter.findPositionByEventId(eventId);
+        if (pos >= 0) {
+            adapter.notifyItemChanged(pos);
+        }
+    }
+
+    /**
+     * Re-fetch the event from the server after join/leave (or failed join) so name, poster, categories,
+     * description, criteria, registration dates, etc. stay in sync with Firestore.
+     */
+    private void refreshEventFromServerAfterWaitlistMutation(String eventId) {
+        if (eventId == null || eventId.isEmpty()) {
+            return;
+        }
+        eventController.getEventFromServer(eventId, fresh -> runOnUiThread(() -> {
+            if (fresh != null) {
+                mergeServerEventIntoAllEvents(fresh);
+                applyFilters();
+            }
+            refreshEventRowUi(eventId);
+            refreshWaitlistCountForEventId(eventId);
+        }), e -> runOnUiThread(() -> {
+            refreshEventRowUi(eventId);
+            refreshWaitlistCountForEventId(eventId);
+        }));
     }
 
     private void performJoinWaitlist(Event event) {
@@ -925,16 +1225,28 @@ public class EventListActivity extends AppCompatActivity {
                 entrant.getPhone(),
                 WaitingList.NOTIFY_EMAIL
         );
-        waitingListDB.addRegistration(registration,
+        waitingListDB.addRegistrationWithJoinChecks(registration, event.getWaitingListCapacity(),
+                event.getRegistrationClose(),
                 id -> {
                     Toast.makeText(this, R.string.waitlist_success, Toast.LENGTH_SHORT).show();
                     activeRegistrationsByEventId.put(event.getEventId(), registration);
                     registrationsByEventId.put(event.getEventId(), registration);
                     adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
                     adapter.setRegistrationsByEventId(registrationsByEventId);
-                    loadWaitlistCountsThenFinalize();
+                    refreshEventFromServerAfterWaitlistMutation(event.getEventId());
                 },
-                e -> Toast.makeText(this, getString(R.string.waitlist_fail) + " " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                e -> {
+                    if (WaitingListDB.REASON_WAITLIST_FULL.equals(e.getMessage())) {
+                        Toast.makeText(this, R.string.waitlist_capacity_altered, Toast.LENGTH_LONG).show();
+                        refreshEventFromServerAfterWaitlistMutation(event.getEventId());
+                    } else if (WaitingListDB.REASON_REGISTRATION_CLOSED.equals(e.getMessage())) {
+                        Toast.makeText(this, R.string.waitlist_registration_closed, Toast.LENGTH_LONG).show();
+                        refreshEventFromServerAfterWaitlistMutation(event.getEventId());
+                    } else {
+                        Toast.makeText(this, getString(R.string.waitlist_fail) + " " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        refreshEventFromServerAfterWaitlistMutation(event.getEventId());
+                    }
+                });
     }
 
     private void leaveWaitlist(Event event) {
@@ -995,7 +1307,12 @@ public class EventListActivity extends AppCompatActivity {
             waitingListDB.deleteRegistration(event.getEventId(), reg.getDeviceId(),
                     unused -> {
                         Toast.makeText(this, "Left waitlist for " + event.getName(), Toast.LENGTH_SHORT).show();
-                        loadActiveRegistrationsThenApplyFilters();
+                        String eid = event.getEventId();
+                        activeRegistrationsByEventId.remove(eid);
+                        registrationsByEventId.remove(eid);
+                        adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+                        adapter.setRegistrationsByEventId(registrationsByEventId);
+                        refreshEventFromServerAfterWaitlistMutation(eid);
                     },
                     e -> Toast.makeText(this, "Failed to leave waitlist: " + e.getMessage(), Toast.LENGTH_SHORT).show());
         });

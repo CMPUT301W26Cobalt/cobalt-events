@@ -266,6 +266,8 @@
                     android:text="No special criteria." />
             </LinearLayout>
 
+            <include layout="@layout/include_event_comments_section" />
+
             <!-- Geolocation required note (legacy, keep for geo-specific message if needed) -->
             <LinearLayout
                 android:id="@+id/layout_geo_note"

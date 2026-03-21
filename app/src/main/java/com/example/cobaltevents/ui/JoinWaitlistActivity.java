@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.db.EntrantDB;
+import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Entrant;
 import com.example.cobaltevents.model.WaitingList;
@@ -38,6 +39,7 @@ public class JoinWaitlistActivity extends AppCompatActivity {
     private String deviceId;
     private EntrantDB entrantDB;
     private WaitingListDB waitingListDB;
+    private EventDB eventDB;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -152,13 +154,26 @@ public class JoinWaitlistActivity extends AppCompatActivity {
                 notificationMethod
         );
 
-        waitingListDB.addRegistration(registration,
-                id -> {
-                    Toast.makeText(this, R.string.waitlist_success, Toast.LENGTH_SHORT).show();
-                    setResult(RESULT_OK);
-                    finish();
-                },
-                e -> Toast.makeText(this, getString(R.string.waitlist_fail) + " " + e.getMessage(),
+        eventDB.getEvent(eventId, event -> {
+            int capacity = event != null ? event.getWaitingListCapacity() : 0;
+            waitingListDB.addRegistrationWithJoinChecks(registration, capacity,
+                    event.getRegistrationClose(),
+                    id -> {
+                        Toast.makeText(this, R.string.waitlist_success, Toast.LENGTH_SHORT).show();
+                        setResult(RESULT_OK);
+                        finish();
+                    },
+                    e -> {
+                        if (WaitingListDB.REASON_WAITLIST_FULL.equals(e.getMessage())) {
+                            Toast.makeText(this, R.string.waitlist_full_capacity, Toast.LENGTH_LONG).show();
+                        } else if (WaitingListDB.REASON_REGISTRATION_CLOSED.equals(e.getMessage())) {
+                            Toast.makeText(this, R.string.waitlist_registration_closed, Toast.LENGTH_LONG).show();
+                        } else {
+                            Toast.makeText(this, getString(R.string.waitlist_fail) + " " + e.getMessage(),
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        }, e -> Toast.makeText(this, getString(R.string.waitlist_fail) + " " + e.getMessage(),
                 Toast.LENGTH_SHORT).show());
     }
 
