@@ -119,6 +119,7 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
             case "selected": return "Selected";
             case "enrolled": return "Enrolled";
             case "declined": return "Declined";
+            case "declined_found_replacement": return "Declined";
             case "not_selected": return "Not Selected";
             case "pending": return "Pending";
             case "rejected": return "Rejected";
@@ -131,6 +132,7 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
             case "selected": return ContextCompat.getColor(itemView.getContext(), R.color.accent);
             case "enrolled": return ContextCompat.getColor(itemView.getContext(), R.color.accent);
             case "declined": return ContextCompat.getColor(itemView.getContext(), R.color.alert_red);
+            case "declined_found_replacement": return ContextCompat.getColor(itemView.getContext(), R.color.alert_red);
             case "not_selected": return ContextCompat.getColor(itemView.getContext(), R.color.alert_red);
             case "rejected": return ContextCompat.getColor(itemView.getContext(), R.color.alert_red);
             case "pending": return ContextCompat.getColor(itemView.getContext(), R.color.status_warning_orange);
@@ -144,6 +146,7 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
             case "enrolled":
                 return R.drawable.badge_selected_bg;
             case "declined":
+            case "declined_found_replacement":
             case "not_selected":
             case "rejected":
                 return R.drawable.badge_declined_bg;

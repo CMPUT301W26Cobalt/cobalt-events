@@ -43,7 +43,6 @@ public class EventListActivityTest {
         assertNotNull(dialog.findViewById(R.id.btn_availability_start));
         assertNotNull(dialog.findViewById(R.id.btn_availability_end));
         assertNotNull(dialog.findViewById(R.id.spinner_capacity));
-        assertNotNull(dialog.findViewById(R.id.spinner_visibility));
         assertNotNull(dialog.findViewById(R.id.spinner_price_range));
         assertNotNull(dialog.findViewById(R.id.btn_apply_filters));
         assertNotNull(dialog.findViewById(R.id.btn_clear_filters));

@@ -3,6 +3,7 @@ package com.example.cobaltevents.db;
 import com.example.cobaltevents.model.Notification;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.AggregateSource;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -28,7 +29,13 @@ public class NotificationDB {
                                  OnSuccessListener<String> onSuccess,
                                  OnFailureListener onFailure) {
         if (notification != null) {
+            if (notification.getRecipientMode() == null || notification.getRecipientMode().trim().isEmpty()) {
+                notification.setRecipientMode(Notification.RECIPIENT_MODE_USER);
+            }
             if (Notification.TYPE_NOT_SELECTED.equals(notification.getType())) {
+                notification.setResponse(null);
+            } else if (Notification.TYPE_CO_ORGANIZER.equals(notification.getType())
+                    && Notification.RECIPIENT_MODE_USER.equals(notification.getRecipientMode())) {
                 notification.setResponse(null);
             } else if (notification.getResponse() == null || notification.getResponse().trim().isEmpty()) {
                 notification.setResponse(Notification.RESPONSE_PENDING);
@@ -64,6 +71,29 @@ public class NotificationDB {
         db.collection(COLLECTION).document(notificationId)
                 .update(updates)
                 .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
+    /**
+     * Count notifications for an event with a given {@code response} (e.g. pending invites).
+     * Uses the server only.
+     */
+    public void countNotificationsForEventAndResponse(String eventId,
+                                                      String response,
+                                                      OnSuccessListener<Integer> onSuccess,
+                                                      OnFailureListener onFailure) {
+        if (eventId == null || eventId.isEmpty() || response == null) {
+            if (onFailure != null) {
+                onFailure.onFailure(new IllegalArgumentException("eventId and response required"));
+            }
+            return;
+        }
+        db.collection(COLLECTION)
+                .whereEqualTo("eventId", eventId)
+                .whereEqualTo("response", response)
+                .count()
+                .get(AggregateSource.SERVER)
+                .addOnSuccessListener(snapshot -> onSuccess.onSuccess((int) snapshot.getCount()))
                 .addOnFailureListener(onFailure);
     }
 
@@ -106,6 +136,31 @@ public class NotificationDB {
                         if (n != null) {
                             n.setId(doc.getId());
                             notifications.add(n);
+                        }
+                    }
+                    onSuccess.onSuccess(notifications);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
+    public void getNotificationsForEventTypeAndMode(String eventId,
+                                                    String type,
+                                                    String recipientMode,
+                                                    OnSuccessListener<List<Notification>> onSuccess,
+                                                    OnFailureListener onFailure) {
+        db.collection(COLLECTION)
+                .whereEqualTo("eventId", eventId)
+                .whereEqualTo("type", type)
+                .get(Source.SERVER)
+                .addOnSuccessListener(querySnapshot -> {
+                    List<Notification> notifications = new ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        Notification n = doc.toObject(Notification.class);
+                        if (n != null) {
+                            n.setId(doc.getId());
+                            if (recipientMode == null || recipientMode.equals(n.getRecipientMode())) {
+                                notifications.add(n);
+                            }
                         }
                     }
                     onSuccess.onSuccess(notifications);

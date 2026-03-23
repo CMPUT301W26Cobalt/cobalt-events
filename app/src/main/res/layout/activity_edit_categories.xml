@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@drawable/bg_edit_event_sticky_header"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
+
+        <ImageButton
+            android:id="@+id/edit_cat_btn_close"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/edit_field_close_cd"
+            android:padding="8dp"
+            android:src="@drawable/ic_close_modal"
+            app:tint="@color/edit_event_modal_label" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center_horizontal"
+            android:text="@string/edit_categories_title"
+            android:textColor="@color/edit_event_modal_title"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/edit_cat_btn_save"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/edit_field_save_cd"
+            android:padding="8dp"
+            android:src="@drawable/ic_check_simple"
+            app:tint="@color/primary_blue" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingStart="20dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="24dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="12dp"
+                android:text="@string/edit_categories_helper"
+                android:textColor="@color/edit_event_modal_subtitle"
+                android:textSize="14sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_edit_field"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="14dp"
+                android:paddingTop="12dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="12dp">
+
+                <EditText
+                    android:id="@+id/edit_cat_et_add"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:hint="@string/event_create_categories_hint"
+                    android:imeOptions="actionDone"
+                    android:inputType="text|textCapSentences"
+                    android:singleLine="true"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/edit_cat_btn_add"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="8dp"
+                    android:text="+"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <HorizontalScrollView
+                android:id="@+id/edit_cat_scroll_chips"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:fillViewport="true"
+                android:overScrollMode="never"
+                android:scrollbars="none"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/edit_cat_layout_chips"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+<LinearLayout
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -20,6 +24,10 @@
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:padding="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="@string/cd_back"
             android:src="@drawable/ic_arrow_back"
             app:tint="@color/white" />
 
@@ -36,6 +44,7 @@
 
     <!-- Scrollable form -->
     <ScrollView
+        android:id="@+id/scroll_event_create"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -104,20 +113,35 @@
             </FrameLayout>
 
             <!-- Event Title -->
-            <TextView
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Event Title"
-                android:textColor="@color/text_primary"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="6dp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="6dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Event Title"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="*"
+                    android:textColor="@color/status_error_red"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
 
             <EditText
                 android:id="@+id/et_title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="4dp"
                 android:background="@drawable/bg_edit_field"
                 android:hint="e.g., Community Yoga Sessions"
                 android:inputType="textCapSentences"
@@ -127,6 +151,15 @@
                 android:paddingBottom="12dp"
                 android:textColor="@color/text_primary"
                 android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tv_error_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:textColor="@color/status_error_red"
+                android:textSize="12sp"
+                android:visibility="gone" />
 
             <!-- Description -->
             <TextView
@@ -189,19 +222,38 @@
                             android:textColor="@color/text_primary"
                             android:textSize="14sp"
                             android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="*"
+                            android:textColor="@color/status_error_red"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
                     </LinearLayout>
 
                     <TextView
-                        android:id="@+id/btn_pick_date"
+                        android:id="@+id/btn_event_date"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:background="@drawable/bg_edit_field"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center_vertical"
                         android:hint="Select date"
                         android:paddingStart="12dp"
                         android:paddingEnd="12dp"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tv_error_event_date"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="@color/status_error_red"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -210,26 +262,52 @@
                     android:layout_weight="1"
                     android:orientation="vertical">
 
-                    <TextView
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Time"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="6dp" />
+                        android:layout_marginBottom="6dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Time"
+                            android:textColor="@color/text_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="*"
+                            android:textColor="@color/status_error_red"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
 
                     <TextView
-                        android:id="@+id/btn_pick_time"
+                        android:id="@+id/btn_event_time"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:background="@drawable/bg_edit_field"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center_vertical"
                         android:hint="Select time"
                         android:paddingStart="12dp"
                         android:paddingEnd="12dp"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tv_error_event_time"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="@color/status_error_red"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -244,8 +322,9 @@
                 <ImageView
                     android:layout_width="14dp"
                     android:layout_height="14dp"
-                    android:src="@android:drawable/ic_menu_mylocation"
                     android:layout_marginEnd="4dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_map_pin"
                     app:tint="@color/text_secondary" />
 
                 <TextView
@@ -255,15 +334,24 @@
                     android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="*"
+                    android:textColor="@color/status_error_red"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
-            <EditText
+            <androidx.appcompat.widget.AppCompatAutoCompleteTextView
                 android:id="@+id/et_location"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="4dp"
                 android:background="@drawable/bg_edit_field"
-                android:hint="e.g., Community Center Room 205"
+                android:completionThreshold="2"
+                android:hint="@string/event_create_location_hint"
                 android:inputType="textCapSentences"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
@@ -271,6 +359,15 @@
                 android:paddingBottom="12dp"
                 android:textColor="@color/text_primary"
                 android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tv_error_location"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:textColor="@color/status_error_red"
+                android:textSize="12sp"
+                android:visibility="gone" />
 
             <!-- Capacity and Price -->
             <LinearLayout
@@ -314,8 +411,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="@drawable/bg_edit_field"
-                        android:hint="e.g., 30"
-                        android:inputType="number"
+                        android:hint="@string/event_create_capacity_hint"
+                        android:inputType="text"
                         android:paddingStart="12dp"
                         android:paddingEnd="12dp"
                         android:paddingTop="12dp"
@@ -344,8 +441,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:background="@drawable/bg_edit_field"
-                        android:hint="e.g., Free or $10"
-                        android:inputType="textCapSentences"
+                        android:hint="@string/event_create_price_hint"
+                        android:inputType="numberDecimal"
                         android:paddingStart="12dp"
                         android:paddingEnd="12dp"
                         android:paddingTop="12dp"
@@ -355,7 +452,124 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Registration Opens and Deadline (side by side) -->
+            <!-- Registration opens: date + time -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/event_create_registration_opens"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="*"
+                    android:textColor="@color/status_error_red"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/btn_reg_open_date"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_edit_field"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:hint="@string/event_create_select_date"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tv_error_reg_open_date"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="@color/status_error_red"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/btn_reg_open_time"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_edit_field"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:hint="@string/event_create_select_time"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tv_error_reg_open_time"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="@color/status_error_red"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Registration closes: date + time -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="6dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/event_create_registration_closes"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="*"
+                    android:textColor="@color/status_error_red"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -370,25 +584,27 @@
                     android:orientation="vertical">
 
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Registration Opens"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="6dp" />
-
-                    <TextView
-                        android:id="@+id/btn_pick_reg_open"
+                        android:id="@+id/btn_reg_close_date"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:background="@drawable/bg_edit_field"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center_vertical"
-                        android:hint="Select date"
+                        android:hint="@string/event_create_select_date"
                         android:paddingStart="12dp"
                         android:paddingEnd="12dp"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tv_error_reg_close_date"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="@color/status_error_red"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -398,46 +614,99 @@
                     android:orientation="vertical">
 
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Registration Closes"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="6dp" />
-
-                    <TextView
-                        android:id="@+id/btn_pick_deadline"
+                        android:id="@+id/btn_reg_close_time"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
                         android:background="@drawable/bg_edit_field"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center_vertical"
-                        android:hint="Select date"
+                        android:hint="@string/event_create_select_time"
                         android:paddingStart="12dp"
                         android:paddingEnd="12dp"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp" />
+
+                    <TextView
+                        android:id="@+id/tv_error_reg_close_time"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="@color/status_error_red"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Category -->
+            <!-- Categories (keyword-style chips, same as event list) -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Category"
+                android:text="@string/event_create_categories"
                 android:textColor="@color/text_primary"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:layout_marginBottom="6dp" />
 
-            <Spinner
-                android:id="@+id/spinner_category"
+            <LinearLayout
+                android:id="@+id/layout_category_input_bar"
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginBottom="16dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
                 android:background="@drawable/bg_edit_field"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp" />
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:layout_marginBottom="12dp">
+
+                <EditText
+                    android:id="@+id/et_category_add"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="@null"
+                    android:hint="@string/event_create_categories_hint"
+                    android:imeOptions="actionDone"
+                    android:inputType="text|textCapSentences"
+                    android:singleLine="true"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
+                    android:textSize="14sp"
+                    android:padding="0dp" />
+
+                <TextView
+                    android:id="@+id/btn_add_category"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="8dp"
+                    android:text="+"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <HorizontalScrollView
+                android:id="@+id/scroll_category_chips"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:overScrollMode="never"
+                android:fillViewport="true"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:id="@+id/layout_category_chips"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
 
             <!-- Selection Criteria -->
             <TextView
@@ -465,8 +734,122 @@
                 android:textColor="@color/text_primary"
                 android:textSize="14sp" />
 
+            <!-- Visibility -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/event_create_visibility"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_edit_field">
+
+                <Spinner
+                    android:id="@+id/spinner_visibility"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@null"
+                    android:contentDescription="@string/event_create_visibility"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="40dp" />
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="12dp"
+                    android:importantForAccessibility="no"
+                    android:src="@android:drawable/arrow_down_float"
+                    app:tint="@color/grey_medium" />
+            </RelativeLayout>
+
+            <!-- Age group -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/event_create_age_group"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginBottom="16dp"
+                android:background="@drawable/bg_edit_field">
+
+                <Spinner
+                    android:id="@+id/spinner_age_group"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@null"
+                    android:contentDescription="@string/event_create_age_group"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="40dp" />
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="12dp"
+                    android:importantForAccessibility="no"
+                    android:src="@android:drawable/arrow_down_float"
+                    app:tint="@color/grey_medium" />
+            </RelativeLayout>
+
+            <!-- Geolocation lock (off by default; enabling shows confirmation dialog) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingTop="4dp"
+                android:paddingBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:paddingEnd="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/event_create_geolocation_lock"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="@string/event_create_geolocation_lock_desc"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/switch_geolocation_lock"
+                    style="@style/Widget.CobaltEvents.Switch.OrganizerBlue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="false" />
+            </LinearLayout>
+
             <!-- Event QR Code section -->
             <LinearLayout
+                android:id="@+id/qr_section_header"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
@@ -476,7 +859,7 @@
                 <ImageView
                     android:layout_width="16dp"
                     android:layout_height="16dp"
-                    android:src="@drawable/ic_nav_qrcode"
+                    android:src="@drawable/ic_nav_qr_grid"
                     android:layout_marginEnd="6dp"
                     app:tint="@color/text_secondary" />
 
@@ -495,13 +878,15 @@
                 android:layout_height="52dp"
                 android:layout_marginBottom="24dp"
                 android:background="@drawable/bg_edit_field"
+                android:clickable="true"
+                android:focusable="true"
                 android:gravity="center"
                 android:orientation="horizontal">
 
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:src="@drawable/ic_nav_qrcode"
+                    android:src="@drawable/ic_nav_qr_grid"
                     android:layout_marginEnd="8dp"
                     app:tint="@color/grey_medium" />
 
@@ -513,14 +898,18 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
-            <ImageView
+            <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/iv_qr_code"
                 android:layout_width="180dp"
                 android:layout_height="180dp"
                 android:layout_gravity="center_horizontal"
                 android:layout_marginBottom="24dp"
+                android:background="@color/white"
                 android:contentDescription="Event QR Code"
-                android:visibility="gone" />
+                android:elevation="2dp"
+                android:scaleType="fitCenter"
+                android:visibility="gone"
+                app:shapeAppearanceOverlay="@style/RoundedQrPreview" />
 
             <!-- Create Event Button -->
             <TextView
@@ -540,3 +929,37 @@
     </ScrollView>
 
 </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/loading_overlay_create_event"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#66000000"
+        android:clickable="true"
+        android:focusable="true"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <ProgressBar
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:indeterminateTint="@color/white" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/event_create_loading"
+                android:textColor="@color/white"
+                android:textSize="15sp" />
+        </LinearLayout>
+    </FrameLayout>
+
+</FrameLayout>

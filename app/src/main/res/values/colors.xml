@@ -70,6 +70,8 @@
     <color name="notif_private_icon_stroke">#7C3AED</color>
     <color name="notif_medal_icon_bg">#FFE8E0</color>
     <color name="notif_medal_icon_stroke">#FF6B35</color>
+    <color name="notif_alert_icon_bg">#FEF3C7</color>
+    <color name="notif_alert_icon_stroke">#F59E0B</color>
     <!-- Badge tints -->
     <color name="status_warning_orange_15">#26E65100</color>
     <color name="grey_200">#E5E7EB</color>
@@ -90,4 +92,54 @@
     <color name="muted_text_4A5565">#4A5565</color>
     <color name="delete_red_E7000B">#E7000B</color>
     <color name="page_bg_F9FAFB">#F9FAFB</color>
+
+    <!-- Event manage (organizer) -->
+    <color name="event_manage_page_bg">#F3F4F6</color>
+    <color name="event_manage_title">#1E2939</color>
+    <color name="event_manage_meta">#4A5565</color>
+    <color name="event_manage_muted">#6A7282</color>
+    <color name="event_manage_lottery">#155DFC</color>
+    <color name="event_manage_lottery_pressed">#1D4ED8</color>
+    <color name="event_manage_chip_bg">#E6FFFFFF</color>
+    <color name="event_manage_on_surface">#0A0A0A</color>
+    <color name="event_manage_outline">#1A000000</color>
+    <color name="event_manage_geo_row">#F9FAFB</color>
+    <color name="event_manage_stat_wait_bg">#EFF6FF</color>
+    <color name="event_manage_stat_wait_num">#155DFC</color>
+    <color name="event_manage_stat_inv_bg">#FFFBEB</color>
+    <color name="event_manage_stat_inv_num">#D97706</color>
+    <color name="event_manage_stat_conf_bg">#F0FDF4</color>
+    <color name="event_manage_stat_conf_num">#16A34A</color>
+    <color name="event_manage_switch_on">#030213</color>
+    <color name="event_manage_avatar_well">#DBEAFE</color>
+    <color name="event_manage_card_border">#E5E7EB</color>
+    <color name="comments_border">#E5E7EB</color>
+    <color name="comments_muted">#6A7282</color>
+
+    <!-- Edit event modal (organizer) -->
+    <color name="edit_event_modal_title">#111827</color>
+    <color name="edit_event_modal_subtitle">#4B5563</color>
+    <color name="edit_event_modal_label">#374151</color>
+    <color name="edit_event_input_bg">#F3F4F6</color>
+    <color name="edit_event_input_border">#E5E7EB</color>
+    <color name="edit_event_input_focus_ring">#0D9488</color>
+    <color name="edit_event_teal">#0D9488</color>
+    <color name="edit_event_teal_pressed">#0F766E</color>
+    <color name="edit_event_upload_dash">#D1D5DB</color>
+    <color name="edit_event_icon_muted">#9CA3AF</color>
+    <color name="edit_event_cancel_border">#D1D5DB</color>
+
+    <!-- Account mode (settings) — used by activity_account_settings + account mode drawables -->
+    <color name="account_mode_blue">#2962FF</color>
+    <color name="account_mode_green">#00A859</color>
+    <color name="account_mode_gradient_purple_end">#7C3AED</color>
+    <color name="account_mode_icon_well_user_bg">#E8F5E9</color>
+    <color name="account_mode_icon_stroke_user">#6B7280</color>
+    <color name="account_mode_section_title">#1E2939</color>
+    <color name="account_mode_title_default">#1E2939</color>
+    <color name="account_mode_subtitle">#4A5565</color>
+    <color name="account_mode_accent_subtitle_blue">#2563EB</color>
+    <color name="account_mode_accent_subtitle_green">#16A34A</color>
+    <color name="age_group_tag_bg">#E0F2F1</color>
+    <color name="age_group_tag_text">#0F766E</color>
 </resources>

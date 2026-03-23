@@ -1,16 +1,190 @@
 <resources>
 
     <string name="app_name">Cobalt Events</string>
+    <string name="back">Back</string>
+    <string name="waitlisted_label">Waitlisted</string>
+    <string name="invited_label">Invited</string>
+    <string name="confirmed_label">Confirmed</string>
+    <string name="event_manage_no_entrants">No entrants in this category</string>
 
     <!-- Event Manage UI -->
     <string name="upload_poster">Upload / Update Poster</string>
-    <string name="run_lottery">Run Lottery Draw</string>
+    <string name="event_manage_screen_title">Manage event</string>
+    <string name="event_manage_edit_event">Edit Event</string>
+    <string name="event_manage_edit_event_cd">Edit event details and poster</string>
+
+    <!-- Edit event modal -->
+    <string name="edit_event_modal_title">Edit Event</string>
+    <string name="edit_event_modal_subtitle">Update your event information</string>
+    <string name="edit_event_label_title">Event Title</string>
+    <string name="edit_event_label_date">Date</string>
+    <string name="edit_event_label_location">Location</string>
+    <string name="edit_event_label_description">Description</string>
+    <string name="edit_event_label_image">Event Image</string>
+    <string name="edit_event_upload_hint">Click to upload new image</string>
+    <string name="edit_event_cancel">Cancel</string>
+    <string name="edit_event_save">Save changes</string>
+    <string name="edit_event_close_cd">Close</string>
+    <string name="edit_event_back_cd">Back</string>
+    <string name="edit_event_save_short">Save</string>
+    <string name="edit_field_close_cd">Close</string>
+    <string name="edit_field_save_cd">Save</string>
+    <string name="edit_field_not_found">Field not found</string>
+    <string name="edit_field_helper_categories">Separate categories with commas (e.g. Music, Outdoor)</string>
+    <string name="edit_event_poster_tap_upload">Tap to upload</string>
+    <string name="edit_event_poster_tap_change">Tap to change</string>
+    <string name="edit_event_preview_cd">New poster preview</string>
+    <string name="edit_event_date_hint">e.g. Mar 21, 2026 · 3:00 PM</string>
+    <string name="edit_event_title_required">Enter an event title</string>
+    <string name="edit_event_date_invalid">Couldn\'t read the date. Use the format shown in the hint.</string>
+    <string name="edit_event_saved">Event updated</string>
+    <string name="edit_event_save_failed">Couldn\'t save changes</string>
+    <string name="edit_event_tap_to_change_poster">Tap to change poster (PNG, JPG up to 10MB)</string>
+    <string name="edit_event_label_event_datetime">Event date &amp; time</string>
+    <string name="edit_event_label_capacity_price">Capacity &amp; price</string>
+    <string name="edit_event_label_criteria">Selection criteria</string>
+    <string name="edit_event_hint_title">Event title</string>
+    <string name="edit_event_hint_description">Describe your event…</string>
+    <string name="edit_event_hint_criteria">How participants are selected</string>
+    <string name="edit_event_pencil_poster_cd">Edit poster image</string>
+    <string name="edit_event_pencil_title_cd">Edit title</string>
+    <string name="edit_event_pencil_description_cd">Edit description</string>
+    <string name="edit_event_pencil_event_dt_cd">Edit event date and time</string>
+    <string name="edit_event_pencil_location_cd">Edit location</string>
+    <string name="edit_event_pencil_capacity_price_cd">Edit capacity and price</string>
+    <string name="edit_event_pencil_reg_open_cd">Edit registration opens</string>
+    <string name="edit_event_pencil_reg_close_cd">Edit registration closes</string>
+    <string name="edit_event_pencil_categories_cd">Edit categories</string>
+    <string name="edit_event_pencil_criteria_cd">Edit selection criteria</string>
+    <string name="edit_event_pencil_visibility_cd">Edit visibility</string>
+    <string name="edit_event_pencil_age_cd">Edit age group</string>
+    <string name="edit_event_capacity_price_summary">%1$s · %2$s</string>
+    <string name="edit_event_label_capacity">Capacity</string>
+    <string name="edit_event_label_price">Price</string>
+    <string name="edit_dt_helper_event">Set when your event starts. Registration must end before this time.</string>
+    <string name="edit_dt_helper_reg_open">When entrants can start joining the waitlist.</string>
+    <string name="edit_dt_helper_reg_close">Last moment to join; must be after registration opens and before the event.</string>
+    <string name="edit_capacity_title">Capacity</string>
+    <string name="edit_capacity_helper">Leave blank or type Unlimited for no cap. Otherwise enter a whole number (minimum 1).</string>
+    <string name="edit_price_title">Price</string>
+    <string name="edit_price_helper">Enter the ticket or entry price. Leave blank or 0 for a free event.</string>
+    <string name="edit_radio_visibility_helper">Choose who can discover and view this event.</string>
+    <string name="edit_radio_age_helper">Helps entrants know if the event fits them. Not shown on the public poster.</string>
+    <string name="edit_location_title">Location</string>
+    <string name="edit_location_helper">Search with Google Places or type an address (same as creating an event).</string>
+    <string name="edit_location_preview_map">Preview on map</string>
+    <string name="edit_location_need_address_for_map">Enter a location first</string>
+    <string name="edit_categories_title">Categories</string>
+    <string name="edit_categories_helper">Add keywords one at a time. Tap × on a chip to remove it.</string>
+    <string name="event_manage_action_replacement">Replacement</string>
+    <string name="event_manage_action_qr">QR Code</string>
+    <string name="event_manage_action_map">Map</string>
+    <string name="event_manage_geo_title">Require Geolocation</string>
+    <string name="event_manage_geo_subtitle">Force users to share location when joining</string>
+    <string name="event_manage_export_csv">Export CSV</string>
+    <string name="event_manage_meta_date">📅 %1$s</string>
+    <string name="event_manage_meta_location">📍 %1$s</string>
+    <string name="event_manage_meta_capacity">👥 %1$s</string>
+    <string name="event_manage_meta_registration">⏰ %1$s</string>
+    <string name="event_manage_registration_range">Registration: %1$s – %2$s</string>
+    <string name="event_manage_entrant_location">📍 %1$.4f, %2$.4f</string>
+    <string name="event_manage_entrant_joined">Joined %1$s</string>
+    <string name="event_manage_todo_replacement">Replacement flow coming soon</string>
+    <string name="event_manage_todo_qr">Event QR view coming soon</string>
+    <string name="event_manage_date_tbd">Date TBD</string>
+    <string name="event_manage_no_location">No location set</string>
+    <string name="event_manage_capacity_value">Capacity: %1$s</string>
+    <string name="event_manage_capacity_unlimited">Unlimited</string>
+    <string name="run_lottery">Run lottery draw</string>
+    <string name="dialog_run_lottery_title">Run Lottery Draw</string>
+    <string name="dialog_run_lottery_body">Randomly select attendees from the waitlist to invite.</string>
+    <string name="dialog_run_lottery_count_label">Number of attendees to select</string>
+    <string name="dialog_run_lottery_hint_max">Max: %1$d</string>
+    <string name="dialog_run_lottery_confirm">Run lottery</string>
+    <string name="dialog_find_replacement_title">Find Replacement(s)</string>
+    <string name="dialog_find_replacement_body">Find replacement attendees from eligible waitlist entrants (waitlisted or invited).</string>
+    <string name="dialog_find_replacement_count_label">Number of replacements to find</string>
+    <string name="dialog_find_replacement_confirm">Find replacement(s)</string>
+    <string name="event_manage_todo_replacement_count">Replacement UI confirmed for %1$d entrant(s). Backend action is coming soon.</string>
+    <string name="event_manage_replacement_success">%1$d replacement(s) found and notified.</string>
+    <string name="event_manage_declined_need_replacement_default">Need replacement (0)</string>
+    <string name="event_manage_declined_found_replacement_default">Found replacement (0)</string>
+    <string name="event_manage_declined_need_replacement">Need replacement (%1$d)</string>
+    <string name="event_manage_declined_found_replacement">Found replacement (%1$d)</string>
+    <string name="event_manage_lottery_err_replacement_capacity">Cannot find that many replacements. Max is based on declined entrants needing replacement and replacement pool size.</string>
+    <string name="event_manage_lottery_load_pending_failed">Couldn\'t load waitlist counts from the server.</string>
+    <string name="event_manage_lottery_invalid_number">Enter a valid number of entrants to select.</string>
+    <string name="event_manage_lottery_success">%1$d entrant(s) invited. Notifications sent.</string>
+    <string name="event_manage_lottery_err_no_pending">No one is pending on the waitlist anymore. Another organizer may have just run the lottery, or the waitlist changed.</string>
+    <string name="event_manage_lottery_err_exceeds_pending">Not enough people are pending for that number. The waitlist may have changed since this screen loaded (for example, another organizer ran the lottery).</string>
+    <string name="event_manage_lottery_err_no_capacity">There is no remaining capacity for new invitations.</string>
+    <string name="event_manage_lottery_err_too_many_waits">This event has too many waitlist entries to run a lottery in one step (limit %1$d). Contact support or split the event.</string>
     <string name="notify_invited">Notify Invited Entrants</string>
     <string name="event_poster">Event poster image</string>
+    <string name="event_manage_geolocation_updated">Geolocation requirement saved</string>
+    <string name="event_manage_geolocation_save_failed">Couldn\'t save geolocation setting. %1$s</string>
+    <string name="event_manage_tab_user_waitlist">User waitlist</string>
+    <string name="event_manage_tab_organizers">Organizers</string>
+    <string name="event_manage_tab_comments">Comments</string>
+    <string name="event_manage_organizers_empty">No organizers listed for this event.</string>
+    <string name="event_manage_add_organizer_label">Add organizer</string>
+    <string name="event_manage_add_organizer_hint">Search by name</string>
+    <string name="event_manage_send_organizer_invite">Send invite</string>
+    <string name="event_manage_organizer_list_header">Organizers and invites</string>
+    <string name="event_manage_selected_organizer_format">Selected: %1$s (%2$s)</string>
+    <string name="event_manage_organizer_invite_sent">Organizer invite sent.</string>
+    <string name="event_manage_organizer_pick_user">Pick a user from suggestions.</string>
+    <string name="event_manage_organizer_status_owner">Owner</string>
+    <string name="event_manage_organizer_status_co_organizer">Co-organizer</string>
+    <string name="event_manage_organizer_status_pending">Pending</string>
+    <string name="event_manage_organizer_status_declined">Declined</string>
+    <string name="event_manage_remove_organizer">Remove organizer</string>
+    <string name="event_manage_err_last_organizer">At least one organizer must remain for this event.</string>
+    <string name="event_manage_remove_organizer_title">Remove organizer</string>
+    <string name="event_manage_remove_organizer_message">Are you sure you want to remove this organizer from the event?</string>
+    <string name="event_manage_remove_organizer_confirm">REMOVE ORGANIZER</string>
+    <string name="event_manage_private_invite_label">Invite to private event</string>
+    <string name="event_manage_private_invite_hint">Search by name</string>
+    <string name="event_manage_private_invite_send">Send private invite</string>
+    <string name="event_manage_private_invites_header">Private invites</string>
+    <string name="event_manage_private_invites_empty">No pending or accepted invites yet.</string>
+    <string name="event_manage_private_invite_sent">Private invite sent.</string>
+    <string name="event_manage_private_status_accepted">Accepted</string>
+    <string name="event_manage_private_status_pending">Pending</string>
+    <string name="notification_private_event_title">Private Event Invitation</string>
+    <string name="notification_event_alert_title">Event Alert</string>
+    <string name="notification_private_event_message">You have been invited to join the private event: %1$s</string>
+    <string name="notification_event_fallback">this event</string>
+    <string name="event_manage_map_popup_close">Close map popup</string>
+    <string name="event_manage_map_popup_title">Entrant Locations Map</string>
+    <string name="event_manage_map_popup_subtitle">View where entrants joined from (requires geolocation enabled)</string>
+    <string name="event_manage_map_popup_map_view">Map View</string>
+    <string name="event_manage_map_popup_count_placeholder">0 entrants with location</string>
+    <string name="event_manage_map_popup_count_format">%1$d entrants with location</string>
+    <string name="event_manage_map_popup_loading">Loading map…</string>
+    <string name="event_manage_map_popup_notice">Info: In a production app, this would show an interactive map with entrant locations using Google Maps or Leaflet</string>
+    <string name="event_manage_map_popup_legend_pending">Pending / Invited</string>
+    <string name="event_manage_map_popup_legend_confirmed">Confirmed</string>
+    <string name="event_manage_map_popup_legend_declined">Declined</string>
+    <string name="event_manage_notify_all_waitlisted">Notify all waitlisted</string>
+    <string name="event_manage_notify_all_invited">Notify all invited</string>
+    <string name="event_manage_notify_all_confirmed">Notify all confirmed</string>
+    <string name="event_manage_notify_all_declined">Notify all declined</string>
+    <string name="event_manage_notify_all_need_replacement">Notify all need replacement</string>
+    <string name="event_manage_notify_all_found_replacement">Notify all found replacement</string>
+    <string name="event_manage_notify_dialog_title">Send Event Alert</string>
+    <string name="event_manage_notify_dialog_hint">Type your alert message</string>
+    <string name="event_manage_notify_dialog_send">SEND</string>
+    <string name="event_manage_notify_dialog_scope_format">Target: %1$s</string>
+    <string name="event_manage_notify_dialog_required">Message cannot be blank</string>
+    <string name="event_manage_notify_dialog_none">No recipients in this section.</string>
+    <string name="event_manage_notify_dialog_sent_format">Alert sent to %1$d recipients</string>
 
     <!-- Notifications (US 01.04.01) -->
     <string name="notification_channel_name">Event Lottery Results</string>
     <string name="notifications_title">Notifications</string>
+    <string name="notifications_empty">No notifications to show</string>
+    <string name="notifications_log_disabled_message">Notifications have been muted</string>
     <string name="notif_accept">Accept</string>
     <string name="notif_decline">Decline</string>
     <string name="notif_accepted">Accepted</string>
@@ -21,9 +195,93 @@
     <string name="registration_history_fallback_message">Couldn\'t load your registration history in one step. Loading registrations per event instead (may be slower).</string>
     <string name="notification_selected_title">You\'ve been selected!</string>
     <string name="notification_selected_message">You have been chosen to attend %1$s.</string>
+    <string name="notification_co_organizer_title">Co-organizer invitation</string>
+    <string name="notification_co_organizer_message">🎉 Congratulations! You\'ve been invited to be a co-organizer for the %1$s. We\'d love to have you help plan and coordinate this year\'s event. Please go to the admin notification section to accept or decline this opportunity.</string>
+    <string name="notification_co_organizer_event_fallback">this event</string>
+    <string name="notification_event_unknown">Unknown event</string>
+    <!-- Shown in the notifications list so every card includes which event it refers to. -->
+    <string name="notification_message_with_event">Event: %1$s\n\n%2$s</string>
 
     <string name="private_tag_label">Private</string>
     <string name="cd_lock_private">Private event</string>
+    <string name="cd_back">Back</string>
+
+    <!-- Create event -->
+    <string name="event_create_location_hint">Address or search with map</string>
+    <string name="event_create_search_place_cd">Search for a place</string>
+    <string name="event_create_capacity_hint">At least 1</string>
+    <string name="event_create_price_hint">Enter price</string>
+    <string name="event_create_registration_opens">Registration opens</string>
+    <string name="event_create_registration_closes">Registration closes</string>
+    <string name="event_create_select_date">Select date</string>
+    <string name="event_create_select_time">Select time</string>
+    <string name="event_create_geolocation_lock">Geolocation lock</string>
+    <string name="event_create_geolocation_lock_desc">Require entrants to be near the event to join the waitlist</string>
+    <string name="event_create_geolocation_dialog_title">Turn on geolocation lock?</string>
+    <string name="event_create_geolocation_dialog_subtitle">Only entrants near your event can join the waitlist when this is enabled.</string>
+    <string name="event_create_geolocation_guidelines_title">30 km rule</string>
+    <string name="event_create_geolocation_guidelines_body">Entrants must be within 30 km of your event location to join the waitlist.\n\nAnyone outside that distance cannot register.\n\nThis helps keep sign-ups local to your venue.</string>
+    <string name="event_create_geolocation_disclaimer">Use an accurate event address so distance checks are fair for everyone.</string>
+    <string name="event_create_geolocation_confirm_enable">TURN ON</string>
+    <string name="event_create_age_group">Age group</string>
+    <string-array name="event_age_group_options">
+        <item>All</item>
+        <item>Kids</item>
+        <item>Teens</item>
+        <item>Adults</item>
+        <item>18+</item>
+        <item>21+</item>
+    </string-array>
+    <string name="event_create_visibility">Visibility</string>
+    <string name="event_visibility_public">Public</string>
+    <string name="event_visibility_private">Private</string>
+    <string-array name="event_visibility_options">
+        <item>@string/event_visibility_public</item>
+        <item>@string/event_visibility_private</item>
+    </string-array>
+    <string name="event_create_categories">Categories</string>
+    <string name="event_create_categories_hint">Add category</string>
+    <string name="event_create_err_required_fields">Fill out all required fields</string>
+    <string name="event_create_field_required">Required</string>
+    <string name="event_create_err_title">Enter an event title</string>
+    <string name="event_create_err_event_datetime">Set event date (earliest is tomorrow)</string>
+    <string name="event_create_err_event_time">Select event time</string>
+    <string name="event_create_err_location">Enter a location</string>
+    <string name="event_select_place_from_suggestions">Choose an address from the suggestions so the venue coordinates can be saved.</string>
+    <string name="edit_location_verify_failed">That location could not be verified. Choose an address from the suggestions and try again.</string>
+    <string name="event_create_err_capacity">Enter a number of at least 1, type Unlimited, or leave blank for unlimited</string>
+    <string name="event_create_err_price">Enter a valid price (0 or more)</string>
+    <string name="event_create_err_reg_open">Set registration open date and time</string>
+    <string name="event_create_err_reg_close">Set registration close date and time</string>
+    <string name="event_create_err_reg_open_time">Select registration start time</string>
+    <string name="event_create_err_reg_close_time">Select registration end time</string>
+    <string name="event_create_err_reg_order">Registration must open before it closes</string>
+    <string name="event_create_err_reg_min_gap">Registration must stay open at least one hour (set close at least one hour after open)</string>
+    <string name="event_create_reg_close_adjusted_for_gap">Close time updated so registration stays open at least one hour</string>
+    <string name="event_create_reg_close_clamped_to_gap">Close time must be at least one hour after open</string>
+    <string name="event_create_err_reg_past">Registration cannot be in the past</string>
+    <string name="event_create_err_reg_open_next_minute">Registration must open after the current time. Earliest allowed is the start of the next minute.</string>
+    <string name="event_create_err_reg_close_after_now">Registration must close after the current time.</string>
+    <string name="event_create_reg_open_clamped_next_minute">Start time set to the earliest allowed: beginning of the next minute.</string>
+    <string name="event_create_err_reg_before_event">Registration must end before the event starts</string>
+    <string name="event_create_err_event_too_soon">Event must be at least tomorrow (so registration can run today)</string>
+    <string name="event_create_err_reg_day_today">Registration dates cannot be before today</string>
+    <string name="event_create_err_reg_day_event">Registration dates cannot be after the event date</string>
+    <string name="event_create_reg_clamped_to_event">Registration dates were cleared because they were after the new event date</string>
+    <string name="event_create_places_unavailable">Places search unavailable; type the address manually</string>
+    <string name="event_create_success">Event created!</string>
+    <string name="event_create_loading">Creating your event…</string>
+    <string name="event_create_no_internet">Failed to create event: No internet connection.</string>
+    <string name="event_create_failed">Failed to create event: %1$s</string>
+    <string name="event_create_waitlist_container_failed">Could not initialize waitlist (entries may still work): %1$s</string>
+    <string name="event_create_update_failed">Failed to save: %1$s</string>
+    <string name="event_create_poster_too_large">Image must be 10MB or smaller</string>
+    <string name="event_create_poster_invalid">Could not read that image. Try another file.</string>
+    <string name="event_create_poster_failed">Poster upload failed: %1$s. Saving event without poster.</string>
+    <string name="event_create_qr_only">Event saved (poster upload failed earlier)</string>
+    <string name="event_create_qr_generated">QR code ready — it will match this event when you create it</string>
+    <string name="event_create_qr_generate_failed">Could not generate QR code</string>
+    <string name="event_create_private_no_qr_created">Event was created with no QR code since it is a private event.</string>
 
     <!-- US 01.01.01 Join Waitlist -->
     <string name="add_to_waitlist">Add to waitlist</string>
@@ -53,11 +311,14 @@
     <string name="notification_method">Preferred notification method</string>
     <string name="confirm_join">Confirm and Join</string>
     <string name="waitlist_success">Successfully joined the waitlist!</string>
+    <string name="geo_join_verifying_location">Checking your location…</string>
     <string name="waitlist_fail">Failed to join waitlist.</string>
     <string name="waitlist_full_capacity">Event at full capacity.</string>
     <string name="waitlist_capacity_altered">Waitlist capacity has been altered.</string>
     <string name="waitlist_registration_closed">Waitlist registration period closed.</string>
     <string name="waitlist_registration_period_altered">Waitlist registration period has been altered.</string>
+    <string name="waitlist_organizer_cannot_join">You can\'t join the waitlist for an event you organize.</string>
+    <string name="join_waitlist_your_event">YOUR EVENT</string>
     <string name="event_switched_to_private">This event has been switched to a private event.</string>
     <string name="validation_email_required">Email is required.</string>
     <string name="validation_email_invalid">Invalid email format.</string>
@@ -69,6 +330,7 @@
     <string name="delete_account_confirm_message">Are you sure you want to delete your account? This cannot be undone.</string>
     <string name="delete_account_confirm">Delete</string>
     <string name="delete_account_cancel">Cancel</string>
+    <string name="unable_to_delete_account">Unable to delete account</string>
 
     <!-- Account Settings - Profile -->
     <string name="change_profile_picture">Change Profile Picture</string>
@@ -92,6 +354,17 @@
 
     <!-- Event list: keyword chips filter by category tags only (not title/description). -->
     <string name="event_list_keywords_hint">Filter by category…</string>
+    <string name="event_card_registration_starts_label">Registration starts: </string>
+
+    <string name="account_mode_section_title">Account Mode</string>
+    <string name="account_mode_user_title">User Mode</string>
+    <string name="account_mode_user_subtitle">Browse and join events</string>
+    <string name="account_mode_organizer_title">Organizer Mode</string>
+    <string name="account_mode_organizer_subtitle">Create and manage events</string>
+    <string name="account_mode_cd_user_row">User mode</string>
+    <string name="account_mode_cd_organizer_row">Organizer mode</string>
+    <!-- Same connectivity pattern as waitlist / notifications (Wi‑Fi, cellular, or Ethernet). -->
+    <string name="account_save_no_internet">Failed to save profile: No internet connection.</string>
 
     <!-- Event comments — Firestore: events/{eventId}/comments/* and .../replies/* -->
     <string name="comments_section_title">Comments</string>
@@ -99,9 +372,13 @@
     <string name="comments_load_failed">Couldn\'t load comments.</string>
     <string name="comments_action_failed">Couldn\'t update comments. Try again.</string>
     <string name="comments_no_internet">No internet connection.</string>
+    <string name="comments_comment_deleted">comment was deleted</string>
     <string name="comments_count_format">Comments (%1$d)</string>
     <string name="comments_show_more">Show comments</string>
     <string name="comments_show_less">Hide comments</string>
+    <string name="comments_add_label">Add a Comment</string>
+    <string name="comments_post">Post</string>
+    <string name="comments_delete">Delete comment</string>
     <string name="comment_input_hint">Add a comment…</string>
     <string name="reply_input_hint">Write a reply…</string>
     <string name="replying_to_hint">Reply to %1$s…</string>
@@ -113,4 +390,9 @@
     <string name="comment_like_format">👍 %1$d</string>
     <string name="comment_like_count">%1$d</string>
     <string name="comments_empty_local">No comments yet. Be the first.</string>
+
+    <plurals name="dialog_run_lottery_waitlist_helper">
+        <item quantity="one">%d person currently on waitlist</item>
+        <item quantity="other">%d people currently on waitlist</item>
+    </plurals>
 </resources>

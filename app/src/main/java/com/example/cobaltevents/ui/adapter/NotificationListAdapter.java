@@ -26,6 +26,8 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
 
     private final List<Notification> items = new ArrayList<>();
     private Map<String, String> eventIdToStatus = new HashMap<>();
+    /** Resolved event names keyed by eventId; used so every card body mentions the event. */
+    private Map<String, String> eventIdToEventName = new HashMap<>();
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd h:mm a", Locale.getDefault());
     private OnNotificationActionListener actionListener;
 
@@ -38,10 +40,13 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
         this.actionListener = listener;
     }
 
-    public void setItems(List<Notification> newItems, Map<String, String> newEventIdToStatus) {
+    public void setItems(List<Notification> newItems,
+                         Map<String, String> newEventIdToStatus,
+                         Map<String, String> newEventIdToEventName) {
         items.clear();
         if (newItems != null) items.addAll(newItems);
         eventIdToStatus = newEventIdToStatus != null ? newEventIdToStatus : new HashMap<>();
+        eventIdToEventName = newEventIdToEventName != null ? newEventIdToEventName : new HashMap<>();
         notifyDataSetChanged();
     }
 
@@ -55,19 +60,33 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Notification n = items.get(position);
-        holder.title.setText(n.getTitle() != null ? n.getTitle() : "");
-        holder.message.setText(n.getMessage() != null ? n.getMessage() : "");
+        String type = n.getType() != null ? n.getType() : "";
+        if (Notification.TYPE_EVENT_ALERT.equals(type)) {
+            holder.title.setText(holder.itemView.getContext().getString(R.string.notification_event_alert_title));
+            holder.title.setTextSize(18f);
+        } else {
+            holder.title.setText(n.getTitle() != null ? n.getTitle() : "");
+            holder.title.setTextSize(15f);
+        }
+        holder.message.setText(formatMessageWithEventLine(holder.itemView, n));
         holder.date.setText(n.getTimestamp() != null ? DATE_FORMAT.format(n.getTimestamp()) : "");
 
-        String type = n.getType() != null ? n.getType() : "";
         int iconBgRes;
         int iconRes;
-        if (isPrivateEventType(type)) {
+        if (Notification.TYPE_EVENT_ALERT.equals(type)) {
+            iconBgRes = R.drawable.bg_notif_icon_alert;
+            iconRes = R.drawable.ic_notif_alert;
+        } else if (isPrivateEventType(type)) {
             iconBgRes = R.drawable.bg_notif_icon_lock;
             iconRes = R.drawable.ic_notif_lock;
         } else if (Notification.TYPE_CO_ORGANIZER.equals(type)) {
-            iconBgRes = R.drawable.bg_notif_icon_medal;
-            iconRes = R.drawable.ic_notif_medal;
+            if (Notification.RECIPIENT_MODE_ORGANIZER.equals(n.getRecipientMode())) {
+                iconBgRes = R.drawable.bg_notif_icon_trophy;
+                iconRes = R.drawable.ic_organizer_building;
+            } else {
+                iconBgRes = R.drawable.bg_notif_icon_medal;
+                iconRes = R.drawable.ic_notif_medal;
+            }
         } else if (Notification.TYPE_GOT_OFF_WAITLIST.equals(type)) {
             iconBgRes = R.drawable.bg_notif_icon_star;
             iconRes = R.drawable.ic_notif_star;
@@ -80,13 +99,21 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
         }
         holder.iconContainer.setBackgroundResource(iconBgRes);
         holder.icon.setImageResource(iconRes);
+        if (Notification.TYPE_CO_ORGANIZER.equals(type)
+                && Notification.RECIPIENT_MODE_ORGANIZER.equals(n.getRecipientMode())) {
+            holder.btnAccept.setBackgroundResource(R.drawable.bg_button_primary_account_solid_organizer);
+            holder.btnDecline.setTextColor(holder.itemView.getResources().getColor(R.color.organizer_blue));
+        } else {
+            holder.btnAccept.setBackgroundResource(R.drawable.bg_notif_accept_btn);
+            holder.btnDecline.setTextColor(holder.itemView.getResources().getColor(R.color.notif_decline_text));
+        }
 
         holder.buttonsRow.setVisibility(View.GONE);
         holder.badgeAccepted.setVisibility(View.GONE);
         holder.badgeDeclined.setVisibility(View.GONE);
         holder.btnAccept.setOnClickListener(null);
         holder.btnDecline.setOnClickListener(null);
-        if (isActionableType(type)) {
+        if (isActionableType(n)) {
             String normalizedResponse = normalizeResponse(n.getResponse());
             if (Notification.RESPONSE_PENDING.equals(normalizedResponse)) {
                 holder.buttonsRow.setVisibility(View.VISIBLE);
@@ -137,6 +164,26 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
         }
     }
 
+    /**
+     * Prefixes the stored message with {@code Event: &lt;name&gt;} using the resolved Firestore event name.
+     */
+    private String formatMessageWithEventLine(View itemView, Notification n) {
+        String body = n.getMessage() != null ? n.getMessage() : "";
+        String eventLabel;
+        String eid = n.getEventId();
+        if (eid == null || eid.isEmpty()) {
+            eventLabel = itemView.getContext().getString(R.string.notification_event_unknown);
+        } else {
+            String resolved = eventIdToEventName.get(eid);
+            if (resolved != null && !resolved.trim().isEmpty()) {
+                eventLabel = resolved.trim();
+            } else {
+                eventLabel = itemView.getContext().getString(R.string.notification_event_unknown);
+            }
+        }
+        return itemView.getContext().getString(R.string.notification_message_with_event, eventLabel, body);
+    }
+
     private String normalizeResponse(String response) {
         if (response == null) return null;
         String normalized = response.toLowerCase(Locale.US);
@@ -152,13 +199,14 @@ public class NotificationListAdapter extends RecyclerView.Adapter<NotificationLi
                 || "private_event".equals(normalized);
     }
 
-    private boolean isActionableType(String type) {
-        if (type == null) return false;
-        String normalized = type.toLowerCase(Locale.US);
+    private boolean isActionableType(Notification notification) {
+        if (notification == null || notification.getType() == null) return false;
+        String normalized = notification.getType().toLowerCase(Locale.US);
         return isPrivateEventType(normalized)
                 || Notification.TYPE_SELECTED.equals(normalized)
                 || Notification.TYPE_GOT_OFF_WAITLIST.equals(normalized)
-                || Notification.TYPE_CO_ORGANIZER.equals(normalized);
+                || (Notification.TYPE_CO_ORGANIZER.equals(normalized)
+                && Notification.RECIPIENT_MODE_ORGANIZER.equals(notification.getRecipientMode()));
     }
 
     @Override

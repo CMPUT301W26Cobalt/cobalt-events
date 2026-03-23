@@ -31,6 +31,13 @@
         <activity android:name=".ui.EventHistoryActivity" />
         <activity android:name=".ui.OrganizerActivity" />
         <activity android:name=".ui.EventManageActivity" />
+        <activity android:name=".ui.EditFieldActivity" />
+        <activity android:name=".ui.EditEventDateTimeActivity" />
+        <activity android:name=".ui.EditCapacityActivity" />
+        <activity android:name=".ui.EditPriceActivity" />
+        <activity android:name=".ui.EditRadioChoiceActivity" />
+        <activity android:name=".ui.EditLocationActivity" />
+        <activity android:name=".ui.EditCategoriesActivity" />
         <activity android:name=".ui.QRScanActivity" />
         <activity android:name=".ui.AccountSettingsActivity" />
         <activity android:name=".ui.NotificationsActivity" />

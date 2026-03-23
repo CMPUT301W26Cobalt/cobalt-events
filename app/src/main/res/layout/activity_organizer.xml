@@ -31,34 +31,40 @@
         android:layout_marginBottom="32dp"
         android:visibility="gone" />
 
-    <!-- Event list + empty state -->
-    <FrameLayout
+    <!-- Event list + empty state + pull to refresh -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_organizer"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_organizer_events"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="96dp"
-            android:clipToPadding="false" />
+            android:layout_height="match_parent">
 
-        <TextView
-            android:id="@+id/tv_empty"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:text="No events created yet.\nTap + to create your first event."
-            android:textSize="15sp"
-            android:textColor="@color/grey_medium"
-            android:textAlignment="center"
-            android:visibility="gone" />
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_organizer_events"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="16dp"
+                android:paddingRight="16dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="96dp"
+                android:clipToPadding="false" />
 
-    </FrameLayout>
+            <TextView
+                android:id="@+id/tv_empty"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="No events created yet.\nTap + to create your first event."
+                android:textSize="15sp"
+                android:textColor="@color/grey_medium"
+                android:textAlignment="center"
+                android:visibility="gone" />
+
+        </FrameLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <!-- Organizer bottom nav -->
     <include layout="@layout/partial_bottom_nav_organizer" />

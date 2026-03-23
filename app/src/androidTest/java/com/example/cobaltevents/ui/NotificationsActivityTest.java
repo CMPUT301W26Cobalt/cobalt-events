@@ -54,6 +54,15 @@ public class NotificationsActivityTest {
         assertNotNull(title);
     }
 
+    /** Organizer-themed layout: same ids as entrant screen for shared activity logic. */
+    @Test
+    public void organizerLayout_hasSameCoreViews() {
+        View root = LayoutInflater.from(themed()).inflate(R.layout.activity_notifications_organizer, null, false);
+        assertNotNull(root.findViewById(R.id.swipe_refresh_notifications));
+        assertNotNull(root.findViewById(R.id.recycler_notifications));
+        assertNotNull(root.findViewById(R.id.tv_empty_notifications));
+    }
+
     private TextView findFirstTextViewWithText(View root, String text) {
         if (root instanceof TextView) {
             TextView tv = (TextView) root;

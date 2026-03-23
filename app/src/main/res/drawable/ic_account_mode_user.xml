@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Parity with AccountMode.tsx: 28×28, viewBox 0 0 53 53, stroke-only, strokeWidth 4.40221 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="28dp"
+    android:height="28dp"
+    android:viewportWidth="53"
+    android:viewportHeight="53">
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M35.2173,46.2222V41.82C35.2173,39.485 34.2897,37.2455 32.6386,35.5944C30.9874,33.9432 28.748,33.0156 26.4129,33.0156H13.2063C10.8712,33.0156 8.63176,33.9432 6.98061,35.5944C5.32946,37.2455 4.40186,39.485 4.40186,41.82V46.2222"
+        android:strokeWidth="4.40221"
+        android:strokeColor="@color/account_mode_icon_stroke_user"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M19.8098,24.2143C24.6723,24.2143 28.6142,20.2724 28.6142,15.4099C28.6142,10.5473 24.6723,6.60547 19.8098,6.60547C14.9472,6.60547 11.0054,10.5473 11.0054,15.4099C11.0054,20.2724 14.9472,24.2143 19.8098,24.2143Z"
+        android:strokeWidth="4.40221"
+        android:strokeColor="@color/account_mode_icon_stroke_user"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M48.4236,46.2232V41.821C48.4222,39.8702 47.7729,37.9752 46.5777,36.4334C45.3825,34.8916 43.7091,33.7904 41.8203,33.3027"
+        android:strokeWidth="4.40221"
+        android:strokeColor="@color/account_mode_icon_stroke_user"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M35.2178,6.89062C37.1116,7.37553 38.7902,8.47696 39.989,10.0213C41.1877,11.5656 41.8383,13.4649 41.8383,15.4199C41.8383,17.3749 41.1877,19.2742 39.989,20.8185C38.7902,22.3628 37.1116,23.4643 35.2178,23.9492"
+        android:strokeWidth="4.40221"
+        android:strokeColor="@color/account_mode_icon_stroke_user"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

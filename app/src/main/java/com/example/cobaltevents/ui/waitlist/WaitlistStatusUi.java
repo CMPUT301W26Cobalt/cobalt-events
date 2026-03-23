@@ -107,7 +107,9 @@ public final class WaitlistStatusUi {
             return dbStatus;
         }
         if (WaitingList.STATUS_NOT_SELECTED.equals(effectiveOverride)
-                && (WaitingList.STATUS_DECLINED.equals(dbStatus) || "declined".equalsIgnoreCase(dbStatus))) {
+                && (WaitingList.STATUS_DECLINED.equals(dbStatus)
+                || WaitingList.STATUS_DECLINED_FOUND_REPLACEMENT.equals(dbStatus)
+                || "declined".equalsIgnoreCase(dbStatus))) {
             return dbStatus;
         }
         if (WaitingList.STATUS_NOT_SELECTED.equals(effectiveOverride)

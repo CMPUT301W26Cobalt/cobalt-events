@@ -1,58 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:padding="12dp"
-    android:background="@color/white">
-
-    <TextView
-        android:id="@+id/tv_avatar"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
-        android:gravity="center"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:background="@drawable/bg_avatar_circle" />
+    android:layout_marginBottom="10dp"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="10dp"
+    app:cardElevation="1dp"
+    app:strokeColor="@color/event_manage_card_border"
+    app:strokeWidth="1dp">
 
     <LinearLayout
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:layout_marginStart="12dp"
-        android:orientation="vertical">
+        android:orientation="horizontal"
+        android:padding="14dp">
 
-        <TextView
-            android:id="@+id/tv_entrant_name"
-            android:layout_width="wrap_content"
+        <FrameLayout
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_waitlist_avatar_well">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_nav_user"
+                app:tint="@color/event_manage_stat_wait_num" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="@color/text_primary" />
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tv_entrant_email"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:textColor="@color/text_secondary" />
+            <TextView
+                android:id="@+id/tv_entrant_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/event_manage_title"
+                android:textSize="14sp"
+                android:fontFamily="sans-serif-medium" />
 
-        <TextView
-            android:id="@+id/tv_entrant_phone"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="12sp"
-            android:textColor="@color/text_secondary" />
+            <TextView
+                android:id="@+id/tv_entrant_email"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/event_manage_meta"
+                android:textSize="12sp" />
 
-        <TextView
-            android:id="@+id/tv_joined_date"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="11sp"
-            android:textColor="@color/text_secondary"
-            android:layout_marginTop="2dp" />
+            <TextView
+                android:id="@+id/tv_entrant_phone"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/event_manage_meta"
+                android:textSize="12sp" />
 
+            <TextView
+                android:id="@+id/tv_entrant_location"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:textColor="@color/event_manage_muted"
+                android:textSize="11sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tv_joined_date"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:textColor="@color/event_manage_muted"
+                android:textSize="11sp" />
+        </LinearLayout>
     </LinearLayout>
-
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Same structure as activity_notifications; organizer theme (blue header, page bg, organizer nav). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/page_background"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/screen_header_height"
+        android:background="@color/organizer_blue"
+        android:elevation="@dimen/screen_header_elevation"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="@dimen/screen_header_padding_horizontal"
+        android:paddingEnd="@dimen/screen_header_padding_horizontal">
+
+        <TextView
+            android:id="@+id/title_notifications"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/notifications_title"
+            android:textColor="@color/white"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.02" />
+    </LinearLayout>
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_notifications"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recycler_notifications"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:overScrollMode="ifContentScrolls"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="20dp"
+                android:paddingBottom="96dp" />
+
+            <TextView
+                android:id="@+id/tv_empty_notifications"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="@string/notifications_empty"
+                android:textSize="16sp"
+                android:textColor="@color/text_secondary"
+                android:visibility="gone" />
+
+        </FrameLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <include layout="@layout/partial_bottom_nav_organizer" />
+</LinearLayout>

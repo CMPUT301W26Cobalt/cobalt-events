@@ -11,6 +11,7 @@ import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.WriteBatch;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -31,6 +32,7 @@ import java.util.Map;
  * </ul>
  */
 public class CommentDB {
+    public static final String ERR_COMMENT_DELETED = "COMMENT_DELETED";
 
     private static final String COLLECTION_EVENTS = "events";
     private static final String SUB_COMMENTS = "comments";
@@ -142,10 +144,11 @@ public class CommentDB {
             }
             return;
         }
-        DocumentReference ref = db.collection(COLLECTION_EVENTS)
+        DocumentReference commentRef = db.collection(COLLECTION_EVENTS)
                 .document(eventId)
                 .collection(SUB_COMMENTS)
-                .document(commentId)
+                .document(commentId);
+        DocumentReference ref = commentRef
                 .collection(SUB_REPLIES)
                 .document();
         Map<String, Object> data = new HashMap<>();
@@ -155,8 +158,15 @@ public class CommentDB {
         data.put("likes", 0L);
         data.put("likedByIds", new ArrayList<String>());
         data.put("createdAt", FieldValue.serverTimestamp());
-        ref.set(data)
-                .addOnSuccessListener(v -> onSuccess.onSuccess(ref.getId()))
+        db.runTransaction(trx -> {
+            DocumentSnapshot commentSnap = trx.get(commentRef);
+            if (commentSnap == null || !commentSnap.exists()) {
+                throw new IllegalStateException(ERR_COMMENT_DELETED);
+            }
+            trx.set(ref, data);
+            return ref.getId();
+        })
+                .addOnSuccessListener(onSuccess)
                 .addOnFailureListener(onFailure);
     }
 
@@ -224,6 +234,121 @@ public class CommentDB {
             trx.update(ref, "likedByIds", likedBy, "likes", likedBy.size());
             return nowLiked;
         }).addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
+    public void deleteCommentWithReplies(String eventId,
+                                         String commentId,
+                                         OnSuccessListener<Void> onSuccess,
+                                         OnFailureListener onFailure) {
+        if (eventId == null || eventId.isEmpty() || commentId == null || commentId.isEmpty()) {
+            if (onFailure != null) {
+                onFailure.onFailure(new IllegalArgumentException("eventId and commentId required"));
+            }
+            return;
+        }
+        DocumentReference commentRef = db.collection(COLLECTION_EVENTS)
+                .document(eventId)
+                .collection(SUB_COMMENTS)
+                .document(commentId);
+        commentRef.collection(SUB_REPLIES)
+                .get()
+                .addOnSuccessListener(replySnap -> {
+                    WriteBatch batch = db.batch();
+                    if (replySnap != null) {
+                        for (DocumentSnapshot replyDoc : replySnap.getDocuments()) {
+                            batch.delete(replyDoc.getReference());
+                        }
+                    }
+                    batch.delete(commentRef);
+                    batch.commit()
+                            .addOnSuccessListener(v -> {
+                                if (onSuccess != null) {
+                                    onSuccess.onSuccess(null);
+                                }
+                            })
+                            .addOnFailureListener(onFailure);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
+    private static final int BATCH_DELETE_MAX = 500;
+
+    /**
+     * Deletes all replies under each comment, then all comment documents, for {@code events/{eventId}/comments}.
+     */
+    public void deleteAllCommentsAndRepliesForEvent(String eventId,
+                                                    OnSuccessListener<Void> onSuccess,
+                                                    OnFailureListener onFailure) {
+        if (eventId == null || eventId.isEmpty()) {
+            if (onSuccess != null) {
+                onSuccess.onSuccess(null);
+            }
+            return;
+        }
+        db.collection(COLLECTION_EVENTS)
+                .document(eventId)
+                .collection(SUB_COMMENTS)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    if (snap == null || snap.isEmpty()) {
+                        if (onSuccess != null) {
+                            onSuccess.onSuccess(null);
+                        }
+                        return;
+                    }
+                    deleteRepliesThenCommentDocs(new ArrayList<>(snap.getDocuments()), 0, onSuccess, onFailure);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
+    private void deleteRepliesThenCommentDocs(List<DocumentSnapshot> commentDocs,
+                                              int index,
+                                              OnSuccessListener<Void> onSuccess,
+                                              OnFailureListener onFailure) {
+        if (index >= commentDocs.size()) {
+            List<DocumentReference> crefList = new ArrayList<>();
+            for (DocumentSnapshot c : commentDocs) {
+                crefList.add(c.getReference());
+            }
+            deleteDocumentRefsInBatches(crefList, 0, onSuccess, onFailure);
+            return;
+        }
+        DocumentSnapshot c = commentDocs.get(index);
+        c.getReference()
+                .collection(SUB_REPLIES)
+                .get()
+                .addOnSuccessListener(rs -> {
+                    List<DocumentReference> rrefs = new ArrayList<>();
+                    if (rs != null) {
+                        for (DocumentSnapshot r : rs.getDocuments()) {
+                            rrefs.add(r.getReference());
+                        }
+                    }
+                    deleteDocumentRefsInBatches(rrefs, 0,
+                            unused -> deleteRepliesThenCommentDocs(commentDocs, index + 1, onSuccess, onFailure),
+                            onFailure);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
+    private void deleteDocumentRefsInBatches(List<DocumentReference> refs,
+                                             int start,
+                                             OnSuccessListener<Void> onSuccess,
+                                             OnFailureListener onFailure) {
+        if (start >= refs.size()) {
+            if (onSuccess != null) {
+                onSuccess.onSuccess(null);
+            }
+            return;
+        }
+        int end = Math.min(start + BATCH_DELETE_MAX, refs.size());
+        WriteBatch batch = db.batch();
+        for (int i = start; i < end; i++) {
+            batch.delete(refs.get(i));
+        }
+        batch.commit()
+                .addOnSuccessListener(v -> deleteDocumentRefsInBatches(refs, end, onSuccess, onFailure))
                 .addOnFailureListener(onFailure);
     }
 

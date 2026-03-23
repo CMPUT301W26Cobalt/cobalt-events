@@ -991,7 +991,7 @@ public class AdminTest {
         data.put("name",              name);
         data.put("description",       "Test description for " + name);
         data.put("location",          "Test Location");
-        data.put("organizerDeviceId", organizerDeviceId);
+        data.put("organizers", java.util.Arrays.asList(organizerDeviceId));
         data.put("eventDate",         new Timestamp(new Date()));
         data.put("category",          "TEST");
         data.put("posterImageUrl",    posterImageUrl);

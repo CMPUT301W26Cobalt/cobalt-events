@@ -4,9 +4,6 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.Editable;
@@ -44,6 +41,7 @@ import com.example.cobaltevents.controller.GeolocationController;
 import com.example.cobaltevents.ui.adapter.EventAdapter;
 import com.example.cobaltevents.ui.waitlist.RegistrationPeriodUi;
 import com.example.cobaltevents.ui.waitlist.WaitlistStatusUi;
+import com.example.cobaltevents.util.NetworkConnectivity;
 import com.google.firebase.Timestamp;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -58,20 +56,11 @@ import java.util.Set;
 
 public class EventListActivity extends AppCompatActivity {
 
-    private static final String[] CATEGORY_OPTIONS = {
-            "All", "Sports", "Music", "Arts", "Food", "Technology", "Community"
-    };
     private static final String[] PRICE_RANGE_OPTIONS = {
             "All", "Free", "Under $10", "$10-$25", "$25-$50", "$50+"
     };
-    private static final String[] AGE_GROUP_OPTIONS = {
-            "All", "All Ages", "Kids", "Teens", "Adults", "18+", "21+"
-    };
     private static final String[] CAPACITY_OPTIONS = {
             "All", "Spots Available", "Full", "Unlimited"
-    };
-    private static final String[] VISIBILITY_OPTIONS = {
-            "All", "Public", "Private"
     };
 
     private RecyclerView recyclerView;
@@ -86,6 +75,8 @@ public class EventListActivity extends AppCompatActivity {
     private WaitingListDB waitingListDB;
     private EntrantDB entrantDB;
     private GeolocationController geolocationController;
+    /** Shown only while verifying location for geolocked waitlist join. */
+    private AlertDialog geoJoinLoadingDialog;
     private Event pendingGeoJoinEvent;
     private final ActivityResultLauncher<String> locationPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
@@ -101,13 +92,19 @@ public class EventListActivity extends AppCompatActivity {
                             }
                             mergeServerEventIntoAllEvents(fresh);
                             applyFilters();
-                            if (fresh.isPrivate() && !adapter.isEffectivelyJoinedOnWaitlist(fresh)) {
+                            if (fresh.isPrivate() && !adapter.isEffectivelyJoinedOnWaitlist(fresh)
+                                    && !(deviceId != null && fresh.isDeviceAnOrganizer(deviceId))) {
                                 Toast.makeText(this, R.string.event_switched_to_private, Toast.LENGTH_LONG).show();
                                 refreshEventRowUi(fresh.getEventId());
                                 return;
                             }
                             if (!RegistrationPeriodUi.isNowWithinRegistrationWindow(fresh)) {
                                 Toast.makeText(this, R.string.waitlist_registration_period_altered, Toast.LENGTH_LONG).show();
+                                refreshEventRowUi(fresh.getEventId());
+                                return;
+                            }
+                            if (deviceId != null && fresh.isDeviceAnOrganizer(deviceId)) {
+                                Toast.makeText(this, R.string.waitlist_organizer_cannot_join, Toast.LENGTH_LONG).show();
                                 refreshEventRowUi(fresh.getEventId());
                                 return;
                             }
@@ -128,17 +125,27 @@ public class EventListActivity extends AppCompatActivity {
     /** Skip redundant reload only when the last full load just finished (keeps resume snappy). */
     private static final long RESUME_DEBOUNCE_MS = 2_000;
 
+    /** Per {@link #loadEvents()} session — invalidates stale waitlist prefetch callbacks. */
+    private int loadEventsSessionId = 0;
+    /** True while Firestore count queries from catalog prefetch are in flight (same session as {@link #loadEventsSessionId}). */
+    private volatile boolean waitlistPrefetchInFlight = false;
+    private volatile boolean waitlistPrefetchCompleteForSession = false;
+    private int waitlistPrefetchSessionId = -1;
+    private Runnable finalizeAfterWaitlistPrefetch;
+    /** Bumped on each {@link #loadEvents()} and when non-bootstrap waitlist refresh invalidates prefetch. */
+    private int prefetchEpoch = 0;
+
     private List<Event> allEvents = new ArrayList<>();
     private String currentQuery = "";
     private String currentKeywordInput = "";
-    private int selectedCategoryIndex = 0;
     private int selectedPriceRangeIndex = 0;
     private int selectedAgeGroupIndex = 0;
     private int selectedCapacityIndex = 0;
-    private int selectedVisibilityIndex = 0;
     private Long availabilityStartMillis = null;
     private Long availabilityEndMillis = null;
     private final List<String> selectedKeywords = new ArrayList<>();
+    /** Same order as `R.array.event_age_group_options` (filter + create event). */
+    private String[] ageGroupOptions;
     private EditText etKeywords;
     private HorizontalScrollView scrollKeywordChips;
     private LinearLayout layoutKeywordChips;
@@ -147,6 +154,7 @@ public class EventListActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_event_list);
+        ageGroupOptions = getResources().getStringArray(R.array.event_age_group_options);
 
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         eventController = new EventController();
@@ -228,10 +236,10 @@ public class EventListActivity extends AppCompatActivity {
         findViewById(R.id.btn_filter).setOnClickListener(v -> showFilterDialog());
 
         if (swipeRefreshLayout != null) {
-            swipeRefreshLayout.setOnRefreshListener(this::loadEvents);
+            swipeRefreshLayout.setOnRefreshListener(() -> loadEvents(true));
             swipeRefreshLayout.setColorSchemeColors(ContextCompat.getColor(this, R.color.user_green));
         }
-        loadEvents();
+        loadEvents(false);
         setupBottomNavigation();
     }
 
@@ -244,17 +252,39 @@ public class EventListActivity extends AppCompatActivity {
         if (System.currentTimeMillis() - lastFullLoadTimestamp < RESUME_DEBOUNCE_MS) {
             return;
         }
-        loadEvents();
+        loadEvents(false);
     }
 
-    private void loadEvents() {
+    /**
+     * Reloads catalog, merges registrations/notifications, then waitlist counts.
+     *
+     * @param fromPullToRefresh when true, keep the list visible and show {@link SwipeRefreshLayout} progress
+     *                          until {@link #applyWaitlistCountsUiComplete()} (do not cancel the swipe spinner early).
+     */
+    private void loadEvents(boolean fromPullToRefresh) {
         eventsLoading = true;
-        progressBar.setVisibility(View.VISIBLE);
-        if (recyclerView != null) recyclerView.setVisibility(View.INVISIBLE);
-        if (tvEmpty != null) tvEmpty.setVisibility(View.GONE);
-        if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+        loadEventsSessionId++;
+        prefetchEpoch++;
+        final int sessionId = loadEventsSessionId;
+        waitlistPrefetchInFlight = false;
+        waitlistPrefetchCompleteForSession = false;
+        waitlistPrefetchSessionId = -1;
+        finalizeAfterWaitlistPrefetch = null;
+        waitlistCountByEventId.clear();
+
+        if (fromPullToRefresh) {
+            progressBar.setVisibility(View.GONE);
+            if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
+            if (tvEmpty != null) tvEmpty.setVisibility(View.GONE);
+        } else {
+            progressBar.setVisibility(View.VISIBLE);
+            if (recyclerView != null) recyclerView.setVisibility(View.INVISIBLE);
+            if (tvEmpty != null) tvEmpty.setVisibility(View.GONE);
+            if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+        }
 
         // Overlap: events catalog + entrant history + notifications (same merge as before; wall-clock ~max of the three).
+        // Waitlist count() queries also start as soon as the catalog returns, overlapping with history + notifications.
         final int bootstrapParts = (deviceId != null && !deviceId.isEmpty()) ? 3 : 1;
         final java.util.concurrent.atomic.AtomicInteger bootstrapRemaining = new java.util.concurrent.atomic.AtomicInteger(bootstrapParts);
         final boolean[] eventsLoadOk = { true };
@@ -276,8 +306,10 @@ public class EventListActivity extends AppCompatActivity {
         };
 
         eventController.getAllEvents(events -> {
-            if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
             eventsHolder[0] = events != null ? events : new ArrayList<>();
+            if (eventsLoadOk[0]) {
+                beginWaitlistCountPrefetchForSession(eventsHolder[0], sessionId);
+            }
             bootstrapPartDone.run();
         }, e -> {
             if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
@@ -323,7 +355,7 @@ public class EventListActivity extends AppCompatActivity {
             return;
         }
         allEvents = events != null ? events : new ArrayList<>();
-        mergeRegistrationsNotificationsAndFinalizeUi(history, historyFailed, notifications, notificationsFailed);
+        mergeRegistrationsNotificationsAndFinalizeUi(history, historyFailed, notifications, notificationsFailed, true);
     }
 
     /**
@@ -337,7 +369,7 @@ public class EventListActivity extends AppCompatActivity {
             adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
             adapter.setRegistrationsByEventId(registrationsByEventId);
             adapter.setEffectiveStatusByEventId(new HashMap<>());
-            loadWaitlistCountsThenFinalize();
+            loadWaitlistCountsThenFinalize(false);
             return;
         }
 
@@ -347,7 +379,7 @@ public class EventListActivity extends AppCompatActivity {
             adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
             adapter.setRegistrationsByEventId(registrationsByEventId);
             adapter.setEffectiveStatusByEventId(new HashMap<>());
-            loadWaitlistCountsThenFinalize();
+            loadWaitlistCountsThenFinalize(false);
             return;
         }
 
@@ -363,7 +395,8 @@ public class EventListActivity extends AppCompatActivity {
                     historyHolder[0],
                     historyFailed[0],
                     notificationsHolder[0],
-                    notificationsFailed[0]));
+                    notificationsFailed[0],
+                    false));
         };
 
         waitingListDB.getEntrantHistory(deviceId,
@@ -388,7 +421,8 @@ public class EventListActivity extends AppCompatActivity {
     }
 
     private void applyEffectiveStatusAdaptersAndWaitlistCounts(List<Notification> notifications,
-                                                               boolean notificationsFailed) {
+                                                               boolean notificationsFailed,
+                                                               boolean mayUseBootstrapPrefetch) {
         Map<String, String> effective = new HashMap<>();
         if (!notificationsFailed && notifications != null) {
             effective = computeEffectiveStatusByEventId(notifications);
@@ -396,7 +430,7 @@ public class EventListActivity extends AppCompatActivity {
         adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
         adapter.setRegistrationsByEventId(registrationsByEventId);
         adapter.setEffectiveStatusByEventId(effective);
-        loadWaitlistCountsThenFinalize();
+        loadWaitlistCountsThenFinalize(mayUseBootstrapPrefetch);
     }
 
     /**
@@ -405,7 +439,8 @@ public class EventListActivity extends AppCompatActivity {
     private void mergeRegistrationsNotificationsAndFinalizeUi(List<WaitingList> history,
                                                               boolean historyFailed,
                                                               List<Notification> notifications,
-                                                              boolean notificationsFailed) {
+                                                              boolean notificationsFailed,
+                                                              boolean mayUseBootstrapPrefetch) {
         activeRegistrationsByEventId.clear();
         registrationsByEventId.clear();
 
@@ -413,7 +448,7 @@ public class EventListActivity extends AppCompatActivity {
             adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
             adapter.setRegistrationsByEventId(registrationsByEventId);
             adapter.setEffectiveStatusByEventId(new HashMap<>());
-            loadWaitlistCountsThenFinalize();
+            loadWaitlistCountsThenFinalize(mayUseBootstrapPrefetch);
             return;
         }
 
@@ -421,16 +456,16 @@ public class EventListActivity extends AppCompatActivity {
             adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
             adapter.setRegistrationsByEventId(registrationsByEventId);
             adapter.setEffectiveStatusByEventId(new HashMap<>());
-            loadWaitlistCountsThenFinalize();
+            loadWaitlistCountsThenFinalize(mayUseBootstrapPrefetch);
             return;
         }
 
         if (!historyFailed) {
             fillRegistrationMapsFromEntrantHistory(history, false);
-            applyEffectiveStatusAdaptersAndWaitlistCounts(notifications, notificationsFailed);
+            applyEffectiveStatusAdaptersAndWaitlistCounts(notifications, notificationsFailed, mayUseBootstrapPrefetch);
         } else {
             loadRegistrationsPerEventForMerge(() -> runOnUiThread(() ->
-                    applyEffectiveStatusAdaptersAndWaitlistCounts(notifications, notificationsFailed)));
+                    applyEffectiveStatusAdaptersAndWaitlistCounts(notifications, notificationsFailed, mayUseBootstrapPrefetch)));
         }
     }
 
@@ -507,33 +542,70 @@ public class EventListActivity extends AppCompatActivity {
                 || WaitingList.STATUS_NOT_SELECTED.equals(status);
     }
 
-    private void loadWaitlistCountsThenFinalize() {
-        // Wait until all events have their waitlist counts + notification effective status
-        // computed before showing the list UI.
-        waitlistCountByEventId.clear();
-
-        java.util.List<String> eventIds = new java.util.ArrayList<>();
-        for (Event e : allEvents) {
-            if (e == null || e.getEventId() == null) continue;
-            // Fetch count for every event so "N on waitlist" is visible even when capacity is 0 (unlimited).
-            // JOIN/WAITLIST FULL still only applies when capacity > 0 (see EventAdapter).
-            eventIds.add(e.getEventId());
-        }
-
-        if (eventIds.isEmpty()) {
-            adapter.setWaitlistCountByEventId(waitlistCountByEventId);
-            eventsLoading = false;
-            lastFullLoadTimestamp = System.currentTimeMillis();
-            applyFilters();
-            progressBar.setVisibility(View.GONE);
-            if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
-            if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+    /**
+     * Starts waitlist {@code count()} queries as soon as the catalog returns, overlapping with
+     * entrant history + notifications so the list can finalize sooner after merge.
+     */
+    private void beginWaitlistCountPrefetchForSession(List<Event> events, int sessionId) {
+        if (sessionId != loadEventsSessionId) {
             return;
         }
+        final int epochAtPrefetchStart = prefetchEpoch;
+        java.util.List<String> eventIds = new java.util.ArrayList<>();
+        if (events != null) {
+            for (Event e : events) {
+                if (e == null || e.getEventId() == null) continue;
+                eventIds.add(e.getEventId());
+            }
+        }
+        if (eventIds.isEmpty()) {
+            waitlistPrefetchInFlight = false;
+            waitlistPrefetchCompleteForSession = true;
+            waitlistPrefetchSessionId = sessionId;
+            return;
+        }
+        waitlistPrefetchInFlight = true;
+        waitlistPrefetchCompleteForSession = false;
+        waitlistPrefetchSessionId = sessionId;
+        runWaitlistCountQueryPool(eventIds, sessionId, epochAtPrefetchStart, () -> runOnUiThread(() -> {
+            if (sessionId != loadEventsSessionId || epochAtPrefetchStart != prefetchEpoch) {
+                return;
+            }
+            waitlistPrefetchInFlight = false;
+            waitlistPrefetchCompleteForSession = true;
+            Runnable r = finalizeAfterWaitlistPrefetch;
+            finalizeAfterWaitlistPrefetch = null;
+            if (r != null) {
+                r.run();
+            }
+        }));
+    }
 
+    private void applyWaitlistCountsUiComplete() {
+        adapter.setWaitlistCountByEventId(waitlistCountByEventId);
+        eventsLoading = false;
+        lastFullLoadTimestamp = System.currentTimeMillis();
+        applyFilters();
+        progressBar.setVisibility(View.GONE);
+        if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
+        if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+    }
+
+    /**
+     * Parallel Firestore aggregate count queries for each event id. Callback runs on the UI thread.
+     *
+     * @param prefetchEpochGuard pass {@code -1} to skip epoch checks (full refresh after join/leave);
+     *                           otherwise only writes when {@code prefetchEpochGuard == prefetchEpoch}.
+     */
+    private void runWaitlistCountQueryPool(List<String> eventIds, int sessionId, int prefetchEpochGuard,
+                                         Runnable onCompleteOnUiThread) {
+        if (eventIds == null || eventIds.isEmpty()) {
+            runOnUiThread(onCompleteOnUiThread);
+            return;
+        }
         // Fetch waitlist counts with limited parallelism to avoid Firestore throttling/timeouts.
         // Count() aggregation is lightweight (no doc downloads), so higher concurrency is safe.
-        final int maxConcurrent = 10;
+        final int maxConcurrent = 16;
         java.util.concurrent.atomic.AtomicInteger nextIndex = new java.util.concurrent.atomic.AtomicInteger(0);
         java.util.concurrent.atomic.AtomicInteger inFlight = new java.util.concurrent.atomic.AtomicInteger(0);
         java.util.concurrent.atomic.AtomicInteger remaining = new java.util.concurrent.atomic.AtomicInteger(eventIds.size());
@@ -543,7 +615,6 @@ public class EventListActivity extends AppCompatActivity {
         startMoreRef[0] = new Runnable() {
             @Override
             public void run() {
-                // Start up to maxConcurrent more tasks.
                 while (!finalized.get()
                         && inFlight.get() < maxConcurrent
                         && nextIndex.get() < eventIds.size()) {
@@ -554,42 +625,79 @@ public class EventListActivity extends AppCompatActivity {
                     inFlight.incrementAndGet();
                     waitingListDB.getActiveCountForEvent(eventId,
                             count -> {
-                                waitlistCountByEventId.put(eventId, count);
+                                boolean epochOk = prefetchEpochGuard < 0 || prefetchEpochGuard == prefetchEpoch;
+                                if (sessionId == loadEventsSessionId && epochOk) {
+                                    waitlistCountByEventId.put(eventId, count);
+                                }
                                 inFlight.decrementAndGet();
                                 if (remaining.decrementAndGet() == 0
                                         && finalized.compareAndSet(false, true)) {
-                                    adapter.setWaitlistCountByEventId(waitlistCountByEventId);
-                                    eventsLoading = false;
-                                    lastFullLoadTimestamp = System.currentTimeMillis();
-                                    applyFilters();
-                                    progressBar.setVisibility(View.GONE);
-                                    if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
-                                    if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+                                    runOnUiThread(onCompleteOnUiThread);
                                 } else {
-                                if (startMoreRef[0] != null) runOnUiThread(startMoreRef[0]);
+                                    if (startMoreRef[0] != null) runOnUiThread(startMoreRef[0]);
                                 }
                             },
                             err -> {
                                 inFlight.decrementAndGet();
                                 if (remaining.decrementAndGet() == 0
                                         && finalized.compareAndSet(false, true)) {
-                                    adapter.setWaitlistCountByEventId(waitlistCountByEventId);
-                                    eventsLoading = false;
-                                    lastFullLoadTimestamp = System.currentTimeMillis();
-                                    applyFilters();
-                                    progressBar.setVisibility(View.GONE);
-                                    if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
-                                    if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+                                    runOnUiThread(onCompleteOnUiThread);
                                 } else {
-                                if (startMoreRef[0] != null) runOnUiThread(startMoreRef[0]);
+                                    if (startMoreRef[0] != null) runOnUiThread(startMoreRef[0]);
                                 }
                             });
                 }
             }
         };
 
-        // Kick off initial tasks.
         if (startMoreRef[0] != null) runOnUiThread(startMoreRef[0]);
+    }
+
+    /**
+     * Wait until all events have waitlist counts + notification effective status before showing the list.
+     *
+     * @param mayUseBootstrapPrefetch when true (initial {@link #loadEvents()} merge), reuse prefetch if ready.
+     */
+    private void loadWaitlistCountsThenFinalize(boolean mayUseBootstrapPrefetch) {
+        if (!mayUseBootstrapPrefetch) {
+            prefetchEpoch++;
+            waitlistPrefetchInFlight = false;
+            waitlistPrefetchCompleteForSession = false;
+            waitlistPrefetchSessionId = -1;
+            finalizeAfterWaitlistPrefetch = null;
+        }
+
+        java.util.List<String> eventIds = new java.util.ArrayList<>();
+        for (Event e : allEvents) {
+            if (e == null || e.getEventId() == null) continue;
+            eventIds.add(e.getEventId());
+        }
+
+        if (eventIds.isEmpty()) {
+            waitlistCountByEventId.clear();
+            adapter.setWaitlistCountByEventId(waitlistCountByEventId);
+            eventsLoading = false;
+            lastFullLoadTimestamp = System.currentTimeMillis();
+            applyFilters();
+            progressBar.setVisibility(View.GONE);
+            if (recyclerView != null) recyclerView.setVisibility(View.VISIBLE);
+            if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+            return;
+        }
+
+        if (mayUseBootstrapPrefetch && waitlistPrefetchCompleteForSession
+                && waitlistPrefetchSessionId == loadEventsSessionId) {
+            applyWaitlistCountsUiComplete();
+            return;
+        }
+        if (mayUseBootstrapPrefetch && waitlistPrefetchInFlight
+                && waitlistPrefetchSessionId == loadEventsSessionId) {
+            finalizeAfterWaitlistPrefetch = this::applyWaitlistCountsUiComplete;
+            return;
+        }
+
+        waitlistCountByEventId.clear();
+        runWaitlistCountQueryPool(eventIds, loadEventsSessionId, -1, this::applyWaitlistCountsUiComplete);
     }
 
     /**
@@ -681,25 +789,11 @@ public class EventListActivity extends AppCompatActivity {
                         (loc != null && loc.toLowerCase().contains(query));
                 if (!matches) continue;
             }
-            if (selectedCategoryIndex > 0) {
-                String selectedCategory = CATEGORY_OPTIONS[selectedCategoryIndex];
-                List<String> eventCategories = event.getCategory();
-                boolean hasMatch = false;
-                for (String eventCategory : eventCategories) {
-                    if (eventCategory != null && eventCategory.equalsIgnoreCase(selectedCategory)) {
-                        hasMatch = true;
-                        break;
-                    }
-                }
-                if (!hasMatch) continue;
-            }
             if (selectedPriceRangeIndex > 0) {
                 if (!matchesPriceRangeFilter(event, selectedPriceRangeIndex)) continue;
             }
             if (selectedAgeGroupIndex > 0) {
-                String selectedAgeGroup = AGE_GROUP_OPTIONS[selectedAgeGroupIndex];
-                String eventAgeGroup = event.getAgeGroup();
-                if (eventAgeGroup == null || !eventAgeGroup.equalsIgnoreCase(selectedAgeGroup)) continue;
+                if (!matchesAgeGroupFilter(event, selectedAgeGroupIndex)) continue;
             }
             if (!matchesAvailabilityDateRangeFilter(event)) {
                 continue;
@@ -707,8 +801,11 @@ public class EventListActivity extends AppCompatActivity {
             if (selectedCapacityIndex > 0) {
                 if (!matchesCapacityFilter(event, selectedCapacityIndex)) continue;
             }
-            if (selectedVisibilityIndex > 0) {
-                if (!matchesVisibilityFilter(event, selectedVisibilityIndex)) continue;
+            // Private events: visible only on waitlist or to organizers (organizers cannot join from browse).
+            if (event.isPrivate() && !adapter.isEffectivelyJoinedOnWaitlist(event)) {
+                if (deviceId == null || !event.isDeviceAnOrganizer(deviceId)) {
+                    continue;
+                }
             }
             if (!selectedKeywords.isEmpty()) {
                 if (!matchesKeywordFilters(event)) continue;
@@ -719,6 +816,19 @@ public class EventListActivity extends AppCompatActivity {
 
         adapter.updateEvents(filtered);
         tvEmpty.setVisibility(filtered.isEmpty() ? View.VISIBLE : View.GONE);
+    }
+
+    /**
+     * Age filter uses `event_age_group_options`. Index 0 is "All" (no filter).
+     * Other indices match {@link Event#getAgeGroup()} (case-insensitive).
+     */
+    private boolean matchesAgeGroupFilter(Event event, int selectedIndex) {
+        if (ageGroupOptions == null || selectedIndex <= 0 || selectedIndex >= ageGroupOptions.length) {
+            return true;
+        }
+        String selected = ageGroupOptions[selectedIndex];
+        String eventAge = event.getAgeGroup();
+        return eventAge != null && selected.equalsIgnoreCase(eventAge.trim());
     }
 
     private boolean matchesPriceRangeFilter(Event event, int priceRangeIndex) {
@@ -764,17 +874,6 @@ public class EventListActivity extends AppCompatActivity {
                 return true;
         }
     }
-    private boolean matchesVisibilityFilter(Event event, int visibilityIndex) {
-        switch (visibilityIndex) {
-            case 1: // Public
-                return !event.isPrivate();
-            case 2: // Private
-                return event.isPrivate();
-            default:
-                return true;
-        }
-    }
-
     /**
      * Keyword chips match only {@link Event#getCategory()} strings (substring, case-insensitive).
      * Title, description, location, private/public, criteria, age group, etc. are not considered.
@@ -804,9 +903,7 @@ public class EventListActivity extends AppCompatActivity {
 
         Spinner spinnerPriceRange = dialogView.findViewById(R.id.spinner_price_range);
         Spinner spinnerAgeGroup = dialogView.findViewById(R.id.spinner_age_group);
-        Spinner spinnerCategory = dialogView.findViewById(R.id.spinner_category);
         Spinner spinnerCapacity = dialogView.findViewById(R.id.spinner_capacity);
-        Spinner spinnerVisibility = dialogView.findViewById(R.id.spinner_visibility);
         TextView btnAvailabilityStart = dialogView.findViewById(R.id.btn_availability_start);
         TextView btnAvailabilityEnd = dialogView.findViewById(R.id.btn_availability_end);
 
@@ -815,25 +912,15 @@ public class EventListActivity extends AppCompatActivity {
         spinnerPriceRange.setAdapter(priceRangeAdapter);
         spinnerPriceRange.setSelection(selectedPriceRangeIndex);
 
-        ArrayAdapter<String> ageGroupAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, AGE_GROUP_OPTIONS);
+        ArrayAdapter<String> ageGroupAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, ageGroupOptions);
         ageGroupAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerAgeGroup.setAdapter(ageGroupAdapter);
         spinnerAgeGroup.setSelection(selectedAgeGroupIndex);
-
-        ArrayAdapter<String> categoryAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, CATEGORY_OPTIONS);
-        categoryAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerCategory.setAdapter(categoryAdapter);
-        spinnerCategory.setSelection(selectedCategoryIndex);
 
         ArrayAdapter<String> capacityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, CAPACITY_OPTIONS);
         capacityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerCapacity.setAdapter(capacityAdapter);
         spinnerCapacity.setSelection(selectedCapacityIndex);
-
-        ArrayAdapter<String> visibilityAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, VISIBILITY_OPTIONS);
-        visibilityAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-        spinnerVisibility.setAdapter(visibilityAdapter);
-        spinnerVisibility.setSelection(selectedVisibilityIndex);
 
         final Long[] tempAvailabilityStart = {availabilityStartMillis};
         final Long[] tempAvailabilityEnd = {availabilityEndMillis};
@@ -857,9 +944,7 @@ public class EventListActivity extends AppCompatActivity {
         dialogView.findViewById(R.id.btn_apply_filters).setOnClickListener(v -> {
             selectedPriceRangeIndex = spinnerPriceRange.getSelectedItemPosition();
             selectedAgeGroupIndex = spinnerAgeGroup.getSelectedItemPosition();
-            selectedCategoryIndex = spinnerCategory.getSelectedItemPosition();
             selectedCapacityIndex = spinnerCapacity.getSelectedItemPosition();
-            selectedVisibilityIndex = spinnerVisibility.getSelectedItemPosition();
             if (tempAvailabilityStart[0] != null && tempAvailabilityEnd[0] != null
                     && tempAvailabilityStart[0] > tempAvailabilityEnd[0]) {
                 Toast.makeText(this, "Start date cannot be after end date.", Toast.LENGTH_SHORT).show();
@@ -874,16 +959,12 @@ public class EventListActivity extends AppCompatActivity {
         dialogView.findViewById(R.id.btn_clear_filters).setOnClickListener(v -> {
             selectedPriceRangeIndex = 0;
             selectedAgeGroupIndex = 0;
-            selectedCategoryIndex = 0;
             selectedCapacityIndex = 0;
-            selectedVisibilityIndex = 0;
             availabilityStartMillis = null;
             availabilityEndMillis = null;
             spinnerPriceRange.setSelection(0);
             spinnerAgeGroup.setSelection(0);
-            spinnerCategory.setSelection(0);
             spinnerCapacity.setSelection(0);
-            spinnerVisibility.setSelection(0);
             btnAvailabilityStart.setText(formatDateLabel(null, "Start date"));
             btnAvailabilityEnd.setText(formatDateLabel(null, "End date"));
             applyFilters();
@@ -949,6 +1030,11 @@ public class EventListActivity extends AppCompatActivity {
         removeText.setTextColor(ContextCompat.getColor(this, R.color.header_teal));
         removeText.setTextSize(14f);
         removeText.setPadding(dpToPx(8), 0, 0, 0);
+        // Avoid default highlight / extra font padding that looks like a grey box under the ×
+        removeText.setBackgroundResource(android.R.color.transparent);
+        removeText.setIncludeFontPadding(false);
+        removeText.setMinHeight(0);
+        removeText.setMinWidth(0);
         removeText.setOnClickListener(v -> {
             selectedKeywords.remove(keyword);
             renderKeywordChips();
@@ -1077,7 +1163,7 @@ public class EventListActivity extends AppCompatActivity {
             Toast.makeText(this, "Invalid event", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (!isNetworkAvailable()) {
+        if (!NetworkConnectivity.hasValidatedInternet(this)) {
             Toast.makeText(this, getString(R.string.waitlist_fail) + " No internet connection.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -1102,6 +1188,11 @@ public class EventListActivity extends AppCompatActivity {
         }
         if (!RegistrationPeriodUi.isNowWithinRegistrationWindow(event)) {
             Toast.makeText(this, R.string.waitlist_registration_period_altered, Toast.LENGTH_LONG).show();
+            refreshEventRowUi(event.getEventId());
+            return;
+        }
+        if (deviceId != null && event.isDeviceAnOrganizer(deviceId)) {
+            Toast.makeText(this, R.string.waitlist_organizer_cannot_join, Toast.LENGTH_LONG).show();
             refreshEventRowUi(event.getEventId());
             return;
         }
@@ -1156,19 +1247,21 @@ public class EventListActivity extends AppCompatActivity {
     }
 
     private void joinAndRecordLocation(Event event) {
+        showGeoJoinLoadingDialog();
         geolocationController.checkDistanceForEvent(this, event,
                 new GeolocationController.GeoJoinCallback() {
                     @Override
                     public void onAllowed(android.location.Location userLocation) {
-                        checkCapacityThenProceedJoin(event, () -> {
-                            performJoinWaitlist(event);
-                            geolocationController.recordLocationForEvent(
-                                    EventListActivity.this, deviceId, event.getEventId(),
-                                    userLocation, unused -> {}, e -> {});
-                        });
+                        dismissGeoJoinLoadingDialog();
+                        // Capacity was checked before geo; server enforces again in addRegistrationWithJoinChecks.
+                        performJoinWaitlist(event);
+                        geolocationController.recordLocationForEvent(
+                                EventListActivity.this, deviceId, event.getEventId(),
+                                userLocation, unused -> {}, e -> {});
                     }
                     @Override
                     public void onBlocked(float distanceMeters) {
+                        dismissGeoJoinLoadingDialog();
                         int km = Math.round(distanceMeters / 1000f);
                         Toast.makeText(EventListActivity.this,
                                 "You are " + km + "km away. Must be within 30km to join.",
@@ -1177,10 +1270,40 @@ public class EventListActivity extends AppCompatActivity {
                     }
                     @Override
                     public void onError(String message) {
+                        dismissGeoJoinLoadingDialog();
                         Toast.makeText(EventListActivity.this, message, Toast.LENGTH_LONG).show();
                         refreshEventRowUi(event.getEventId());
                     }
                 });
+    }
+
+    private void showGeoJoinLoadingDialog() {
+        dismissGeoJoinLoadingDialog();
+        View content = LayoutInflater.from(this).inflate(R.layout.dialog_geo_join_loading, null, false);
+        geoJoinLoadingDialog = new MaterialAlertDialogBuilder(this)
+                .setView(content)
+                .setCancelable(false)
+                .create();
+        geoJoinLoadingDialog.show();
+    }
+
+    private void dismissGeoJoinLoadingDialog() {
+        if (geoJoinLoadingDialog == null) {
+            return;
+        }
+        try {
+            if (geoJoinLoadingDialog.isShowing()) {
+                geoJoinLoadingDialog.dismiss();
+            }
+        } catch (Exception ignored) {
+        }
+        geoJoinLoadingDialog = null;
+    }
+
+    @Override
+    protected void onDestroy() {
+        dismissGeoJoinLoadingDialog();
+        super.onDestroy();
     }
 
     private void refreshEventRowUi(String eventId) {
@@ -1233,6 +1356,7 @@ public class EventListActivity extends AppCompatActivity {
                     registrationsByEventId.put(event.getEventId(), registration);
                     adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
                     adapter.setRegistrationsByEventId(registrationsByEventId);
+                    recordLocationIfPermitted(event.getEventId());
                     refreshEventFromServerAfterWaitlistMutation(event.getEventId());
                 },
                 e -> {
@@ -1242,11 +1366,29 @@ public class EventListActivity extends AppCompatActivity {
                     } else if (WaitingListDB.REASON_REGISTRATION_CLOSED.equals(e.getMessage())) {
                         Toast.makeText(this, R.string.waitlist_registration_closed, Toast.LENGTH_LONG).show();
                         refreshEventFromServerAfterWaitlistMutation(event.getEventId());
+                    } else if (WaitingListDB.REASON_ORGANIZER_CANNOT_JOIN.equals(e.getMessage())) {
+                        Toast.makeText(this, R.string.waitlist_organizer_cannot_join, Toast.LENGTH_LONG).show();
+                        refreshEventFromServerAfterWaitlistMutation(event.getEventId());
                     } else {
                         Toast.makeText(this, getString(R.string.waitlist_fail) + " " + e.getMessage(), Toast.LENGTH_SHORT).show();
                         refreshEventFromServerAfterWaitlistMutation(event.getEventId());
                     }
                 });
+    }
+
+    private void recordLocationIfPermitted(String eventId) {
+        if (eventId == null || eventId.isEmpty()) return;
+        if (!geolocationController.hasLocationPermission(this)) return;
+        geolocationController.getCurrentDeviceLocation(this, loc -> {
+            if (loc == null) return;
+            geolocationController.recordLocationForEvent(
+                    EventListActivity.this,
+                    deviceId,
+                    eventId,
+                    loc,
+                    unused -> {},
+                    e -> {});
+        });
     }
 
     private void leaveWaitlist(Event event) {
@@ -1259,7 +1401,7 @@ public class EventListActivity extends AppCompatActivity {
             Toast.makeText(this, "Could not find your registration.", Toast.LENGTH_SHORT).show();
             return;
         }
-        if (!isNetworkAvailable()) {
+        if (!NetworkConnectivity.hasValidatedInternet(this)) {
             Toast.makeText(this, "Failed to leave waitlist: No internet connection.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -1323,14 +1465,4 @@ public class EventListActivity extends AppCompatActivity {
         }
     }
 
-    private boolean isNetworkAvailable() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (cm == null) return false;
-        Network network = cm.getActiveNetwork();
-        if (network == null) return false;
-        NetworkCapabilities caps = cm.getNetworkCapabilities(network);
-        return caps != null && (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-                || caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-                || caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
-    }
 }

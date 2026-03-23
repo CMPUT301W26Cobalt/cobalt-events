@@ -181,67 +181,122 @@ public class EventHistoryActivity extends AppCompatActivity {
         if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(refreshFromUserGesture);
         allHistory.clear();
 
-        eventController.getAllEvents(events -> {
-            if (events == null || events.isEmpty()) {
-                progressBar.setVisibility(View.GONE);
-                tvEmpty.setVisibility(View.VISIBLE);
-                adapter.updateHistory(new ArrayList<>());
-                if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
-                refreshFromUserGesture = false;
-                return;
-            }
-            final List<Event> eventList = events;
-
-            if (deviceId == null || deviceId.isEmpty()) {
+        // No device: only need catalog (same as before).
+        if (deviceId == null || deviceId.isEmpty()) {
+            eventController.getAllEvents(events -> {
+                if (events == null || events.isEmpty()) {
+                    progressBar.setVisibility(View.GONE);
+                    tvEmpty.setVisibility(View.VISIBLE);
+                    adapter.updateHistory(new ArrayList<>());
+                    if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+                    refreshFromUserGesture = false;
+                    return;
+                }
                 effectiveStatusByEventId.clear();
                 completeHistoryUiRefresh(new ArrayList<>());
-                return;
-            }
+            }, e -> {
+                progressBar.setVisibility(View.GONE);
+                if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+                refreshFromUserGesture = false;
+                Toast.makeText(this, "Failed to load history: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }, () -> runOnUiThread(() ->
+                    Toast.makeText(this, R.string.firebase_cache_fallback_message, Toast.LENGTH_LONG).show()));
+            return;
+        }
 
-            final AtomicInteger completed = new AtomicInteger(0);
-            final List<WaitingList>[] historyHolder = new List[1];
-            final List<Notification>[] notificationsHolder = new List[1];
-            final List<EventHistory>[] legacyHistoryResult = new List[1];
-            final boolean[] historyFailed = { false };
-            final boolean[] notificationsFailed = { false };
+        // Overlap: catalog + entrant history + notifications (wall-clock ~max of the three).
+        final AtomicInteger remaining = new AtomicInteger(3);
+        final boolean[] eventsOk = { true };
+        final List<Event>[] eventsHolder = new List[1];
+        final List<WaitingList>[] historyHolder = new List[1];
+        final List<Notification>[] notificationsHolder = new List[1];
+        final boolean[] historyFailed = { false };
+        final boolean[] notificationsFailed = { false };
+        final List<EventHistory>[] legacyHistoryResult = new List[1];
+        final boolean[] legacyStarted = { false };
+        /** True after catalog success or failure — used so history error can complete if legacy never runs. */
+        final boolean[] eventsResolved = { false };
 
-            Runnable mergeWhenBothDone = () -> {
-                if (completed.incrementAndGet() != 2) return;
-                runOnUiThread(() -> completeHistoryParallelMerge(
+        Runnable onPartComplete = () -> {
+            if (remaining.decrementAndGet() != 0) return;
+            runOnUiThread(() -> {
+                if (!eventsOk[0]) {
+                    return;
+                }
+                List<Event> eventList = eventsHolder[0] != null ? eventsHolder[0] : new ArrayList<>();
+                if (eventList.isEmpty()) {
+                    progressBar.setVisibility(View.GONE);
+                    tvEmpty.setVisibility(View.VISIBLE);
+                    adapter.updateHistory(new ArrayList<>());
+                    if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+                    refreshFromUserGesture = false;
+                    return;
+                }
+                completeHistoryParallelMerge(
                         eventList,
                         historyHolder[0],
                         historyFailed[0],
                         notificationsHolder[0],
                         notificationsFailed[0],
-                        legacyHistoryResult));
-            };
+                        legacyHistoryResult);
+            });
+        };
 
-            waitingListDB.getEntrantHistory(deviceId,
-                    list -> {
-                        historyHolder[0] = list;
-                        mergeWhenBothDone.run();
-                    },
-                    err -> {
-                        historyFailed[0] = true;
-                        loadHistoryRegistrationsLegacy(eventList, legacyHistoryResult, mergeWhenBothDone);
-                    });
+        Runnable tryStartLegacyIfNeeded = () -> {
+            if (!historyFailed[0] || legacyStarted[0]) {
+                return;
+            }
+            List<Event> el = eventsHolder[0];
+            if (el == null) {
+                return;
+            }
+            legacyStarted[0] = true;
+            loadHistoryRegistrationsLegacy(el, legacyHistoryResult, () -> runOnUiThread(onPartComplete));
+        };
 
-            notificationDB.getNotificationsForRecipient(deviceId,
-                    list -> {
-                        notificationsHolder[0] = list;
-                        mergeWhenBothDone.run();
-                    },
-                    err -> {
-                        notificationsFailed[0] = true;
-                        mergeWhenBothDone.run();
-                    });
-        }, e -> {
-            progressBar.setVisibility(View.GONE);
-            if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
-            refreshFromUserGesture = false;
-            Toast.makeText(this, "Failed to load history: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }, () -> runOnUiThread(() ->
-                Toast.makeText(this, R.string.firebase_cache_fallback_message, Toast.LENGTH_LONG).show()));
+        eventController.getAllEvents(
+                events -> {
+                    eventsResolved[0] = true;
+                    eventsHolder[0] = events != null ? events : new ArrayList<>();
+                    tryStartLegacyIfNeeded.run();
+                    onPartComplete.run();
+                },
+                e -> {
+                    eventsResolved[0] = true;
+                    progressBar.setVisibility(View.GONE);
+                    if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+                    refreshFromUserGesture = false;
+                    Toast.makeText(this, "Failed to load history: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    eventsOk[0] = false;
+                    onPartComplete.run();
+                },
+                () -> runOnUiThread(() ->
+                        Toast.makeText(this, R.string.firebase_cache_fallback_message, Toast.LENGTH_LONG).show()));
+
+        waitingListDB.getEntrantHistory(deviceId,
+                list -> {
+                    historyHolder[0] = list;
+                    onPartComplete.run();
+                },
+                err -> {
+                    historyFailed[0] = true;
+                    tryStartLegacyIfNeeded.run();
+                    // If catalog already resolved and legacy did not start, complete the history "slot"
+                    // (e.g. events load failed so no waitlist docs to scan).
+                    if (eventsResolved[0] && !legacyStarted[0]) {
+                        onPartComplete.run();
+                    }
+                });
+
+        notificationDB.getNotificationsForRecipient(deviceId,
+                list -> {
+                    notificationsHolder[0] = list;
+                    onPartComplete.run();
+                },
+                err -> {
+                    notificationsFailed[0] = true;
+                    onPartComplete.run();
+                });
     }
 
     /** Per-event registration fetch when collection-group query fails (matches pre-optimization behavior). */
@@ -422,6 +477,7 @@ public class EventHistoryActivity extends AppCompatActivity {
             return 0;
         }
         if (WaitingList.STATUS_DECLINED.equals(status)
+                || WaitingList.STATUS_DECLINED_FOUND_REPLACEMENT.equals(status)
                 || "declined".equals(status)
                 || WaitingList.STATUS_NOT_SELECTED.equals(status)
                 || "rejected".equals(status)) {
@@ -438,7 +494,9 @@ public class EventHistoryActivity extends AppCompatActivity {
     private void confirmRemoveFromWaitlist(EventHistory history) {
         if (history == null || history.getEvent() == null || history.getEvent().getEventId() == null) return;
         String status = getEffectiveStatusForHistory(history);
-        if (WaitingList.STATUS_ENROLLED.equals(status) || WaitingList.STATUS_DECLINED.equals(status)) {
+        if (WaitingList.STATUS_ENROLLED.equals(status)
+                || WaitingList.STATUS_DECLINED.equals(status)
+                || WaitingList.STATUS_DECLINED_FOUND_REPLACEMENT.equals(status)) {
             Toast.makeText(this, "You cannot leave after a final decision.", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -480,7 +538,9 @@ public class EventHistoryActivity extends AppCompatActivity {
         // Never let an X/not-selected notification overwrite a final DB decision.
         if (WaitingList.STATUS_NOT_SELECTED.equals(effective)) {
             String base = history.getStatus();
-            if (WaitingList.STATUS_DECLINED.equals(base) || "declined".equalsIgnoreCase(base)) {
+            if (WaitingList.STATUS_DECLINED.equals(base)
+                    || WaitingList.STATUS_DECLINED_FOUND_REPLACEMENT.equals(base)
+                    || "declined".equalsIgnoreCase(base)) {
                 return base;
             }
             if (WaitingList.STATUS_ENROLLED.equals(base) || WaitingList.STATUS_SELECTED.equals(base)) {

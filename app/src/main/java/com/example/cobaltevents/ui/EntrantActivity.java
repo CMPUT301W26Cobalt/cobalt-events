@@ -18,6 +18,12 @@ import com.google.android.material.textfield.TextInputLayout;
 
 public class EntrantActivity extends AppCompatActivity {
 
+    /** When set (e.g. from Welcome "Continue as Organizer"), go to {@link OrganizerActivity} after profile is complete. */
+    public static final String EXTRA_LAUNCH_ORGANIZER_AFTER_SIGNUP =
+            "com.example.cobaltevents.EXTRA_LAUNCH_ORGANIZER_AFTER_SIGNUP";
+
+    private boolean launchOrganizerAfterSignup;
+
     private TextInputLayout nameLayout, emailLayout, phoneLayout;
     private TextInputEditText nameInput, emailInput, phoneInput;
     private Button getStartedButton;
@@ -34,6 +40,7 @@ public class EntrantActivity extends AppCompatActivity {
         entrantDB = new EntrantDB(this);
         controller = new EntrantController(entrantDB);
         currentEntrant = entrantDB.getEntrant();
+        readLaunchOrganizerFlag(getIntent());
         if (currentEntrant.isValid()) {
             navigateToMain();
             return;
@@ -54,6 +61,20 @@ public class EntrantActivity extends AppCompatActivity {
 
         backButton.setOnClickListener(v -> finish());
         getStartedButton.setOnClickListener(v -> saveProfile());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        readLaunchOrganizerFlag(intent);
+    }
+
+    private void readLaunchOrganizerFlag(Intent intent) {
+        if (intent != null) {
+            launchOrganizerAfterSignup = intent.getBooleanExtra(
+                    EXTRA_LAUNCH_ORGANIZER_AFTER_SIGNUP, launchOrganizerAfterSignup);
+        }
     }
 
     private void loadProfileFields() {
@@ -100,9 +121,8 @@ public class EntrantActivity extends AppCompatActivity {
     }
 
     private void navigateToMain() {
-        // Default to the Events screen; EventListActivity already loads notifications
-        // as part of its notification-aware loading pipeline before showing the list.
-        Intent intent = new Intent(this, EventListActivity.class);
+        Class<?> dest = launchOrganizerAfterSignup ? OrganizerActivity.class : EventListActivity.class;
+        Intent intent = new Intent(this, dest);
         startActivity(intent);
         finish();
     }

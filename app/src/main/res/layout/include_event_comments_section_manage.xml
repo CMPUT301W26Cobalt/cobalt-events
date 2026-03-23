@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/layout_event_comments_section"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp">
+
+    <LinearLayout
+        android:id="@+id/layout_comments_list_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tv_comments_header"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:text="@string/comments_section_title"
+            android:textColor="@color/event_manage_meta"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium" />
+
+        <LinearLayout
+            android:id="@+id/layout_comments_empty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_comments_empty_card"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingTop="24dp"
+            android:paddingBottom="24dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/comments_empty_local"
+                android:textColor="@color/comments_muted"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/layout_comments_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical" />
+
+        <TextView
+            android:id="@+id/tv_comments_toggle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:padding="4dp"
+            android:textColor="@color/event_manage_lottery"
+            android:textSize="12sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layout_comments_composer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/bg_comments_form_card"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="@string/comments_add_label"
+            android:textColor="@color/event_manage_title"
+            android:textSize="14sp"
+            android:fontFamily="sans-serif-medium" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="top"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/et_comment_input"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:minLines="2"
+                android:maxLines="5"
+                android:background="@drawable/bg_comments_input"
+                android:gravity="top|start"
+                android:hint="@string/comment_input_hint"
+                android:inputType="textCapSentences|textMultiLine"
+                android:paddingStart="12dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="8dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/comments_muted"
+                android:textSize="12sp" />
+
+            <ImageButton
+                android:id="@+id/btn_send_comment"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/bg_comment_send_organizer"
+                android:contentDescription="@string/send_comment"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                android:src="@drawable/ic_send_arrow"
+                app:tint="@color/white" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

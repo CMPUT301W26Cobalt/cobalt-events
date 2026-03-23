@@ -72,11 +72,76 @@ public class NotificationController {
                 "You have been chosen to attend " + eventName + ". Tap to view event details.",
                 Notification.TYPE_SELECTED
         );
+        notification.setRecipientMode(Notification.RECIPIENT_MODE_USER);
 
         notificationDB.saveNotification(notification,
                 unused -> {},
                 e -> e.printStackTrace()
         );
+    }
+
+    /**
+     * In-app notification for waitlisted entrants not chosen in a lottery draw
+     * ({@link Notification#TYPE_NOT_SELECTED}).
+     */
+    public void sendNotSelectedNotification(String entrantId, String eventId, String eventName) {
+        String label = eventName != null && !eventName.isEmpty() ? eventName : "the event";
+        Notification notification = new Notification(
+                entrantId,
+                eventId,
+                "Not selected this time",
+                "The lottery for " + label + " has ended — you weren't selected. Thank you for joining the waitlist.",
+                Notification.TYPE_NOT_SELECTED
+        );
+        notification.setRecipientMode(Notification.RECIPIENT_MODE_USER);
+
+        notificationDB.saveNotification(notification,
+                unused -> {},
+                e -> e.printStackTrace()
+        );
+    }
+
+    /**
+     * In-app notification for entrants taken off the waitlist as replacements
+     * ({@link Notification#TYPE_GOT_OFF_WAITLIST}).
+     */
+    public void sendGotOffWaitlistNotification(String entrantId, String eventId, String eventName) {
+        String label = eventName != null && !eventName.isEmpty() ? eventName : "the event";
+        Notification notification = new Notification(
+                entrantId,
+                eventId,
+                "You've been moved off the waitlist!",
+                "A spot opened up for " + label + ". You've been invited as a replacement.",
+                Notification.TYPE_GOT_OFF_WAITLIST
+        );
+        notification.setRecipientMode(Notification.RECIPIENT_MODE_USER);
+        notificationDB.saveNotification(notification,
+                unused -> {},
+                e -> e.printStackTrace());
+    }
+
+    /**
+     * Creates a co-organizer invitation notification ({@link Notification#TYPE_CO_ORGANIZER}).
+     * In-app list is informational only (no Accept/Decline); message directs users to admin to respond.
+     */
+    public void sendCoOrganizerNotification(Context context,
+                                            String recipientId,
+                                            String eventId,
+                                            String eventName) {
+        String eventLabel = (eventName != null && !eventName.trim().isEmpty())
+                ? eventName.trim()
+                : context.getString(R.string.notification_co_organizer_event_fallback);
+        Notification notification = new Notification(
+                recipientId,
+                eventId,
+                context.getString(R.string.notification_co_organizer_title),
+                context.getString(R.string.notification_co_organizer_message, eventLabel),
+                Notification.TYPE_CO_ORGANIZER
+        );
+        notification.setRecipientMode(Notification.RECIPIENT_MODE_USER);
+        notificationDB.saveNotification(notification,
+                unused -> {},
+                e -> e.printStackTrace());
     }
 
     public void startNotificationListener(Context context, String deviceId) {
