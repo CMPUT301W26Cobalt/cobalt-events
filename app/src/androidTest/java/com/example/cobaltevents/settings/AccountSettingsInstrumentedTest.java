@@ -9,7 +9,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.example.cobaltevents.db.EntrantDB;
 import com.example.cobaltevents.db.ProfileDB;
-import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Entrant;
 
 import org.junit.Before;
@@ -23,7 +22,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Instrumented tests that cover "account settings"-like flows:
- * - Muting notifications (WaitingListDB.updateNotificationsAllowed)
  * - Deleting account (ProfileDB.deleteProfile)
  * - Changing account info (EntrantDB.save + get roundtrip)
  *
@@ -34,33 +32,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @RunWith(AndroidJUnit4.class)
 public class AccountSettingsInstrumentedTest {
 
-    private WaitingListDB waitingListDB;
     private ProfileDB profileDB;
     private EntrantDB entrantDB;
     private static final int TIMEOUT_SECONDS = 10;
 
     @Before
     public void setUp() {
-        waitingListDB = new WaitingListDB();
         profileDB = new ProfileDB();
         Context context = ApplicationProvider.getApplicationContext();
         entrantDB = new EntrantDB(context);
-    }
-
-    @Test
-    public void muteNotifications_allowsToggle() throws InterruptedException {
-        String eventId = "mute_event_" + UUID.randomUUID();
-        String deviceId = "mute_device_" + UUID.randomUUID();
-
-        CountDownLatch latch = new CountDownLatch(1);
-        AtomicBoolean ok = new AtomicBoolean(false);
-
-        waitingListDB.updateNotificationsAllowed(eventId, deviceId, false,
-                v -> { ok.set(true); latch.countDown(); },
-                e -> latch.countDown());
-
-        assertTrue(latch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
-        assertTrue(ok.get());
     }
 
     @Test

@@ -264,8 +264,7 @@ public class EventManageActivity extends AppCompatActivity {
             if (WaitingList.STATUS_PENDING.equals(s)) waitlisted++;
             else if (WaitingList.STATUS_SELECTED.equals(s)) invited++;
             else if ("confirmed".equals(s)) confirmed++;
-            else if (WaitingList.STATUS_NOT_SELECTED.equals(s)
-                    || WaitingList.STATUS_CANCELLED.equals(s)) declined++;
+            else if (WaitingList.STATUS_NOT_SELECTED.equals(s)) declined++;
         }
         tvCountWaitlisted.setText(String.valueOf(waitlisted));
         tvCountInvited.setText(String.valueOf(invited));
@@ -305,8 +304,7 @@ public class EventManageActivity extends AppCompatActivity {
                 case "confirmed":
                     include = "confirmed".equals(s); break;
                 default:
-                    include = WaitingList.STATUS_NOT_SELECTED.equals(s)
-                            || WaitingList.STATUS_CANCELLED.equals(s); break;
+                    include = WaitingList.STATUS_NOT_SELECTED.equals(s); break;
             }
             if (include) filtered.add(reg);
         }

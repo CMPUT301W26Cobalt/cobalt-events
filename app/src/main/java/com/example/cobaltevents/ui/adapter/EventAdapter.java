@@ -10,12 +10,16 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.WaitingList;
+import com.example.cobaltevents.ui.comments.EventCommentsUiBinder;
+import com.example.cobaltevents.ui.waitlist.WaitlistStatusUi;
 import com.google.firebase.Timestamp;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -28,13 +32,21 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         void onEventClick(Event event, boolean isJoined);
     }
 
+    /** Fired when local comments/replies change so the row can refresh. */
+    public interface OnEventCommentsChangedListener {
+        void onEventCommentsChanged(String eventId);
+    }
 
     private List<Event> events;
     private final OnEventClickListener listener;
     private final Set<String> expandedIds = new HashSet<>();
     private Map<String, WaitingList> activeRegistrationsByEventId;
+    private Map<String, WaitingList> registrationsByEventId;
     private Map<String, Integer> waitlistCountByEventId;
+    private Map<String, String> effectiveStatusByEventId;
     private String deviceId;
+    private String commentAuthorName = "You";
+    private OnEventCommentsChangedListener onEventCommentsChangedListener;
 
     private static final SimpleDateFormat DATE_FORMAT =
             new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
@@ -53,35 +65,79 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         notifyDataSetChanged();
     }
 
+    /** Sets map without triggering a redraw; call {@link #notifyDataSetChanged()} once when all maps are ready. */
     public void setActiveRegistrationsByEventId(Map<String, WaitingList> map) {
         this.activeRegistrationsByEventId = map;
-        notifyDataSetChanged();
     }
 
+    /** Sets map without triggering a redraw; call {@link #notifyDataSetChanged()} once when all maps are ready. */
+    public void setRegistrationsByEventId(Map<String, WaitingList> map) {
+        this.registrationsByEventId = map;
+    }
+
+    /** Sets map without triggering a redraw; call {@link #notifyDataSetChanged()} once when all maps are ready. */
     public void setWaitlistCountByEventId(Map<String, Integer> map) {
         this.waitlistCountByEventId = map;
-        notifyDataSetChanged();
+    }
+
+    /** Sets map without triggering a redraw; call {@link #notifyDataSetChanged()} once when all maps are ready. */
+    public void setEffectiveStatusByEventId(Map<String, String> map) {
+        this.effectiveStatusByEventId = map;
     }
 
     public void setDeviceId(String deviceId) {
         this.deviceId = deviceId;
     }
 
+    public void setCommentAuthorName(String name) {
+        this.commentAuthorName = (name != null && !name.trim().isEmpty()) ? name.trim() : "You";
+    }
 
-    /** Call after updating notificationsAllowed in Firestore so the card reflects the new value. */
-    public void updateNotificationsAllowedForEvent(String eventId, boolean enabled) {
-        if (activeRegistrationsByEventId != null) {
-            WaitingList reg = activeRegistrationsByEventId.get(eventId);
-            if (reg != null) {
-                reg.setNotificationsAllowed(enabled);
-                for (int i = 0; i < events.size(); i++) {
-                    if (eventId.equals(events.get(i).getEventId())) {
-                        notifyItemChanged(i);
-                        break;
-                    }
-                }
+    public void setOnEventCommentsChangedListener(OnEventCommentsChangedListener listener) {
+        this.onEventCommentsChangedListener = listener;
+    }
+
+    /** Position in the current (filtered) list, or -1. */
+    public int findPositionByEventId(String eventId) {
+        if (eventId == null || events == null) {
+            return -1;
+        }
+        for (int i = 0; i < events.size(); i++) {
+            Event e = events.get(i);
+            if (e != null && eventId.equals(e.getEventId())) {
+                return i;
             }
         }
+        return -1;
+    }
+
+    /**
+     * Whether the user is treated as on the waitlist for join/leave UI (aligned with {@link #onBindViewHolder}).
+     * Used when re-checking server state before joining (e.g. event switched to private).
+     */
+    public boolean isEffectivelyJoinedOnWaitlist(Event event) {
+        if (event == null || event.getEventId() == null) {
+            return false;
+        }
+        String eventId = event.getEventId();
+        boolean isJoined = activeRegistrationsByEventId != null
+                && activeRegistrationsByEventId.containsKey(eventId);
+        WaitingList anyReg = (registrationsByEventId != null)
+                ? registrationsByEventId.get(eventId)
+                : null;
+        String anyStatusDb = anyReg != null ? anyReg.getStatus() : null;
+        String anyStatus = anyStatusDb;
+        if (anyStatusDb != null && effectiveStatusByEventId != null && event.getEventId() != null) {
+            String effective = effectiveStatusByEventId.get(eventId);
+            anyStatus = WaitlistStatusUi.mergeDbStatusWithEffectiveOverride(anyStatusDb, effective);
+        }
+        boolean isJoinedEffective = isJoined;
+        if (effectiveStatusByEventId != null && event.getEventId() != null) {
+            if (anyStatus != null) {
+                isJoinedEffective = isActiveStatusForUi(anyStatus);
+            }
+        }
+        return isJoinedEffective;
     }
 
     @NonNull
@@ -100,9 +156,37 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         boolean isJoined = event.getEventId() != null
                 && activeRegistrationsByEventId != null
                 && activeRegistrationsByEventId.containsKey(event.getEventId());
+        WaitingList anyReg = (event.getEventId() != null && registrationsByEventId != null)
+                ? registrationsByEventId.get(event.getEventId())
+                : null;
+        String anyStatusDb = anyReg != null ? anyReg.getStatus() : null;
+        String anyStatus = anyStatusDb;
+        // Only apply notification-derived overrides when we actually have a waitlist entry.
+        // This prevents "leave waitlist" UI appearing for events where the registration is missing.
+        if (anyStatusDb != null && effectiveStatusByEventId != null && event.getEventId() != null) {
+            String effective = effectiveStatusByEventId.get(event.getEventId());
+            anyStatus = WaitlistStatusUi.mergeDbStatusWithEffectiveOverride(anyStatusDb, effective);
+        }
+
+        boolean isJoinedEffective = isJoined;
+        if (effectiveStatusByEventId != null && event.getEventId() != null) {
+            if (anyStatus != null) {
+                isJoinedEffective = isActiveStatusForUi(anyStatus);
+            }
+        }
         Integer count = (event.getEventId() != null && waitlistCountByEventId != null)
                 ? waitlistCountByEventId.get(event.getEventId())
                 : null;
+
+        if (event.getPosterImageUrl() != null && !event.getPosterImageUrl().trim().isEmpty()) {
+            Glide.with(holder.itemView.getContext())
+                    .load(event.getPosterImageUrl())
+                    .centerCrop()
+                    .placeholder(android.R.drawable.ic_menu_gallery)
+                    .into(holder.ivEventImage);
+        } else {
+            holder.ivEventImage.setImageResource(android.R.drawable.ic_menu_gallery);
+        }
 
         holder.tvName.setText(event.getName());
 
@@ -112,12 +196,21 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.tvWaitlistCount.setText("");
         }
 
-        if (event.getCategory() != null && !event.getCategory().isEmpty()) {
-            holder.tvCategoryTag.setVisibility(View.VISIBLE);
-            holder.tvCategoryTag.setText(event.getCategory());
-        } else {
-            holder.tvCategoryTag.setVisibility(View.GONE);
+        holder.layoutCategoryTags.removeAllViews();
+        boolean hasTags = false;
+        if (event.isPrivate()) {
+            holder.layoutCategoryTags.addView(createPrivateChip(holder));
+            hasTags = true;
         }
+        List<String> categories = event.getCategory();
+        if (categories != null && !categories.isEmpty()) {
+            for (String category : categories) {
+                if (category == null || category.trim().isEmpty()) continue;
+                holder.layoutCategoryTags.addView(createCategoryChip(holder, category.trim()));
+                hasTags = true;
+            }
+        }
+        holder.layoutCategoryTags.setVisibility(hasTags ? View.VISIBLE : View.GONE);
 
         Timestamp now = Timestamp.now();
         boolean registrationClosed = event.getRegistrationClose() != null
@@ -127,10 +220,13 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 && event.getEventDate() != null
                 && event.getEventDate().compareTo(now) > 0;
         int capacity = event.getWaitingListCapacity();
-        boolean full = !isJoined
+        boolean full = !isJoinedEffective
                 && capacity > 0
                 && count != null
                 && count >= capacity;
+        boolean privateBlocked = !isJoinedEffective && event.isPrivate();
+        boolean enrolled = WaitingList.STATUS_ENROLLED.equals(anyStatus);
+        boolean declined = WaitingList.STATUS_DECLINED.equals(anyStatus);
 
         if (registrationClosed) {
             holder.btnJoin.setText("REGISTRATION CLOSED");
@@ -147,11 +243,27 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.btnJoin.setAlpha(0.45f);
             holder.btnJoin.setEnabled(false);
             holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
+        } else if (enrolled) {
+            holder.btnJoin.setText("ENROLLED");
+            holder.btnJoin.setAlpha(0.45f);
+            holder.btnJoin.setEnabled(false);
+            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
+        } else if (declined) {
+            holder.btnJoin.setText("DECLINED");
+            holder.btnJoin.setAlpha(0.45f);
+            holder.btnJoin.setEnabled(false);
+            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
+        } else if (privateBlocked) {
+            // Declined must always win over "PRIVATE EVENT" styling.
+            holder.btnJoin.setText("PRIVATE EVENT");
+            holder.btnJoin.setAlpha(0.45f);
+            holder.btnJoin.setEnabled(false);
+            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
         } else {
-            holder.btnJoin.setText(isJoined ? "LEAVE WAITLIST" : "JOIN WAITLIST");
+            holder.btnJoin.setText(isJoinedEffective ? "LEAVE WAITLIST" : "JOIN WAITLIST");
             holder.btnJoin.setAlpha(1.0f);
             holder.btnJoin.setEnabled(true);
-            holder.btnJoin.setBackgroundResource(isJoined ? R.drawable.bg_button_red_pill : R.drawable.bg_button_join_solid);
+            holder.btnJoin.setBackgroundResource(isJoinedEffective ? R.drawable.bg_button_red_pill : R.drawable.bg_button_join_solid);
         }
 
         holder.layoutExpandedDetails.setVisibility(isExpanded ? View.VISIBLE : View.GONE);
@@ -203,7 +315,12 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                     : "No special criteria.";
             holder.tvCriteriaDescription.setText(criteriaText);
             holder.layoutGeoNote.setVisibility(View.GONE);
-            holder.layoutEventNotifications.setVisibility(View.GONE);
+
+            EventCommentsUiBinder.bind(holder.itemView, event, deviceId, commentAuthorName, () -> {
+                if (onEventCommentsChangedListener != null && event.getEventId() != null) {
+                    onEventCommentsChangedListener.onEventCommentsChanged(event.getEventId());
+                }
+            });
         }
 
         View.OnClickListener toggleExpand = v -> {
@@ -218,7 +335,16 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         holder.itemView.setOnClickListener(toggleExpand);
         holder.tvChevron.setOnClickListener(toggleExpand);
 
-        holder.btnJoin.setOnClickListener(v -> listener.onEventClick(event, isJoined));
+        // Make sure captured variables are effectively-final for the lambda.
+        final boolean isJoinedForClick = isJoinedEffective;
+        holder.btnJoin.setOnClickListener(v -> listener.onEventClick(event, isJoinedForClick));
+    }
+
+    private boolean isActiveStatusForUi(String status) {
+        return WaitingList.STATUS_PENDING.equals(status)
+                || WaitingList.STATUS_SELECTED.equals(status)
+                || WaitingList.STATUS_NOT_SELECTED.equals(status)
+                || WaitingList.STATUS_ENROLLED.equals(status);
     }
 
     private static String formatPrice(String raw) {
@@ -230,25 +356,84 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         return p;
     }
 
+    private TextView createCategoryChip(@NonNull EventViewHolder holder, @NonNull String label) {
+        TextView chip = new TextView(holder.itemView.getContext());
+        chip.setText(label);
+        chip.setTextSize(11f);
+        chip.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.header_teal));
+        chip.setBackgroundResource(R.drawable.bg_tag_teal);
+        int hPad = dpToPx(holder, 10);
+        int vPad = dpToPx(holder, 3);
+        chip.setPadding(hPad, vPad, hPad, vPad);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        lp.setMarginEnd(dpToPx(holder, 6));
+        chip.setLayoutParams(lp);
+        return chip;
+    }
+
+    private LinearLayout createPrivateChip(@NonNull EventViewHolder holder) {
+        LinearLayout chip = new LinearLayout(holder.itemView.getContext());
+        chip.setOrientation(LinearLayout.HORIZONTAL);
+        chip.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        chip.setBackgroundResource(R.drawable.bg_private_tag);
+        int hPad = dpToPx(holder, 8);
+        int vPad = dpToPx(holder, 2);
+        chip.setPadding(hPad, vPad, hPad, vPad);
+
+        android.widget.ImageView icon = new android.widget.ImageView(holder.itemView.getContext());
+        icon.setImageResource(R.drawable.ic_lock_private);
+        LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(dpToPx(holder, 12), dpToPx(holder, 12));
+        icon.setLayoutParams(iconLp);
+
+        TextView label = new TextView(holder.itemView.getContext());
+        label.setText(R.string.private_tag_label);
+        label.setTextSize(12f);
+        label.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.private_tag_text));
+        label.setTypeface(label.getTypeface(), android.graphics.Typeface.BOLD);
+        LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        textLp.setMarginStart(dpToPx(holder, 4));
+        label.setLayoutParams(textLp);
+
+        LinearLayout.LayoutParams chipLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        chipLp.setMarginEnd(dpToPx(holder, 6));
+        chip.setLayoutParams(chipLp);
+
+        chip.addView(icon);
+        chip.addView(label);
+        return chip;
+    }
+
+    private int dpToPx(@NonNull EventViewHolder holder, int dp) {
+        float density = holder.itemView.getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
+    }
+
     @Override
     public int getItemCount() {
         return events.size();
     }
 
     static class EventViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvStatus, tvChevron, tvCategoryTag;
+        TextView tvName, tvStatus, tvChevron;
+        android.widget.ImageView ivEventImage;
+        LinearLayout layoutCategoryTags;
         TextView btnJoin;
         TextView tvWaitlistCount;
         TextView tvDescription, tvDetailDate, tvDetailTime, tvDetailLocation, tvPrice, tvCapacity, tvRegClose, tvGeoNote, tvCriteriaDescription;
-        LinearLayout layoutExpandedDetails, layoutGeoNote, layoutEventNotifications;
-        androidx.appcompat.widget.SwitchCompat switchEventNotifications;
+        LinearLayout layoutExpandedDetails, layoutGeoNote;
 
         EventViewHolder(@NonNull View itemView) {
             super(itemView);
+            ivEventImage = itemView.findViewById(R.id.iv_event_image);
             tvName = itemView.findViewById(R.id.tv_event_name);
             tvStatus = itemView.findViewById(R.id.tv_event_status);
             tvChevron = itemView.findViewById(R.id.tv_chevron);
-            tvCategoryTag = itemView.findViewById(R.id.tv_category_tag);
+            layoutCategoryTags = itemView.findViewById(R.id.layout_category_tags);
             btnJoin = itemView.findViewById(R.id.btn_join);
             tvWaitlistCount = itemView.findViewById(R.id.tv_waitlist_count);
             layoutExpandedDetails = itemView.findViewById(R.id.layout_expanded_details);
@@ -262,8 +447,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             layoutGeoNote = itemView.findViewById(R.id.layout_geo_note);
             tvGeoNote = itemView.findViewById(R.id.tv_geo_note);
             tvCriteriaDescription = itemView.findViewById(R.id.tv_criteria_description);
-            layoutEventNotifications = itemView.findViewById(R.id.layout_event_notifications);
-            switchEventNotifications = itemView.findViewById(R.id.switch_event_notifications);
         }
     }
 }

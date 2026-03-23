@@ -85,9 +85,9 @@ package "com.example.cobaltevents.model" as model {
     +timestamp: Date
     --
     +TYPE_SELECTED
-    +TYPE_SELECT
     +TYPE_GOT_OFF_WAITLIST
     +TYPE_NOT_SELECTED
+    +TYPE_PRIVATE_EVENT
     +STATUS_PENDING
     +STATUS_ACCEPTED
     +STATUS_REJECTED

@@ -15,13 +15,11 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Instrumented tests for NotificationDB:
  * - saveNotification
- * - updateReadStatus
  * - getNotificationsForRecipient
  *
  * Note: Requires Firebase emulator or test project to run online.
@@ -77,32 +75,5 @@ public class NotificationDBInstrumentedTest {
         assertTrue(listRef.get().stream().anyMatch(nn -> savedId.get().equals(nn.getId())));
     }
 
-    @Test
-    public void update_read_status_succeeds() throws InterruptedException {
-        // Save first
-        CountDownLatch saveLatch = new CountDownLatch(1);
-        AtomicReference<String> savedId = new AtomicReference<>();
-
-        Notification n = new Notification(
-                recipientId,
-                "event_xyz",
-                "Read Update",
-                "Please read",
-                Notification.TYPE_SELECT
-        );
-        notificationDB.saveNotification(n,
-                id -> { savedId.set(id); saveLatch.countDown(); },
-                e -> saveLatch.countDown());
-        assertTrue(saveLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
-
-        // Update read
-        CountDownLatch updateLatch = new CountDownLatch(1);
-        AtomicBoolean ok = new AtomicBoolean(false);
-        notificationDB.updateReadStatus(savedId.get(), Notification.READ_ACCEPTED,
-                v -> { ok.set(true); updateLatch.countDown(); },
-                e -> updateLatch.countDown());
-        assertTrue(updateLatch.await(TIMEOUT_SECONDS, TimeUnit.SECONDS));
-        assertTrue(ok.get());
-    }
 }
 

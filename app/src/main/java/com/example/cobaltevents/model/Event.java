@@ -2,6 +2,7 @@ package com.example.cobaltevents.model;
 
 import com.google.firebase.Timestamp;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -24,14 +25,17 @@ public class Event {
     private int waitingListCapacity;   // 0 = unlimited
     private String qrCodeData;
     private List<String> confirmedAttendeeIds;
-    private String category;
+    private Object category;
     private String ageGroup;
     private String criteria;
+    /** If true, event is not shown in public browse (organizer-only); UI shows a Private tag. */
+    private boolean isPrivate;
 
     public Event() {
         this.confirmedAttendeeIds = new ArrayList<>();
         this.geolocationRequired = false;
         this.waitingListCapacity = 0;
+        this.isPrivate = false;
     }
 
     public Event(String name, String description, String location,
@@ -47,6 +51,7 @@ public class Event {
         this.confirmedAttendeeIds = new ArrayList<>();
         this.geolocationRequired = false;
         this.waitingListCapacity = 0;
+        this.isPrivate = false;
     }
 
     public String getEventId() { return eventId; }
@@ -64,9 +69,39 @@ public class Event {
     public int getWaitingListCapacity() { return waitingListCapacity; }
     public String getQrCodeData() { return qrCodeData; }
     public List<String> getConfirmedAttendeeIds() { return confirmedAttendeeIds; }
-    public String getCategory() { return category; }
+    public List<String> getCategory() {
+        if (category == null) return Collections.emptyList();
+        if (category instanceof List<?>) {
+            List<String> result = new ArrayList<>();
+            for (Object item : (List<?>) category) {
+                if (item instanceof String) {
+                    String value = ((String) item).trim();
+                    if (!value.isEmpty()) result.add(value);
+                }
+            }
+            return result;
+        }
+        if (category instanceof String) {
+            String value = ((String) category).trim();
+            if (value.isEmpty()) return Collections.emptyList();
+            List<String> single = new ArrayList<>();
+            single.add(value);
+            return single;
+        }
+        return Collections.emptyList();
+    }
+    public String getPrimaryCategory() {
+        List<String> categories = getCategory();
+        return categories.isEmpty() ? null : categories.get(0);
+    }
+    public String getCategoryDisplayText() {
+        List<String> categories = getCategory();
+        return categories.isEmpty() ? "" : String.join(", ", categories);
+    }
     public String getAgeGroup() { return ageGroup; }
     public String getCriteria() { return criteria; }
+    public boolean getIsPrivate() { return isPrivate; }
+    public boolean isPrivate() { return isPrivate; }
 
     public void setEventId(String eventId) { this.eventId = eventId; }
     public void setName(String name) { this.name = name; }
@@ -83,7 +118,37 @@ public class Event {
     public void setWaitingListCapacity(int waitingListCapacity) { this.waitingListCapacity = waitingListCapacity; }
     public void setQrCodeData(String qrCodeData) { this.qrCodeData = qrCodeData; }
     public void setConfirmedAttendeeIds(List<String> confirmedAttendeeIds) { this.confirmedAttendeeIds = confirmedAttendeeIds; }
-    public void setCategory(String category) { this.category = category; }
+    public void setCategory(Object category) {
+        if (category == null) {
+            this.category = null;
+            return;
+        }
+        if (category instanceof List<?>) {
+            List<String> normalized = new ArrayList<>();
+            for (Object item : (List<?>) category) {
+                if (item instanceof String) {
+                    String trimmed = ((String) item).trim();
+                    if (!trimmed.isEmpty()) normalized.add(trimmed);
+                }
+            }
+            this.category = normalized;
+            return;
+        }
+        if (category instanceof String) {
+            String trimmed = ((String) category).trim();
+            if (trimmed.isEmpty()) {
+                this.category = null;
+            } else {
+                List<String> single = new ArrayList<>();
+                single.add(trimmed);
+                this.category = single;
+            }
+            return;
+        }
+        this.category = null;
+    }
     public void setAgeGroup(String ageGroup) { this.ageGroup = ageGroup; }
     public void setCriteria(String criteria) { this.criteria = criteria; }
+    public void setIsPrivate(boolean isPrivate) { this.isPrivate = isPrivate; }
+    public void setPrivate(boolean isPrivate) { this.isPrivate = isPrivate; }
 }

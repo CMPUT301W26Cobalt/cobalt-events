@@ -50,7 +50,6 @@ public class AccountSettingsActivityTest {
         assertNotNull(root.findViewById(R.id.tv_phone));
         assertNotNull(root.findViewById(R.id.btn_edit_info));
         assertNotNull(root.findViewById(R.id.btn_delete_account));
-        assertNotNull(root.findViewById(R.id.recycler_notification_events));
         assertNotNull(root.findViewById(R.id.switch_general));
         assertNotNull(root.findViewById(R.id.switch_event_updates));
     }

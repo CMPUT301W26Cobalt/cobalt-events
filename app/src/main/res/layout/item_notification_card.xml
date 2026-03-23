@@ -121,9 +121,7 @@
                     android:layout_marginTop="4dp"
                     android:textColor="@color/notif_message"
                     android:textSize="13sp"
-                    android:lineSpacingMultiplier="1.25"
-                    android:maxLines="4"
-                    android:ellipsize="end" />
+                    android:lineSpacingMultiplier="1.25" />
 
                 <TextView
                     android:id="@+id/date"
@@ -171,7 +169,7 @@
                 android:textColor="@color/notif_decline_text"
                 android:textSize="13sp"
                 android:textStyle="bold"
-                android:textAllCaps="true" />
+                android:textAllCaps="false" />
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

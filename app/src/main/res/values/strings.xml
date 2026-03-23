@@ -15,23 +15,27 @@
     <string name="notif_decline">Decline</string>
     <string name="notif_accepted">Accepted</string>
     <string name="notif_declined">Declined</string>
+    <string name="notification_no_internet">Failed to update notification: No internet connection.</string>
+    <string name="firebase_cache_fallback_message">Couldn\'t reach Firebase. Showing locally cached data — it may be out of date.</string>
+    <string name="admin_in_memory_cache_message">Showing cached admin data from this session. It may not reflect the latest server changes.</string>
+    <string name="registration_history_fallback_message">Couldn\'t load your registration history in one step. Loading registrations per event instead (may be slower).</string>
     <string name="notification_selected_title">You\'ve been selected!</string>
     <string name="notification_selected_message">You have been chosen to attend %1$s.</string>
+
+    <string name="private_tag_label">Private</string>
+    <string name="cd_lock_private">Private event</string>
 
     <!-- US 01.01.01 Join Waitlist -->
     <string name="add_to_waitlist">Add to waitlist</string>
     <string name="join_waitlist">Join Waitlist</string>
     <string name="join_waitlist_button">JOIN WAITLIST</string>
     <string name="leave_waitlist_button">LEAVE WAITLIST</string>
-    <string name="event_notifications">Event Notifications</string>
-    <string name="event_notifications_subtitle">You won\'t receive updates about this event</string>
     <string name="notification_settings">Notification Settings</string>
     <string name="notifications_enabled">Notifications enabled</string>
     <string name="general_app_notifications">General App Notifications</string>
     <string name="general_app_notifications_desc">Receive notifications about app updates and announcements.</string>
     <string name="event_update_notifications">Event Update Notifications</string>
     <string name="event_update_notifications_desc">Receive updates from events you\'ve joined.</string>
-    <string name="my_event_notifications">My Event Notifications</string>
     <string name="dialog_join_waitlist_title">Join Waitlist</string>
     <string name="dialog_join_waitlist_subtitle">Are you sure you want to join this event\'s waitlist?</string>
     <string name="dialog_join_waitlist_guidelines_title">Lottery Guidelines:</string>
@@ -50,6 +54,11 @@
     <string name="confirm_join">Confirm and Join</string>
     <string name="waitlist_success">Successfully joined the waitlist!</string>
     <string name="waitlist_fail">Failed to join waitlist.</string>
+    <string name="waitlist_full_capacity">Event at full capacity.</string>
+    <string name="waitlist_capacity_altered">Waitlist capacity has been altered.</string>
+    <string name="waitlist_registration_closed">Waitlist registration period closed.</string>
+    <string name="waitlist_registration_period_altered">Waitlist registration period has been altered.</string>
+    <string name="event_switched_to_private">This event has been switched to a private event.</string>
     <string name="validation_email_required">Email is required.</string>
     <string name="validation_email_invalid">Invalid email format.</string>
     <string name="validation_participants">Enter a valid number of participants (1 or more).</string>
@@ -80,4 +89,28 @@
     <string name="tab_organizers">Organizers</string>
     <string name="tab_notifications">Notifications</string>
     <string name="section_events">Browse &amp; Manage Events</string>
+
+    <!-- Event list: keyword chips filter by category tags only (not title/description). -->
+    <string name="event_list_keywords_hint">Filter by category…</string>
+
+    <!-- Event comments — Firestore: events/{eventId}/comments/* and .../replies/* -->
+    <string name="comments_section_title">Comments</string>
+    <string name="comments_loading">Loading comments…</string>
+    <string name="comments_load_failed">Couldn\'t load comments.</string>
+    <string name="comments_action_failed">Couldn\'t update comments. Try again.</string>
+    <string name="comments_no_internet">No internet connection.</string>
+    <string name="comments_count_format">Comments (%1$d)</string>
+    <string name="comments_show_more">Show comments</string>
+    <string name="comments_show_less">Hide comments</string>
+    <string name="comment_input_hint">Add a comment…</string>
+    <string name="reply_input_hint">Write a reply…</string>
+    <string name="replying_to_hint">Reply to %1$s…</string>
+    <string name="cancel_reply">Cancel reply</string>
+    <string name="send_comment">Send comment</string>
+    <string name="reply">Reply</string>
+    <string name="send_reply">Send reply</string>
+    <string name="like">Like</string>
+    <string name="comment_like_format">👍 %1$d</string>
+    <string name="comment_like_count">%1$d</string>
+    <string name="comments_empty_local">No comments yet. Be the first.</string>
 </resources>

@@ -82,8 +82,19 @@ public class AdminController {
 
     public void getAllEvents(OnSuccessListener<List<Event>> onSuccess,
                              OnFailureListener onFailure) {
+        getAllEvents(onSuccess, onFailure, null);
+    }
+
+    /**
+     * @param onUsedInMemoryCache if non-null, invoked when the static session cache is used
+     *                            instead of fetching from Firestore.
+     */
+    public void getAllEvents(OnSuccessListener<List<Event>> onSuccess,
+                             OnFailureListener onFailure,
+                             Runnable onUsedInMemoryCache) {
         // Return cached list immediately if available (avoids Firestore round trip)
         if (cachedEvents != null) {
+            if (onUsedInMemoryCache != null) onUsedInMemoryCache.run();
             onSuccess.onSuccess(cachedEvents);
             return;
         }
@@ -130,8 +141,18 @@ public class AdminController {
 
     public void getAllProfiles(OnSuccessListener<List<Entrant>> onSuccess,
                                OnFailureListener onFailure) {
+        getAllProfiles(onSuccess, onFailure, null);
+    }
+
+    /**
+     * @param onUsedInMemoryCache if non-null, invoked when the static session cache is used.
+     */
+    public void getAllProfiles(OnSuccessListener<List<Entrant>> onSuccess,
+                               OnFailureListener onFailure,
+                               Runnable onUsedInMemoryCache) {
         // Return cached list immediately if available
         if (cachedProfiles != null) {
+            if (onUsedInMemoryCache != null) onUsedInMemoryCache.run();
             onSuccess.onSuccess(cachedProfiles);
             return;
         }
@@ -205,6 +226,15 @@ public class AdminController {
 
     public void getAllImagesFromEvents(OnSuccessListener<List<Event>> onSuccess,
                                        OnFailureListener onFailure) {
+        getAllImagesFromEvents(onSuccess, onFailure, null);
+    }
+
+    /**
+     * @param onUsedInMemoryCache forwarded to {@link #getAllEvents} when the event cache is used.
+     */
+    public void getAllImagesFromEvents(OnSuccessListener<List<Event>> onSuccess,
+                                       OnFailureListener onFailure,
+                                       Runnable onUsedInMemoryCache) {
         getAllEvents(events -> {
             // Filter: only include events that have a non-empty poster image URL
             List<Event> withImages = new ArrayList<>();
@@ -214,7 +244,7 @@ public class AdminController {
                     withImages.add(e);
             }
             onSuccess.onSuccess(withImages);
-        }, onFailure);
+        }, onFailure, onUsedInMemoryCache);
     }
 
     // =========================================================================
@@ -245,6 +275,16 @@ public class AdminController {
 
     public void getAllOrganizers(OnSuccessListener<List<Entrant>> onSuccess,
                                  OnFailureListener onFailure) {
+        getAllOrganizers(onSuccess, onFailure, null);
+    }
+
+    /**
+     * @param onUsedInMemoryCache forwarded to both {@link #getAllEvents} and {@link #getAllProfiles}
+     *                            when either session cache is used (may run twice — UI may dedupe).
+     */
+    public void getAllOrganizers(OnSuccessListener<List<Entrant>> onSuccess,
+                                 OnFailureListener onFailure,
+                                 Runnable onUsedInMemoryCache) {
         // Step 1: Get all events to extract unique organizer device IDs
         getAllEvents(events -> {
             Set<String> organizerIds = new HashSet<>();
@@ -266,8 +306,8 @@ public class AdminController {
                         organizers.add(p);
                 }
                 onSuccess.onSuccess(organizers);
-            }, onFailure);
-        }, onFailure);
+            }, onFailure, onUsedInMemoryCache);
+        }, onFailure, onUsedInMemoryCache);
     }
 
     // =========================================================================

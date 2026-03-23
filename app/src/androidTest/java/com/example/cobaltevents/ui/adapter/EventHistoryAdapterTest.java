@@ -110,17 +110,17 @@ public class EventHistoryAdapterTest {
     }
 
     @Test
-    public void eventHistory_withCancelledStatus_hasBlueColor() {
-        EventHistory history = createMockEventHistory("event1", "Test Event", "cancelled");
+    public void eventHistory_withDeclinedStatus_hasRedColor() {
+        EventHistory history = createMockEventHistory("event1", "Test Event", "declined");
         
-        assertEquals("cancelled", history.getRegistration().getStatus());
+        assertEquals("declined", history.getRegistration().getStatus());
     }
 
     @Test
-    public void eventHistory_withWithdrawnStatus_hasGrayColor() {
-        EventHistory history = createMockEventHistory("event1", "Test Event", "withdrawn");
+    public void eventHistory_withDeclinedAliasStatus_hasRedColor() {
+        EventHistory history = createMockEventHistory("event1", "Test Event", "declined");
         
-        assertEquals("withdrawn", history.getRegistration().getStatus());
+        assertEquals("declined", history.getRegistration().getStatus());
     }
 
     // ── Event data display ───────────────────────────────────────────────────
@@ -167,7 +167,7 @@ public class EventHistoryAdapterTest {
         multipleHistory.add(createMockEventHistory("event1", "Event 1", "pending"));
         multipleHistory.add(createMockEventHistory("event2", "Event 2", "selected"));
         multipleHistory.add(createMockEventHistory("event3", "Event 3", "not_selected"));
-        multipleHistory.add(createMockEventHistory("event4", "Event 4", "cancelled"));
+        multipleHistory.add(createMockEventHistory("event4", "Event 4", "declined"));
         
         adapter.updateHistory(multipleHistory);
         

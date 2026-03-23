@@ -36,12 +36,13 @@
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:layout_marginBottom="6dp">
-
             <TextView
                 android:id="@+id/tv_event_name"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:maxLines="1"
+                android:ellipsize="end"
                 android:text="Event Name"
                 android:textSize="16sp"
                 android:textStyle="bold"
@@ -63,19 +64,13 @@
                 android:paddingStart="8dp" />
         </LinearLayout>
 
-        <!-- Category tag (shown when available) -->
-        <TextView
-            android:id="@+id/tv_category_tag"
-            android:layout_width="wrap_content"
+        <!-- Category tags (shown when available) -->
+        <LinearLayout
+            android:id="@+id/layout_category_tags"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="horizontal"
             android:visibility="gone"
-            android:textSize="11sp"
-            android:textColor="@color/header_teal"
-            android:background="@drawable/bg_tag_teal"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:paddingTop="3dp"
-            android:paddingBottom="3dp"
             android:layout_marginBottom="6dp" />
 
         <!-- Waitlist count -->
@@ -271,51 +266,7 @@
                     android:text="No special criteria." />
             </LinearLayout>
 
-            <!-- Event Notifications (only when on waitlist) -->
-            <LinearLayout
-                android:id="@+id/layout_event_notifications"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:visibility="gone"
-                android:layout_marginBottom="12dp">
-                <ImageView
-                    android:id="@+id/iv_notifications_bell"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:src="@drawable/ic_bell_notifications"
-                    android:contentDescription="Notifications"
-                    android:layout_marginEnd="12dp" />
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:layout_marginEnd="12dp">
-                    <TextView
-                        android:id="@+id/tv_notifications_title"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Event Notifications"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/text_primary" />
-                    <TextView
-                        android:id="@+id/tv_notifications_subtitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="You will receive updates about this event"
-                        android:textSize="12sp"
-                        android:textColor="@color/grey_muted_text" />
-                </LinearLayout>
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/switch_event_notifications"
-                    style="@style/Widget.CobaltEvents.Switch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="true" />
-            </LinearLayout>
+            <include layout="@layout/include_event_comments_section" />
 
             <!-- Geolocation required note (legacy, keep for geo-specific message if needed) -->
             <LinearLayout

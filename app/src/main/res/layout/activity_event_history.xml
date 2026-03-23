@@ -73,12 +73,17 @@
     </androidx.cardview.widget.CardView>
 
     <!-- List -->
-    <FrameLayout
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh_history"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp">
+        android:layout_weight="1">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_history"
@@ -105,7 +110,8 @@
             android:textColor="@color/text_secondary"
             android:visibility="gone" />
 
-    </FrameLayout>
+        </FrameLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
     <FrameLayout
         android:id="@+id/nav_container"

@@ -100,6 +100,8 @@ public class EntrantActivity extends AppCompatActivity {
     }
 
     private void navigateToMain() {
+        // Default to the Events screen; EventListActivity already loads notifications
+        // as part of its notification-aware loading pipeline before showing the list.
         Intent intent = new Intent(this, EventListActivity.class);
         startActivity(intent);
         finish();

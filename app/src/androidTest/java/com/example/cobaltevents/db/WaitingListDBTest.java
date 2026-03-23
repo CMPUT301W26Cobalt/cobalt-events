@@ -215,7 +215,7 @@ public class WaitingListDBTest {
     }
 
     @Test
-    public void updateStatus_toCancelled_succeeds() throws InterruptedException {
+    public void updateStatus_toDeclined_succeeds() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicBoolean success = new AtomicBoolean(false);
 
@@ -224,7 +224,7 @@ public class WaitingListDBTest {
         waitingListDB.updateStatus(
                 TEST_EVENT_ID,
                 testRegistrationId,
-                "cancelled",
+                "declined",
                 aVoid -> {
                     success.set(true);
                     latch.countDown();

@@ -19,20 +19,26 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.Color;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.controller.EventController;
+import com.example.cobaltevents.db.NotificationDB;
 import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.EventHistory;
+import com.example.cobaltevents.model.Notification;
 import com.example.cobaltevents.model.WaitingList;
 import com.example.cobaltevents.ui.adapter.EventHistoryAdapter;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * US 01.02.03: Display entrant's event registration history
@@ -42,6 +48,7 @@ public class EventHistoryActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private ProgressBar progressBar;
     private TextView tvEmpty;
+    private SwipeRefreshLayout swipeRefreshLayout;
     private EventHistoryAdapter adapter;
     private TextView tabUpcoming;
     private TextView tabPast;
@@ -49,7 +56,12 @@ public class EventHistoryActivity extends AppCompatActivity {
     
     private String deviceId;
     private WaitingListDB waitingListDB;
+    private NotificationDB notificationDB;
     private EventController eventController;
+    private boolean refreshFromUserGesture = false;
+    private java.util.Map<String, String> effectiveStatusByEventId = new java.util.HashMap<>();
+    // Prevent accidental navigation to EventDetailActivity while the delete/leave dialog is showing.
+    private volatile boolean historyDeleteDialogShowing = false;
     private enum Tab { UPCOMING, PAST }
     private Tab currentTab = Tab.UPCOMING;
     
@@ -60,11 +72,13 @@ public class EventHistoryActivity extends AppCompatActivity {
         
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         waitingListDB = new WaitingListDB();
+        notificationDB = new NotificationDB();
         eventController = new EventController();
         
         recyclerView = findViewById(R.id.recycler_history);
         progressBar = findViewById(R.id.progress_bar);
         tvEmpty = findViewById(R.id.tv_empty);
+        swipeRefreshLayout = findViewById(R.id.swipe_refresh_history);
         
         adapter = new EventHistoryAdapter(new ArrayList<>(), new EventHistoryAdapter.Listener() {
             @Override
@@ -77,10 +91,19 @@ public class EventHistoryActivity extends AppCompatActivity {
             }
         });
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setItemViewCacheSize(12);
         recyclerView.setAdapter(adapter);
 
         setupBottomNavigation();
         setupTabs();
+        if (swipeRefreshLayout != null) {
+            swipeRefreshLayout.setOnRefreshListener(() -> {
+                refreshFromUserGesture = true;
+                loadHistory();
+            });
+            swipeRefreshLayout.setColorSchemeColors(getResources().getColor(R.color.user_green));
+        }
         loadHistory();
     }
 
@@ -155,6 +178,7 @@ public class EventHistoryActivity extends AppCompatActivity {
     private void loadHistory() {
         progressBar.setVisibility(View.VISIBLE);
         tvEmpty.setVisibility(View.GONE);
+        if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(refreshFromUserGesture);
         allHistory.clear();
 
         eventController.getAllEvents(events -> {
@@ -162,37 +186,193 @@ public class EventHistoryActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.GONE);
                 tvEmpty.setVisibility(View.VISIBLE);
                 adapter.updateHistory(new ArrayList<>());
+                if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+                refreshFromUserGesture = false;
                 return;
             }
-            final int total = events.size();
-            final int[] processed = {0};
-            List<EventHistory> temp = new ArrayList<>();
-            for (Event event : events) {
-                if (event == null || event.getEventId() == null) {
-                    if (++processed[0] == total) finishHistoryLoad(temp);
-                    continue;
-                }
-                waitingListDB.getRegistrationForEventAnyStatus(event.getEventId(), deviceId, reg -> {
-                    if (reg != null) {
-                        temp.add(new EventHistory(event, reg));
-                    }
-                    if (++processed[0] == total) finishHistoryLoad(temp);
-                }, e -> {
-                    if (++processed[0] == total) finishHistoryLoad(temp);
-                });
+            final List<Event> eventList = events;
+
+            if (deviceId == null || deviceId.isEmpty()) {
+                effectiveStatusByEventId.clear();
+                completeHistoryUiRefresh(new ArrayList<>());
+                return;
             }
+
+            final AtomicInteger completed = new AtomicInteger(0);
+            final List<WaitingList>[] historyHolder = new List[1];
+            final List<Notification>[] notificationsHolder = new List[1];
+            final List<EventHistory>[] legacyHistoryResult = new List[1];
+            final boolean[] historyFailed = { false };
+            final boolean[] notificationsFailed = { false };
+
+            Runnable mergeWhenBothDone = () -> {
+                if (completed.incrementAndGet() != 2) return;
+                runOnUiThread(() -> completeHistoryParallelMerge(
+                        eventList,
+                        historyHolder[0],
+                        historyFailed[0],
+                        notificationsHolder[0],
+                        notificationsFailed[0],
+                        legacyHistoryResult));
+            };
+
+            waitingListDB.getEntrantHistory(deviceId,
+                    list -> {
+                        historyHolder[0] = list;
+                        mergeWhenBothDone.run();
+                    },
+                    err -> {
+                        historyFailed[0] = true;
+                        loadHistoryRegistrationsLegacy(eventList, legacyHistoryResult, mergeWhenBothDone);
+                    });
+
+            notificationDB.getNotificationsForRecipient(deviceId,
+                    list -> {
+                        notificationsHolder[0] = list;
+                        mergeWhenBothDone.run();
+                    },
+                    err -> {
+                        notificationsFailed[0] = true;
+                        mergeWhenBothDone.run();
+                    });
         }, e -> {
             progressBar.setVisibility(View.GONE);
+            if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+            refreshFromUserGesture = false;
             Toast.makeText(this, "Failed to load history: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        });
+        }, () -> runOnUiThread(() ->
+                Toast.makeText(this, R.string.firebase_cache_fallback_message, Toast.LENGTH_LONG).show()));
     }
 
-    private void finishHistoryLoad(List<EventHistory> historyList) {
+    /** Per-event registration fetch when collection-group query fails (matches pre-optimization behavior). */
+    private void loadHistoryRegistrationsLegacy(List<Event> eventList,
+                                                List<EventHistory>[] out,
+                                                Runnable whenDone) {
+        if (eventList == null || eventList.isEmpty()) {
+            out[0] = new ArrayList<>();
+            whenDone.run();
+            return;
+        }
+        runOnUiThread(() -> Toast.makeText(this, R.string.registration_history_fallback_message,
+                Toast.LENGTH_LONG).show());
+        final List<EventHistory> temp = new ArrayList<>();
+        final AtomicInteger pending = new AtomicInteger(eventList.size());
+        for (Event event : eventList) {
+            if (event == null || event.getEventId() == null) {
+                runOnUiThread(() -> {
+                    if (pending.decrementAndGet() == 0) {
+                        out[0] = temp;
+                        whenDone.run();
+                    }
+                });
+                continue;
+            }
+            final String eventId = event.getEventId();
+            waitingListDB.getRegistrationForEventAnyStatus(eventId, deviceId,
+                    reg -> runOnUiThread(() -> {
+                        if (reg != null) {
+                            temp.add(new EventHistory(event, reg));
+                        }
+                        if (pending.decrementAndGet() == 0) {
+                            out[0] = temp;
+                            whenDone.run();
+                        }
+                    }),
+                    e -> runOnUiThread(() -> {
+                        if (pending.decrementAndGet() == 0) {
+                            out[0] = temp;
+                            whenDone.run();
+                        }
+                    }));
+        }
+    }
+
+    /**
+     * Join catalog events with one collection-group registration query and notification overrides
+     * (same result as N per-event reads + sequential notifications).
+     */
+    private void completeHistoryParallelMerge(List<Event> eventList,
+                                              List<WaitingList> history,
+                                              boolean historyFailed,
+                                              List<Notification> notifications,
+                                              boolean notificationsFailed,
+                                              List<EventHistory>[] legacyHistoryResult) {
+        List<EventHistory> temp = new ArrayList<>();
+        if (historyFailed) {
+            if (legacyHistoryResult != null && legacyHistoryResult[0] != null) {
+                temp = legacyHistoryResult[0];
+                legacyHistoryResult[0] = null;
+            }
+        } else if (history != null) {
+            Map<String, WaitingList> byEventId = new HashMap<>();
+            for (WaitingList w : history) {
+                if (w == null || w.getEventId() == null) continue;
+                byEventId.put(w.getEventId(), w);
+            }
+            for (Event event : eventList) {
+                if (event == null || event.getEventId() == null) continue;
+                WaitingList reg = byEventId.get(event.getEventId());
+                if (reg != null) {
+                    temp.add(new EventHistory(event, reg));
+                }
+            }
+        }
+
+        effectiveStatusByEventId.clear();
+        if (!notificationsFailed && notifications != null) {
+            applyNotificationEffectiveStatuses(notifications);
+        }
+
+        completeHistoryUiRefresh(temp);
+    }
+
+    private void applyNotificationEffectiveStatuses(List<Notification> notifications) {
+        if (notifications == null) return;
+        for (Notification n : notifications) {
+            if (n == null || n.getEventId() == null || n.getType() == null) continue;
+            if (effectiveStatusByEventId.containsKey(n.getEventId())) continue;
+            String overrideStatus = getOverrideStatusFromNotification(n);
+            if (overrideStatus != null) {
+                effectiveStatusByEventId.put(n.getEventId(), overrideStatus);
+            }
+        }
+    }
+
+    private String getOverrideStatusFromNotification(Notification n) {
+        if (n == null || n.getType() == null) return null;
+        String type = n.getType();
+        String response = n.getResponse();
+        if (Notification.TYPE_CO_ORGANIZER.equals(type)) {
+            // No waitlist connection for co-organization.
+            return null;
+        }
+        if (Notification.TYPE_NOT_SELECTED.equals(type)) {
+            // X (not-selected) means the user wasn't selected, but they remain on waitlist.
+            return WaitingList.STATUS_NOT_SELECTED;
+        }
+        if (Notification.TYPE_PRIVATE_EVENT.equals(type)) {
+            // Private invitations should not force My Events state
+            // until a waitlist entry exists.
+            return null;
+        }
+        if (Notification.TYPE_SELECTED.equals(type) || Notification.TYPE_GOT_OFF_WAITLIST.equals(type)) {
+            if (Notification.RESPONSE_ACCEPTED.equals(response)) return WaitingList.STATUS_ENROLLED;
+            if (Notification.RESPONSE_DECLINED.equals(response)) return WaitingList.STATUS_DECLINED;
+            // Pending selected/star must not flip UI by itself.
+            return null;
+        }
+        return null;
+    }
+
+    private void completeHistoryUiRefresh(List<EventHistory> historyList) {
         progressBar.setVisibility(View.GONE);
         allHistory.clear();
         allHistory.addAll(historyList);
+        adapter.setEffectiveStatusByEventId(effectiveStatusByEventId);
         applyFilter();
         updateTabStyles();
+        if (swipeRefreshLayout != null) swipeRefreshLayout.setRefreshing(false);
+        refreshFromUserGesture = false;
     }
     
     private void applyFilter() {
@@ -217,6 +397,11 @@ public class EventHistoryActivity extends AppCompatActivity {
         Collections.sort(filtered, new Comparator<EventHistory>() {
             @Override
             public int compare(EventHistory a, EventHistory b) {
+                int groupA = statusSortGroup(a != null ? getEffectiveStatusForHistory(a) : null);
+                int groupB = statusSortGroup(b != null ? getEffectiveStatusForHistory(b) : null);
+                if (groupA != groupB) {
+                    return Integer.compare(groupA, groupB);
+                }
                 Date da = a.getEvent().getEventDate() != null ? a.getEvent().getEventDate().toDate() : new Date(0);
                 Date db = b.getEvent().getEventDate() != null ? b.getEvent().getEventDate().toDate() : new Date(0);
                 return Long.compare(db.getTime(), da.getTime());
@@ -225,15 +410,88 @@ public class EventHistoryActivity extends AppCompatActivity {
         adapter.updateHistory(filtered);
         tvEmpty.setVisibility(filtered.isEmpty() ? View.VISIBLE : View.GONE);
     }
+
+    /**
+     * Sort priority for My Events:
+     * 0 = pending/enrolled (top), 1 = other statuses, 2 = declined-style statuses (bottom).
+     */
+    private int statusSortGroup(String status) {
+        if (status == null) return 1;
+        if (WaitingList.STATUS_PENDING.equals(status)
+                || WaitingList.STATUS_ENROLLED.equals(status)) {
+            return 0;
+        }
+        if (WaitingList.STATUS_DECLINED.equals(status)
+                || "declined".equals(status)
+                || WaitingList.STATUS_NOT_SELECTED.equals(status)
+                || "rejected".equals(status)) {
+            return 2;
+        }
+        return 1;
+    }
     
     private void onEventClick(EventHistory history) {
-        Intent intent = new Intent(this, EventDetailActivity.class);
-        intent.putExtra("eventId", history.getEvent().getEventId());
-        startActivity(intent);
+        // Legacy EventDetailActivity removed; keep My Events screen non-navigational.
+        // If you want a new detail behavior, we can wire it up here.
     }
 
     private void confirmRemoveFromWaitlist(EventHistory history) {
         if (history == null || history.getEvent() == null || history.getEvent().getEventId() == null) return;
+        String status = getEffectiveStatusForHistory(history);
+        if (WaitingList.STATUS_ENROLLED.equals(status) || WaitingList.STATUS_DECLINED.equals(status)) {
+            Toast.makeText(this, "You cannot leave after a final decision.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        String eventId = history.getEvent().getEventId();
+        notificationDB.getNotificationsForRecipientAndEvent(deviceId, eventId,
+                notifications -> {
+                    boolean hasSelectionNotification = false;
+                    if (notifications != null) {
+                        for (Notification n : notifications) {
+                            if (n == null || n.getType() == null) continue;
+                            String type = n.getType();
+                            if (Notification.TYPE_SELECTED.equals(type)
+                                    || Notification.TYPE_GOT_OFF_WAITLIST.equals(type)) {
+                                hasSelectionNotification = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (hasSelectionNotification) {
+                        Toast.makeText(this,
+                                "Cannot leave waitlist was selected for enrollment.",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    showLeaveHistoryDialog(history);
+                },
+                e -> Toast.makeText(this,
+                        "Unable to verify selection status. Please try again.",
+                        Toast.LENGTH_SHORT).show());
+    }
+
+    private String getEffectiveStatusForHistory(EventHistory history) {
+        if (history == null || history.getEvent() == null) return history != null ? history.getStatus() : null;
+        String eventId = history.getEvent().getEventId();
+        if (eventId == null) return history.getStatus();
+        String effective = effectiveStatusByEventId.get(eventId);
+        if (effective == null) return history.getStatus();
+
+        // Never let an X/not-selected notification overwrite a final DB decision.
+        if (WaitingList.STATUS_NOT_SELECTED.equals(effective)) {
+            String base = history.getStatus();
+            if (WaitingList.STATUS_DECLINED.equals(base) || "declined".equalsIgnoreCase(base)) {
+                return base;
+            }
+            if (WaitingList.STATUS_ENROLLED.equals(base) || WaitingList.STATUS_SELECTED.equals(base)) {
+                return base;
+            }
+        }
+
+        return effective;
+    }
+
+    private void showLeaveHistoryDialog(EventHistory history) {
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_leave_waitlist_confirm, null);
         AlertDialog dialog = new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
                 .setView(dialogView)
@@ -253,6 +511,8 @@ public class EventHistoryActivity extends AppCompatActivity {
         });
 
         dialog.show();
+        historyDeleteDialogShowing = true;
+        dialog.setOnDismissListener(d -> historyDeleteDialogShowing = false);
         if (dialog.getWindow() != null) {
             dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
         }
