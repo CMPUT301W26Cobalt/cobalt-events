@@ -388,8 +388,12 @@ public class AdminActivity extends AppCompatActivity {
                     String title = (e.getName() != null && !e.getName().trim().isEmpty())
                             ? e.getName() : "Untitled Event";
 
-                    // Resolve organizer name from the profile cache if available
-                    String organizerId   = e.getOrganizerDeviceId();
+                    // Resolve organizer name from the profile cache if available (first listed organizer)
+                    String organizerId = null;
+                    List<String> orgs = e.getOrganizers();
+                    if (orgs != null && !orgs.isEmpty()) {
+                        organizerId = orgs.get(0);
+                    }
                     Entrant organizer    = profileDetailMap.get(organizerId);
                     String organizerName = (organizer != null && organizer.getName() != null)
                             ? "By: " + organizer.getName()

@@ -2,7 +2,6 @@ package com.example.cobaltevents.ui;
 
 import android.Manifest;
 import android.content.Intent;
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -13,12 +12,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.graphics.drawable.ColorDrawable;
 import android.view.ViewGroup;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
-
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
@@ -36,6 +32,7 @@ import com.example.cobaltevents.model.WaitingList;
 import com.example.cobaltevents.ui.comments.EventCommentsUiBinder;
 import com.example.cobaltevents.ui.waitlist.RegistrationPeriodUi;
 import com.example.cobaltevents.ui.waitlist.WaitlistStatusUi;
+import com.example.cobaltevents.util.NetworkConnectivity;
 import com.google.firebase.Timestamp;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -51,6 +48,8 @@ public class QRScanActivity extends AppCompatActivity {
     private Entrant currentEntrant;
     private String deviceId;
     private GeolocationController geolocationController;
+    /** Shown only while verifying location for geolocked waitlist join from the QR popup. */
+    private AlertDialog geoJoinLoadingDialog;
     private Event pendingGeoJoinEvent;
     private TextView pendingGeoJoinBtn;
     /** While the QR event dialog is open, re-fetch join state (e.g. after capacity error). */
@@ -198,8 +197,14 @@ public class QRScanActivity extends AppCompatActivity {
         }
         layoutCategoryTags.removeAllViews();
         boolean hasTags = false;
+        // Tag order: private → age group → categories
         if (event.isPrivate()) {
             layoutCategoryTags.addView(createPrivateChip());
+            hasTags = true;
+        }
+        String ageGroup = event.getAgeGroup();
+        if (ageGroup != null && !ageGroup.trim().isEmpty()) {
+            layoutCategoryTags.addView(createAgeGroupTag(ageGroup.trim()));
             hasTags = true;
         }
         List<String> categories = event.getCategory();
@@ -241,7 +246,9 @@ public class QRScanActivity extends AppCompatActivity {
         tvPrice.setText(formatPrice(event.getPrice()));
         tvCapacity.setText(event.getWaitingListCapacity() > 0 ? event.getWaitingListCapacity() + " spots" : "Unlimited");
         if (event.getRegistrationClose() != null) {
-            tvRegClose.setText(DATE_FORMAT.format(event.getRegistrationClose().toDate()));
+            tvRegClose.setText(DATE_FORMAT.format(event.getRegistrationClose().toDate())
+                    + " · "
+                    + TIME_FORMAT.format(event.getRegistrationClose().toDate()));
         } else {
             tvRegClose.setText("TBD");
         }
@@ -380,8 +387,14 @@ public class QRScanActivity extends AppCompatActivity {
         if (layoutCategoryTags != null) {
             layoutCategoryTags.removeAllViews();
             boolean hasTags = false;
+            // Tag order: private → age group → categories
             if (event.isPrivate()) {
                 layoutCategoryTags.addView(createPrivateChip());
+                hasTags = true;
+            }
+            String ageGroup = event.getAgeGroup();
+            if (ageGroup != null && !ageGroup.trim().isEmpty()) {
+                layoutCategoryTags.addView(createAgeGroupTag(ageGroup.trim()));
                 hasTags = true;
             }
             List<String> categories = event.getCategory();
@@ -431,7 +444,9 @@ public class QRScanActivity extends AppCompatActivity {
         }
         if (tvRegClose != null) {
             if (event.getRegistrationClose() != null) {
-                tvRegClose.setText(DATE_FORMAT.format(event.getRegistrationClose().toDate()));
+                tvRegClose.setText(DATE_FORMAT.format(event.getRegistrationClose().toDate())
+                        + " · "
+                        + TIME_FORMAT.format(event.getRegistrationClose().toDate()));
             } else {
                 tvRegClose.setText("TBD");
             }
@@ -457,6 +472,25 @@ public class QRScanActivity extends AppCompatActivity {
         if (p.startsWith("$")) return p;
         if (p.matches("^\\d+(?:\\.\\d{1,2})?$")) return "$" + p;
         return p;
+    }
+
+    private TextView createAgeGroupTag(String label) {
+        TextView chip = new TextView(this);
+        chip.setText(label);
+        chip.setTextSize(12f);
+        chip.setTypeface(chip.getTypeface(), android.graphics.Typeface.BOLD);
+        chip.setTextColor(ContextCompat.getColor(this, R.color.age_group_tag_text));
+        chip.setBackgroundResource(R.drawable.bg_age_group_tag);
+        int hPad = dpToPx(10);
+        int vPad = dpToPx(4);
+        chip.setPadding(hPad, vPad, hPad, vPad);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        lp.setMarginEnd(dpToPx(6));
+        chip.setLayoutParams(lp);
+        return chip;
     }
 
     private TextView createCategoryChip(String label) {
@@ -550,7 +584,8 @@ public class QRScanActivity extends AppCompatActivity {
             btn.setBackgroundResource(R.drawable.bg_button_join_solid);
             btn.setAlpha(0.45f);
             btn.setEnabled(false);
-        } else if (WaitingList.STATUS_DECLINED.equals(status)) {
+        } else if (WaitingList.STATUS_DECLINED.equals(status)
+                || WaitingList.STATUS_DECLINED_FOUND_REPLACEMENT.equals(status)) {
             btn.setText("DECLINED");
             btn.setBackgroundResource(R.drawable.bg_button_join_solid);
             btn.setAlpha(0.45f);
@@ -558,6 +593,11 @@ public class QRScanActivity extends AppCompatActivity {
         } else if (event != null && event.isPrivate() && !isJoined) {
             // Declined must always win over "PRIVATE EVENT" styling.
             btn.setText("PRIVATE EVENT");
+            btn.setBackgroundResource(R.drawable.bg_button_join_solid);
+            btn.setAlpha(0.45f);
+            btn.setEnabled(false);
+        } else if (event != null && deviceId != null && event.isDeviceAnOrganizer(deviceId) && !isJoined) {
+            btn.setText(getString(R.string.join_waitlist_your_event));
             btn.setBackgroundResource(R.drawable.bg_button_join_solid);
             btn.setAlpha(0.45f);
             btn.setEnabled(false);
@@ -660,7 +700,7 @@ public class QRScanActivity extends AppCompatActivity {
     private void joinWaitlist(Event event, TextView btn, androidx.appcompat.app.AlertDialog dialog,
                               View content, View canvasSpinner, TextView tvWaitlist) {
         if (event == null || event.getEventId() == null) return;
-        if (!isNetworkAvailable()) {
+        if (!NetworkConnectivity.hasValidatedInternet(this)) {
             android.widget.Toast.makeText(this,
                     "Failed to join: No internet connection.",
                     android.widget.Toast.LENGTH_SHORT).show();
@@ -681,6 +721,13 @@ public class QRScanActivity extends AppCompatActivity {
             qrRefreshJoinUi = () -> loadQrPopupJoinButtonState(fresh, btn, dialog, content, canvasSpinner, tvWaitlist);
             Runnable dismiss = dialog::dismiss;
             qrPrivateJoinGateIfNeeded(fresh, btn, dialog, content, canvasSpinner, tvWaitlist, () -> {
+                if (deviceId != null && fresh.isDeviceAnOrganizer(deviceId)) {
+                    android.widget.Toast.makeText(this, R.string.waitlist_organizer_cannot_join,
+                            android.widget.Toast.LENGTH_LONG).show();
+                    applyQrPopupEventFields(content, fresh);
+                    loadQrPopupJoinButtonState(fresh, btn, dialog, content, canvasSpinner, tvWaitlist);
+                    return;
+                }
                 if (!RegistrationPeriodUi.isNowWithinRegistrationWindow(fresh)) {
                     android.widget.Toast.makeText(this, R.string.waitlist_registration_period_altered,
                             android.widget.Toast.LENGTH_LONG).show();
@@ -713,20 +760,21 @@ public class QRScanActivity extends AppCompatActivity {
     }
 
     private void joinAndRecordLocation(Event event, TextView btn, Runnable dismissDialog) {
+        showGeoJoinLoadingDialog();
         geolocationController.checkDistanceForEvent(this, event,
                 new GeolocationController.GeoJoinCallback() {
                     @Override
                     public void onAllowed(android.location.Location userLocation) {
-                        checkCapacityThenProceedJoinQr(event, btn, qrActiveDialog, qrPopupContent, qrPopupCanvasSpinner,
-                                qrPopupTvWaitlist, () -> {
-                                    performJoinWaitlist(event, btn, dismissDialog);
-                                    geolocationController.recordLocationForEvent(
-                                            QRScanActivity.this, deviceId, event.getEventId(),
-                                            userLocation, unused -> {}, err -> {});
-                                });
+                        dismissGeoJoinLoadingDialog();
+                        // Capacity was checked before geo; server enforces again in addRegistrationWithJoinChecks.
+                        performJoinWaitlist(event, btn, dismissDialog);
+                        geolocationController.recordLocationForEvent(
+                                QRScanActivity.this, deviceId, event.getEventId(),
+                                userLocation, unused -> {}, err -> {});
                     }
                     @Override
                     public void onBlocked(float distanceMeters) {
+                        dismissGeoJoinLoadingDialog();
                         int km = Math.round(distanceMeters / 1000f);
                         android.widget.Toast.makeText(QRScanActivity.this,
                                 "You are " + km + "km away. Must be within 30km to join.",
@@ -738,6 +786,7 @@ public class QRScanActivity extends AppCompatActivity {
                     }
                     @Override
                     public void onError(String message) {
+                        dismissGeoJoinLoadingDialog();
                         android.widget.Toast.makeText(QRScanActivity.this, message,
                                 android.widget.Toast.LENGTH_LONG).show();
                         refreshQrPopupAfterGeoOrJoinFailure(event);
@@ -746,6 +795,35 @@ public class QRScanActivity extends AppCompatActivity {
                         }
                     }
                 });
+    }
+
+    private void showGeoJoinLoadingDialog() {
+        dismissGeoJoinLoadingDialog();
+        View content = LayoutInflater.from(this).inflate(R.layout.dialog_geo_join_loading, null, false);
+        geoJoinLoadingDialog = new MaterialAlertDialogBuilder(this)
+                .setView(content)
+                .setCancelable(false)
+                .create();
+        geoJoinLoadingDialog.show();
+    }
+
+    private void dismissGeoJoinLoadingDialog() {
+        if (geoJoinLoadingDialog == null) {
+            return;
+        }
+        try {
+            if (geoJoinLoadingDialog.isShowing()) {
+                geoJoinLoadingDialog.dismiss();
+            }
+        } catch (Exception ignored) {
+        }
+        geoJoinLoadingDialog = null;
+    }
+
+    @Override
+    protected void onDestroy() {
+        dismissGeoJoinLoadingDialog();
+        super.onDestroy();
     }
 
     private void refreshQrPopupAfterGeoOrJoinFailure(Event event) {
@@ -835,6 +913,7 @@ public class QRScanActivity extends AppCompatActivity {
                 event.getRegistrationClose(),
                 id -> {
                     android.widget.Toast.makeText(this, R.string.waitlist_success, android.widget.Toast.LENGTH_SHORT).show();
+                    recordLocationIfPermitted(event.getEventId());
                     refreshQrPopupAfterWaitlistMutation(event.getEventId(), dismissDialog);
                 },
                 e -> {
@@ -842,6 +921,8 @@ public class QRScanActivity extends AppCompatActivity {
                         android.widget.Toast.makeText(this, R.string.waitlist_capacity_altered, android.widget.Toast.LENGTH_LONG).show();
                     } else if (WaitingListDB.REASON_REGISTRATION_CLOSED.equals(e.getMessage())) {
                         android.widget.Toast.makeText(this, R.string.waitlist_registration_closed, android.widget.Toast.LENGTH_LONG).show();
+                    } else if (WaitingListDB.REASON_ORGANIZER_CANNOT_JOIN.equals(e.getMessage())) {
+                        android.widget.Toast.makeText(this, R.string.waitlist_organizer_cannot_join, android.widget.Toast.LENGTH_LONG).show();
                     } else {
                         android.widget.Toast.makeText(this, getString(R.string.waitlist_fail) + " " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show();
                     }
@@ -849,9 +930,24 @@ public class QRScanActivity extends AppCompatActivity {
                 });
     }
 
+    private void recordLocationIfPermitted(String eventId) {
+        if (eventId == null || eventId.isEmpty()) return;
+        if (!geolocationController.hasLocationPermission(this)) return;
+        geolocationController.getCurrentDeviceLocation(this, loc -> {
+            if (loc == null) return;
+            geolocationController.recordLocationForEvent(
+                    QRScanActivity.this,
+                    deviceId,
+                    eventId,
+                    loc,
+                    unused -> {},
+                    err -> {});
+        });
+    }
+
     private void leaveWaitlist(Event event, TextView btn) {
         if (event == null || event.getEventId() == null || deviceId == null) return;
-        if (!isNetworkAvailable()) {
+        if (!NetworkConnectivity.hasValidatedInternet(this)) {
             android.widget.Toast.makeText(this,
                     "Failed to leave waitlist: No internet connection.",
                     android.widget.Toast.LENGTH_SHORT).show();
@@ -919,14 +1015,4 @@ public class QRScanActivity extends AppCompatActivity {
         if (text != null) text.setTextColor(color);
     }
 
-    private boolean isNetworkAvailable() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (cm == null) return false;
-        Network network = cm.getActiveNetwork();
-        if (network == null) return false;
-        NetworkCapabilities caps = cm.getNetworkCapabilities(network);
-        return caps != null && (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-                || caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-                || caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
-    }
 }

@@ -9,6 +9,8 @@ public class WaitingList {
     public static final String STATUS_NOT_SELECTED = "not_selected";
     public static final String STATUS_ENROLLED = "enrolled";
     public static final String STATUS_DECLINED = "declined";
+    /** A declined invite where organizer has already found a replacement entrant. */
+    public static final String STATUS_DECLINED_FOUND_REPLACEMENT = "declined_found_replacement";
 
     public static final String NOTIFY_EMAIL = "email";
     public static final String NOTIFY_PHONE = "phone";

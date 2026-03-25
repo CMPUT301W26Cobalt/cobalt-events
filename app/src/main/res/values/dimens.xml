@@ -1,7 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Shared teal header bar for main user-flow screens (My Events, QR, Notifications, Account) -->
+    <dimen name="screen_header_height">64dp</dimen>
+    <dimen name="screen_header_padding_horizontal">16dp</dimen>
+    <dimen name="screen_header_elevation">4dp</dimen>
+
     <dimen name="button_height">44dp</dimen>
     <dimen name="button_height_large">48dp</dimen>
     <dimen name="button_corner_radius">12dp</dimen>
     <dimen name="card_corner_radius">16dp</dimen>
+
+    <!-- Manage event — compact mobile density -->
+    <dimen name="event_manage_hero_height">150dp</dimen>
+    <dimen name="event_manage_page_padding_h">12dp</dimen>
+    <dimen name="event_manage_card_padding">16dp</dimen>
+    <dimen name="event_manage_section_gap">12dp</dimen>
+    <dimen name="event_manage_main_tab_bar_corner">12dp</dimen>
+    <dimen name="event_manage_main_tab_indicator_height">4dp</dimen>
+    <dimen name="event_manage_main_tab_indicator_inset_h">10dp</dimen>
+
+    <dimen name="edit_event_modal_scroll_max">360dp</dimen>
 </resources>

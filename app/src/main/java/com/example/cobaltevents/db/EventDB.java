@@ -8,7 +8,9 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Source;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import androidx.annotation.Nullable;
 
@@ -19,6 +21,7 @@ import androidx.annotation.Nullable;
 public class EventDB {
 
     private static final String COLLECTION = "events";
+    public static final String ERR_LAST_ORGANIZER = "LAST_ORGANIZER";
     private final FirebaseFirestore db;
 
     public EventDB() {
@@ -28,8 +31,14 @@ public class EventDB {
     public void createEvent(Event event,
                             OnSuccessListener<String> onSuccess,
                             OnFailureListener onFailure) {
-        DocumentReference ref = db.collection(COLLECTION).document();
-        event.setEventId(ref.getId());
+        String presetId = event.getEventId();
+        DocumentReference ref;
+        if (presetId != null && !presetId.trim().isEmpty()) {
+            ref = db.collection(COLLECTION).document(presetId.trim());
+        } else {
+            ref = db.collection(COLLECTION).document();
+            event.setEventId(ref.getId());
+        }
         ref.set(event)
                 .addOnSuccessListener(unused -> onSuccess.onSuccess(ref.getId()))
                 .addOnFailureListener(onFailure);
@@ -83,12 +92,11 @@ public class EventDB {
     }
 
     /**
-     * Loads the full event catalog from the <strong>server</strong> so organizer edits
+     * Loads the full event catalog from the server so organizer edits
      * (name, private flag, poster, etc.) show up reliably. Falls back to the local
      * Firestore cache only when the server request fails (e.g. offline).
      *
-     * @param onUsedLocalCacheFallback if non-null, invoked when cached data is used after the server
-     *                                 request failed (run on the same thread as Firestore callbacks).
+     * @param onUsedLocalCacheFallback optional runnable invoked when serving from cache after a failed server read
      */
     public void getAllEvents(OnSuccessListener<List<Event>> onSuccess,
                              OnFailureListener onFailure) {
@@ -143,7 +151,7 @@ public class EventDB {
                                      OnSuccessListener<List<Event>> onSuccess,
                                      OnFailureListener onFailure) {
         db.collection(COLLECTION)
-                .whereEqualTo("organizerDeviceId", organizerDeviceId)
+                .whereArrayContains("organizers", organizerDeviceId)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
                     List<Event> events = new ArrayList<>();
@@ -160,11 +168,19 @@ public class EventDB {
     }
 
     /**
+     * Events where {@code deviceId} appears in the {@code organizers} array.
+     */
+    public void getEventsForOrganizerParticipation(String deviceId,
+                                                   OnSuccessListener<List<Event>> onSuccess,
+                                                   OnFailureListener onFailure) {
+        getEventsByOrganizer(deviceId, onSuccess, onFailure);
+    }
+
+    /**
      * Fetch a single event by its qrCodeData value.
      * Returns the first matching event or null if none found.
      *
-     * @param onUsedLocalCacheFallback if non-null, invoked when cached data is used after the server
-     *                                 request failed and the cache returned a matching document.
+     * @param onUsedLocalCacheFallback optional runnable when serving from cache after a failed server read
      */
     public void getEventByQrCode(String qrCodeData,
                                  OnSuccessListener<Event> onSuccess,
@@ -224,6 +240,50 @@ public class EventDB {
                 .document(eventId)
                 .delete()
                 .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
+    /**
+     * Removes one organizer from {@code organizers} while guaranteeing at least one organizer remains.
+     * Transactional to protect against concurrent organizer removals.
+     */
+    public void removeOrganizerEnsuringAtLeastOne(String eventId,
+                                                  String organizerDeviceId,
+                                                  OnSuccessListener<Void> onSuccess,
+                                                  OnFailureListener onFailure) {
+        if (eventId == null || eventId.trim().isEmpty()
+                || organizerDeviceId == null || organizerDeviceId.trim().isEmpty()) {
+            if (onFailure != null) {
+                onFailure.onFailure(new IllegalArgumentException("eventId and organizerDeviceId required"));
+            }
+            return;
+        }
+        DocumentReference ref = db.collection(COLLECTION).document(eventId.trim());
+        db.runTransaction(trx -> {
+            com.google.firebase.firestore.DocumentSnapshot snap = trx.get(ref);
+            Object raw = snap.get("organizers");
+            List<String> organizers = new ArrayList<>();
+            if (raw instanceof List<?>) {
+                for (Object item : (List<?>) raw) {
+                    if (item instanceof String) {
+                        String id = ((String) item).trim();
+                        if (!id.isEmpty() && !organizers.contains(id)) {
+                            organizers.add(id);
+                        }
+                    }
+                }
+            }
+            organizers.remove(organizerDeviceId.trim());
+            if (organizers.size() < 1) {
+                throw new IllegalStateException(ERR_LAST_ORGANIZER);
+            }
+            trx.update(ref, "organizers", organizers);
+            return null;
+        }).addOnSuccessListener(unused -> {
+                    if (onSuccess != null) {
+                        onSuccess.onSuccess(null);
+                    }
+                })
                 .addOnFailureListener(onFailure);
     }
 }

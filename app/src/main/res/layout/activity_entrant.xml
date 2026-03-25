@@ -55,7 +55,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="24dp"
-        android:text="User Sign Up"
+        android:text="Sign Up"
         android:textColor="@color/text_primary"
         android:textSize="28sp"
         android:textStyle="bold" />
@@ -65,7 +65,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="8dp"
-        android:text="Create your account to join community events"
+        android:text="Create your account to join and organize events"
         android:textColor="@color/text_secondary"
         android:textSize="14sp" />
 

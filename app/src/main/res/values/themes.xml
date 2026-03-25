@@ -15,10 +15,34 @@
         <item name="android:minHeight">28dp</item>
     </style>
 
+    <!-- Organizer create-event switches (matches account notification row, blue track when on) -->
+    <style name="Widget.CobaltEvents.Switch.OrganizerBlue" parent="Widget.AppCompat.CompoundButton.Switch">
+        <item name="thumbTint">@color/thumb_white</item>
+        <item name="track">@drawable/switch_track_pill</item>
+        <item name="trackTint">@color/switch_track_selector_organizer_blue</item>
+        <item name="android:minWidth">56dp</item>
+        <item name="android:minHeight">28dp</item>
+    </style>
+
+    <!-- Event manage geolocation row — dark track when ON (#030213) -->
+    <style name="Widget.CobaltEvents.Switch.EventManage" parent="Widget.AppCompat.CompoundButton.Switch">
+        <item name="thumbTint">@color/thumb_white</item>
+        <item name="track">@drawable/switch_track_pill</item>
+        <item name="trackTint">@color/switch_track_selector_event_manage</item>
+        <item name="android:minWidth">52dp</item>
+        <item name="android:minHeight">30dp</item>
+    </style>
+
     <!-- Clips ImageView to a perfect circle -->
     <style name="CircleImageView" parent="">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
+    </style>
+
+    <!-- Event create QR preview — matches card / field corner radius -->
+    <style name="RoundedQrPreview" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/card_corner_radius</item>
     </style>
 
     <style name="AdminTab">

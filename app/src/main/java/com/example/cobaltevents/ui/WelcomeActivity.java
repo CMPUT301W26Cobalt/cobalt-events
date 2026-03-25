@@ -8,6 +8,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.controller.AdminController;
+import com.example.cobaltevents.db.EntrantDB;
+import com.example.cobaltevents.model.Entrant;
 import com.example.cobaltevents.ui.admin.AdminActivity;
 import android.provider.Settings;
 
@@ -62,7 +64,15 @@ public class WelcomeActivity extends AppCompatActivity {
         btnContinueUser.setOnClickListener(v ->
                 startActivity(new Intent(this, EntrantActivity.class)));
 
-        btnContinueOrganizer.setOnClickListener(v ->
-                startActivity(new Intent(this, OrganizerActivity.class)));
+        btnContinueOrganizer.setOnClickListener(v -> {
+            Entrant entrant = new EntrantDB(this).getEntrant();
+            if (!entrant.isValid()) {
+                Intent i = new Intent(this, EntrantActivity.class);
+                i.putExtra(EntrantActivity.EXTRA_LAUNCH_ORGANIZER_AFTER_SIGNUP, true);
+                startActivity(i);
+            } else {
+                startActivity(new Intent(this, OrganizerActivity.class));
+            }
+        });
     }
 }

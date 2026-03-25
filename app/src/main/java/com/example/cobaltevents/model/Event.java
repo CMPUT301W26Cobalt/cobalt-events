@@ -3,6 +3,7 @@ package com.example.cobaltevents.model;
 import com.google.firebase.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
@@ -14,11 +15,17 @@ public class Event {
     private String name;
     private String description;
     private String location;
+    /** Optional: from Google Places when organizer picks a venue; used for geolocation join distance. */
+    private Double locationLatitude;
+    private Double locationLongitude;
     private String price;
     private Timestamp eventDate;
     private Timestamp registrationOpen;
     private Timestamp registrationClose;
-    private String organizerDeviceId;
+    /**
+     * Device IDs of all organizers (creator + co-organizers). Stored in Firestore as {@code organizers}.
+     */
+    private List<String> organizers;
     private String waitingListId;
     private String posterImageUrl;
     private boolean geolocationRequired;
@@ -40,14 +47,13 @@ public class Event {
 
     public Event(String name, String description, String location,
                  Timestamp eventDate, Timestamp registrationOpen,
-                 Timestamp registrationClose, String organizerDeviceId) {
+                 Timestamp registrationClose) {
         this.name = name;
         this.description = description;
         this.location = location;
         this.eventDate = eventDate;
         this.registrationOpen = registrationOpen;
         this.registrationClose = registrationClose;
-        this.organizerDeviceId = organizerDeviceId;
         this.confirmedAttendeeIds = new ArrayList<>();
         this.geolocationRequired = false;
         this.waitingListCapacity = 0;
@@ -58,11 +64,19 @@ public class Event {
     public String getName() { return name; }
     public String getDescription() { return description; }
     public String getLocation() { return location; }
+    /** @return Latitude from Places when set; otherwise null (client may geocode {@link #getLocation()}). */
+    public Double getLocationLatitude() { return locationLatitude; }
+    public void setLocationLatitude(Double locationLatitude) { this.locationLatitude = locationLatitude; }
+    /** @return Longitude from Places when set; otherwise null. */
+    public Double getLocationLongitude() { return locationLongitude; }
+    public void setLocationLongitude(Double locationLongitude) { this.locationLongitude = locationLongitude; }
     public String getPrice() { return price; }
     public Timestamp getEventDate() { return eventDate; }
     public Timestamp getRegistrationOpen() { return registrationOpen; }
     public Timestamp getRegistrationClose() { return registrationClose; }
-    public String getOrganizerDeviceId() { return organizerDeviceId; }
+    public List<String> getOrganizers() {
+        return organizers != null ? organizers : Collections.emptyList();
+    }
     public String getWaitingListId() { return waitingListId; }
     public String getPosterImageUrl() { return posterImageUrl; }
     public boolean isGeolocationRequired() { return geolocationRequired; }
@@ -103,6 +117,46 @@ public class Event {
     public boolean getIsPrivate() { return isPrivate; }
     public boolean isPrivate() { return isPrivate; }
 
+    /** Whether {@code deviceId} is listed in {@code organizers}. */
+    public boolean isDeviceAnOrganizer(String deviceId) {
+        if (deviceId == null || deviceId.isEmpty()) {
+            return false;
+        }
+        if (organizers != null) {
+            for (String id : organizers) {
+                if (id != null && deviceId.equals(id)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Deduplicated organizer device IDs from {@code organizers} (stable order).
+     * Used for account deletion and co-organizer checks.
+     */
+    public List<String> getMergedOrganizerDeviceIds() {
+        LinkedHashSet<String> set = new LinkedHashSet<>();
+        if (organizers != null) {
+            for (String id : organizers) {
+                if (id != null && !id.trim().isEmpty()) {
+                    set.add(id.trim());
+                }
+            }
+        }
+        return new ArrayList<>(set);
+    }
+
+    /** True if this device is the only organizer on the merged organizer list. */
+    public boolean isSoleOrganizer(String deviceId) {
+        if (deviceId == null || deviceId.isEmpty()) {
+            return false;
+        }
+        List<String> merged = getMergedOrganizerDeviceIds();
+        return merged.size() == 1 && deviceId.equals(merged.get(0));
+    }
+
     public void setEventId(String eventId) { this.eventId = eventId; }
     public void setName(String name) { this.name = name; }
     public void setDescription(String description) { this.description = description; }
@@ -111,7 +165,7 @@ public class Event {
     public void setEventDate(Timestamp eventDate) { this.eventDate = eventDate; }
     public void setRegistrationOpen(Timestamp registrationOpen) { this.registrationOpen = registrationOpen; }
     public void setRegistrationClose(Timestamp registrationClose) { this.registrationClose = registrationClose; }
-    public void setOrganizerDeviceId(String organizerDeviceId) { this.organizerDeviceId = organizerDeviceId; }
+    public void setOrganizers(List<String> organizers) { this.organizers = organizers; }
     public void setWaitingListId(String waitingListId) { this.waitingListId = waitingListId; }
     public void setPosterImageUrl(String posterImageUrl) { this.posterImageUrl = posterImageUrl; }
     public void setGeolocationRequired(boolean geolocationRequired) { this.geolocationRequired = geolocationRequired; }

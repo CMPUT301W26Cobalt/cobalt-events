@@ -179,8 +179,8 @@ public class AdminController {
 
     // =========================================================================
     // US 03.02.01 — Remove profiles
-    // Deletes the profile document AND all events created by this organizer
-    // (using a targeted whereEqualTo query + WriteBatch for efficiency).
+    // Deletes the profile document AND all events where this device id appears in organizers
+    // (using whereArrayContains + WriteBatch for efficiency).
     // =========================================================================
 
     public void removeProfile(String deviceId,
@@ -193,7 +193,7 @@ public class AdminController {
             // Step 2: Find and delete all events this user organised
             // We use whereEqualTo instead of scanning all events — much faster
             db.collection("events")
-                    .whereEqualTo("organizerDeviceId", deviceId)
+                    .whereArrayContains("organizers", deviceId)
                     .get()
                     .addOnSuccessListener(snapshot -> {
                         if (snapshot.isEmpty()) {
@@ -289,8 +289,13 @@ public class AdminController {
         getAllEvents(events -> {
             Set<String> organizerIds = new HashSet<>();
             for (Event e : events) {
-                if (e.getOrganizerDeviceId() != null && !e.getOrganizerDeviceId().trim().isEmpty())
-                    organizerIds.add(e.getOrganizerDeviceId());
+                if (e.getOrganizers() != null) {
+                    for (String id : e.getOrganizers()) {
+                        if (id != null && !id.trim().isEmpty()) {
+                            organizerIds.add(id.trim());
+                        }
+                    }
+                }
             }
 
             if (organizerIds.isEmpty()) {
@@ -325,7 +330,7 @@ public class AdminController {
 
             // Step 2: Batch delete all events this organizer created
             db.collection("events")
-                    .whereEqualTo("organizerDeviceId", organizerDeviceId)
+                    .whereArrayContains("organizers", organizerDeviceId)
                     .get()
                     .addOnSuccessListener(snapshot -> {
                         if (snapshot.isEmpty()) {

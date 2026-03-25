@@ -28,7 +28,8 @@ public class EventTest {
         future = new Timestamp(now.getSeconds() + 86400, 0);  // +1 day
         past   = new Timestamp(now.getSeconds() - 86400, 0);  // -1 day
         event = new Event("Tech Conference", "Annual tech event",
-                "Edmonton Convention Centre", future, now, future, "organizer-device-001");
+                "Edmonton Convention Centre", future, now, future);
+        event.setOrganizers(Arrays.asList("organizer-device-001"));
     }
 
     // ── Constructor ──────────────────────────────────────────────────────────
@@ -49,8 +50,9 @@ public class EventTest {
     }
 
     @Test
-    public void testConstructor_setsOrganizerDeviceId() {
-        assertEquals("organizer-device-001", event.getOrganizerDeviceId());
+    public void testConstructor_setsOrganizers() {
+        assertEquals(1, event.getOrganizers().size());
+        assertEquals("organizer-device-001", event.getOrganizers().get(0));
     }
 
     @Test
@@ -196,9 +198,46 @@ public class EventTest {
     }
 
     @Test
-    public void testSetOrganizerDeviceId_updatesId() {
-        event.setOrganizerDeviceId("new-organizer-id");
-        assertEquals("new-organizer-id", event.getOrganizerDeviceId());
+    public void testSetOrganizers_updatesList() {
+        event.setOrganizers(Arrays.asList("new-organizer-id"));
+        assertEquals(1, event.getOrganizers().size());
+        assertEquals("new-organizer-id", event.getOrganizers().get(0));
+    }
+
+    @Test
+    public void testIsDeviceAnOrganizer_matchesOrganizersList() {
+        assertTrue(event.isDeviceAnOrganizer("organizer-device-001"));
+        assertFalse(event.isDeviceAnOrganizer("someone-else"));
+    }
+
+    @Test
+    public void testIsDeviceAnOrganizer_matchesOrganizersArray() {
+        event.setOrganizers(Arrays.asList("co-a", "co-b"));
+        assertTrue(event.isDeviceAnOrganizer("co-a"));
+        assertTrue(event.isDeviceAnOrganizer("co-b"));
+        assertFalse(event.isDeviceAnOrganizer("stranger"));
+    }
+
+    @Test
+    public void testGetMergedOrganizerDeviceIds_deduplicates() {
+        event.setOrganizers(Arrays.asList("organizer-device-001", "organizer-device-001", "co-b"));
+        List<String> merged = event.getMergedOrganizerDeviceIds();
+        assertEquals(2, merged.size());
+        assertTrue(merged.contains("organizer-device-001"));
+        assertTrue(merged.contains("co-b"));
+    }
+
+    @Test
+    public void testIsSoleOrganizer_trueWhenOnlyOneOrganizer() {
+        assertTrue(event.isSoleOrganizer("organizer-device-001"));
+        assertFalse(event.isSoleOrganizer("co-b"));
+    }
+
+    @Test
+    public void testIsSoleOrganizer_falseWhenMultiple() {
+        event.setOrganizers(Arrays.asList("organizer-device-001", "co-b"));
+        assertFalse(event.isSoleOrganizer("organizer-device-001"));
+        assertFalse(event.isSoleOrganizer("co-b"));
     }
 
     @Test

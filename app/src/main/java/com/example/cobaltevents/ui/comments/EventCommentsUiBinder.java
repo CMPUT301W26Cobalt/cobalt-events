@@ -2,9 +2,6 @@ package com.example.cobaltevents.ui.comments;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
@@ -20,6 +17,7 @@ import com.example.cobaltevents.db.CommentDB;
 import com.example.cobaltevents.model.Comment;
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.Reply;
+import com.example.cobaltevents.util.NetworkConnectivity;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,7 +37,38 @@ public final class EventCommentsUiBinder {
 
     private EventCommentsUiBinder() {}
 
+    /**
+     * For full-screen or tab UIs where comments should be visible without tapping “show more”
+     * (e.g. Manage event → Comments tab).
+     */
+    public static void setCommentsExpandedForEvent(String eventId, boolean expanded) {
+        if (eventId == null || eventId.isEmpty()) {
+            return;
+        }
+        if (expanded) {
+            EXPANDED_COMMENTS_EVENTS.add(eventId);
+        } else {
+            EXPANDED_COMMENTS_EVENTS.remove(eventId);
+        }
+    }
+
+    /** Ensures the comment list is visible after the user sends a comment or reply. */
+    private static void expandCommentsForEvent(String eventId) {
+        if (eventId != null && !eventId.isEmpty()) {
+            EXPANDED_COMMENTS_EVENTS.add(eventId);
+        }
+    }
+
     public static void bind(View root, Event event, String deviceId, String userName, Runnable onCommentsChanged) {
+        bindInternal(root, event, deviceId, userName, onCommentsChanged, false);
+    }
+
+    public static void bindManage(View root, Event event, String deviceId, String userName, Runnable onCommentsChanged) {
+        bindInternal(root, event, deviceId, userName, onCommentsChanged, true);
+    }
+
+    private static void bindInternal(View root, Event event, String deviceId, String userName,
+                                     Runnable onCommentsChanged, boolean manageStyle) {
         if (root == null || event == null || event.getEventId() == null) {
             return;
         }
@@ -52,17 +81,15 @@ public final class EventCommentsUiBinder {
         TextView toggle = root.findViewById(R.id.tv_comments_toggle);
         EditText etComment = root.findViewById(R.id.et_comment_input);
         View btnSend = root.findViewById(R.id.btn_send_comment);
-        TextView inputAvatar = root.findViewById(R.id.tv_comment_input_avatar);
 
         if (list == null || header == null || etComment == null || btnSend == null) {
             return;
         }
 
         String displayName = (userName != null && !userName.trim().isEmpty()) ? userName.trim() : "You";
-        inputAvatar.setText(String.valueOf(Character.toUpperCase(displayName.charAt(0))));
         updateComposerHint(ctx, eid, etComment);
 
-        Runnable rebindSelf = () -> bind(root, event, deviceId, userName, onCommentsChanged);
+        Runnable rebindSelf = () -> bindInternal(root, event, deviceId, userName, onCommentsChanged, manageStyle);
         boolean hasExistingRowsForSameEvent = eid.equals(list.getTag()) && list.getChildCount() > 0;
         list.setTag(eid);
         if (!hasExistingRowsForSameEvent) {
@@ -85,14 +112,15 @@ public final class EventCommentsUiBinder {
                     btnSend.setEnabled(true);
                     header.setText(ctx.getString(R.string.comments_count_format, comments.size()));
 
-                    renderCommentsList(ctx, list, toggle, comments, eid, deviceId, displayName, commentDB, rebindSelf, etComment, composerRow);
+                    renderCommentsList(ctx, list, toggle, comments, eid, deviceId, displayName, commentDB,
+                            rebindSelf, etComment, composerRow, root, manageStyle);
 
                     btnSend.setOnClickListener(v -> {
                         String text = etComment.getText() != null ? etComment.getText().toString().trim() : "";
                         if (text.isEmpty()) {
                             return;
                         }
-                        if (!isNetworkAvailable(ctx)) {
+                        if (!NetworkConnectivity.hasValidatedInternet(ctx)) {
                             Toast.makeText(ctx, R.string.comments_no_internet, Toast.LENGTH_SHORT).show();
                             return;
                         }
@@ -110,13 +138,20 @@ public final class EventCommentsUiBinder {
                                     },
                                     err -> {
                                         btnSend.setEnabled(true);
-                                        Toast.makeText(ctx, R.string.comments_action_failed, Toast.LENGTH_SHORT).show();
+                                        if (isCommentDeletedError(err)) {
+                                            Toast.makeText(ctx, R.string.comments_comment_deleted, Toast.LENGTH_SHORT).show();
+                                            clearReplyTarget(eid);
+                                            rebindSelf.run();
+                                        } else {
+                                            Toast.makeText(ctx, R.string.comments_action_failed, Toast.LENGTH_SHORT).show();
+                                        }
                                     });
                         } else {
                             commentDB.addComment(eid, deviceId != null ? deviceId : "", displayName, text,
                                     id -> {
                                         btnSend.setEnabled(true);
                                         etComment.setText("");
+                                        expandCommentsForEvent(eid);
                                         rebindSelf.run();
                                         if (onCommentsChanged != null) onCommentsChanged.run();
                                     },
@@ -152,9 +187,12 @@ public final class EventCommentsUiBinder {
                                            CommentDB commentDB,
                                            Runnable rebindSelf,
                                            EditText composer,
-                                           View composerRow) {
+                                           View composerRow,
+                                           View root,
+                                           boolean manageStyle) {
         list.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(ctx);
+        View emptyCard = root.findViewById(R.id.layout_comments_empty);
 
         boolean expanded = EXPANDED_COMMENTS_EVENTS.contains(eid);
         int visibleCount = expanded ? comments.size() : 0;
@@ -162,25 +200,40 @@ public final class EventCommentsUiBinder {
         if (composerRow != null) {
             composerRow.setVisibility(expanded ? View.VISIBLE : View.GONE);
         }
+        if (emptyCard != null) {
+            emptyCard.setVisibility(expanded && comments.isEmpty() ? View.VISIBLE : View.GONE);
+        }
 
         for (int i = 0; i < visibleCount; i++) {
             Comment c = comments.get(i);
-            View row = inflater.inflate(R.layout.item_event_comment, list, false);
+            int rowLayout = manageStyle ? R.layout.item_event_comment_manage : R.layout.item_event_comment;
+            View row = inflater.inflate(rowLayout, list, false);
             bindCommentRow(ctx, inflater, row, eid, c, deviceId, displayName, commentDB, rebindSelf, composer);
+            if (manageStyle && i == visibleCount - 1) {
+                View divider = row.findViewById(R.id.view_comment_divider);
+                if (divider != null) {
+                    divider.setVisibility(View.GONE);
+                }
+            }
             list.addView(row);
         }
 
         if (toggle != null) {
-            toggle.setVisibility(View.VISIBLE);
-            toggle.setText(expanded ? R.string.comments_show_less : R.string.comments_show_more);
-            toggle.setOnClickListener(v -> {
-                if (expanded) {
-                    EXPANDED_COMMENTS_EVENTS.remove(eid);
-                } else {
-                    EXPANDED_COMMENTS_EVENTS.add(eid);
-                }
-                rebindSelf.run();
-            });
+            if (manageStyle) {
+                toggle.setVisibility(View.GONE);
+                toggle.setOnClickListener(null);
+            } else {
+                toggle.setVisibility(View.VISIBLE);
+                toggle.setText(expanded ? R.string.comments_show_less : R.string.comments_show_more);
+                toggle.setOnClickListener(v -> {
+                    if (expanded) {
+                        EXPANDED_COMMENTS_EVENTS.remove(eid);
+                    } else {
+                        EXPANDED_COMMENTS_EVENTS.add(eid);
+                    }
+                    rebindSelf.run();
+                });
+            }
         }
     }
 
@@ -200,6 +253,7 @@ public final class EventCommentsUiBinder {
         TextView body = row.findViewById(R.id.tv_comment_body);
         TextView btnLike = row.findViewById(R.id.btn_comment_like);
         TextView btnReply = row.findViewById(R.id.btn_comment_reply);
+        View btnDelete = row.findViewById(R.id.btn_comment_delete);
         LinearLayout repliesLayout = row.findViewById(R.id.layout_replies);
         LinearLayout replyInput = row.findViewById(R.id.layout_reply_input);
 
@@ -215,7 +269,7 @@ public final class EventCommentsUiBinder {
         bindLikeButtonVisual(ctx, btnLike, c.getLikes(), c.isLikedByCurrentUser());
 
         btnLike.setOnClickListener(v -> {
-            if (!isNetworkAvailable(ctx)) {
+            if (!NetworkConnectivity.hasValidatedInternet(ctx)) {
                 Toast.makeText(ctx, R.string.comments_no_internet, Toast.LENGTH_SHORT).show();
                 return;
             }
@@ -245,9 +299,39 @@ public final class EventCommentsUiBinder {
             rebindSelf.run();
         });
 
+        if (btnDelete != null) {
+            boolean canDelete = deviceId != null
+                    && !deviceId.trim().isEmpty()
+                    && c.getUserId() != null
+                    && deviceId.equals(c.getUserId());
+            btnDelete.setVisibility(canDelete ? View.VISIBLE : View.GONE);
+            btnDelete.setOnClickListener(v -> {
+                if (!canDelete) {
+                    return;
+                }
+                if (!NetworkConnectivity.hasValidatedInternet(ctx)) {
+                    Toast.makeText(ctx, R.string.comments_no_internet, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                btnDelete.setEnabled(false);
+                commentDB.deleteCommentWithReplies(eid, c.getId(),
+                        unused -> {
+                            btnDelete.setEnabled(true);
+                            rebindSelf.run();
+                        },
+                        err -> {
+                            btnDelete.setEnabled(true);
+                            Toast.makeText(ctx, R.string.comments_action_failed, Toast.LENGTH_SHORT).show();
+                        });
+            });
+        }
+
         repliesLayout.removeAllViews();
         for (Reply r : c.getReplies()) {
-            View rView = inflater.inflate(R.layout.item_event_reply, repliesLayout, false);
+            int replyLayout = row.findViewById(R.id.layout_comment_main_content) != null
+                    ? R.layout.item_event_reply_manage
+                    : R.layout.item_event_reply;
+            View rView = inflater.inflate(replyLayout, repliesLayout, false);
             TextView ra = rView.findViewById(R.id.tv_reply_avatar);
             TextView rauth = rView.findViewById(R.id.tv_reply_author);
             TextView rt = rView.findViewById(R.id.tv_reply_time);
@@ -260,7 +344,7 @@ public final class EventCommentsUiBinder {
             rb.setText(r.getText() != null ? r.getText() : "");
             bindLikeButtonVisual(ctx, rLike, r.getLikes(), r.isLikedByCurrentUser());
             rLike.setOnClickListener(v -> {
-                if (!isNetworkAvailable(ctx)) {
+                if (!NetworkConnectivity.hasValidatedInternet(ctx)) {
                     Toast.makeText(ctx, R.string.comments_no_internet, Toast.LENGTH_SHORT).show();
                     return;
                 }
@@ -322,17 +406,14 @@ public final class EventCommentsUiBinder {
         return Math.round(dp * ctx.getResources().getDisplayMetrics().density);
     }
 
-    private static boolean isNetworkAvailable(Context ctx) {
-        ConnectivityManager cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (cm == null) {
-            return false;
+    private static boolean isCommentDeletedError(Throwable err) {
+        for (Throwable t = err; t != null; t = t.getCause()) {
+            String message = t.getMessage();
+            if (CommentDB.ERR_COMMENT_DELETED.equals(message)) {
+                return true;
+            }
         }
-        Network network = cm.getActiveNetwork();
-        if (network == null) {
-            return false;
-        }
-        NetworkCapabilities caps = cm.getNetworkCapabilities(network);
-        return caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+        return false;
     }
 
     private static String formatTimeAgo(long millis) {

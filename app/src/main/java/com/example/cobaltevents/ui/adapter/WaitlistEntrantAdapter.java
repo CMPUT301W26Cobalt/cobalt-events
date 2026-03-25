@@ -48,7 +48,6 @@ public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrant
         WaitingList reg = items.get(position);
         String name = names.getOrDefault(reg.getDeviceId(), "Unknown");
 
-        holder.tvAvatar.setText(name.isEmpty() ? "?" : name.substring(0, 1).toUpperCase());
         holder.tvName.setText(name);
 
         if (reg.getEmail() != null && !reg.getEmail().isEmpty()) {
@@ -65,10 +64,22 @@ public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrant
             holder.tvPhone.setVisibility(View.GONE);
         }
 
-        if (reg.getRegisteredAt() != null) {
-            holder.tvJoined.setText("Joined: " + DATE_FORMAT.format(reg.getRegisteredAt().toDate()));
+        if (reg.getLatitude() != null && reg.getLongitude() != null) {
+            holder.tvLocation.setVisibility(View.VISIBLE);
+            holder.tvLocation.setText(holder.itemView.getContext().getString(
+                    R.string.event_manage_entrant_location,
+                    reg.getLatitude(), reg.getLongitude()));
         } else {
-            holder.tvJoined.setText("");
+            holder.tvLocation.setVisibility(View.GONE);
+        }
+
+        if (reg.getRegisteredAt() != null) {
+            holder.tvJoined.setVisibility(View.VISIBLE);
+            holder.tvJoined.setText(holder.itemView.getContext().getString(
+                    R.string.event_manage_entrant_joined,
+                    DATE_FORMAT.format(reg.getRegisteredAt().toDate())));
+        } else {
+            holder.tvJoined.setVisibility(View.GONE);
         }
     }
 
@@ -78,14 +89,14 @@ public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrant
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvAvatar, tvName, tvEmail, tvPhone, tvJoined;
+        TextView tvName, tvEmail, tvPhone, tvLocation, tvJoined;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvAvatar = itemView.findViewById(R.id.tv_avatar);
             tvName = itemView.findViewById(R.id.tv_entrant_name);
             tvEmail = itemView.findViewById(R.id.tv_entrant_email);
             tvPhone = itemView.findViewById(R.id.tv_entrant_phone);
+            tvLocation = itemView.findViewById(R.id.tv_entrant_location);
             tvJoined = itemView.findViewById(R.id.tv_joined_date);
         }
     }

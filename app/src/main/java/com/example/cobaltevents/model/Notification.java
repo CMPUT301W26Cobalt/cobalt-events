@@ -14,13 +14,17 @@ public class Notification {
      * Supported notification {@code type} strings:
      * {@link #TYPE_SELECTED} (trophy), {@link #TYPE_GOT_OFF_WAITLIST} (star),
      * {@link #TYPE_NOT_SELECTED} (X), {@link #TYPE_PRIVATE_EVENT} (lock),
-     * {@link #TYPE_CO_ORGANIZER} (medal).
+     * {@link #TYPE_CO_ORGANIZER} (medal icon; informational, no Accept/Decline in the list),
+     * {@link #TYPE_EVENT_ALERT} (amber exclamation; informational).
      */
     public static final String TYPE_SELECTED = "selected";
     public static final String TYPE_GOT_OFF_WAITLIST = "got-off-waitlist";
     public static final String TYPE_NOT_SELECTED = "not-selected";
     public static final String TYPE_PRIVATE_EVENT = "private-event";
     public static final String TYPE_CO_ORGANIZER = "co-organizer";
+    public static final String TYPE_EVENT_ALERT = "event-alert";
+    public static final String RECIPIENT_MODE_USER = "user";
+    public static final String RECIPIENT_MODE_ORGANIZER = "organizer";
     public static final String RESPONSE_PENDING = "pending";
     public static final String RESPONSE_ACCEPTED = "accepted";
     public static final String RESPONSE_DECLINED = "declined";
@@ -31,6 +35,7 @@ public class Notification {
     private String title;
     private String message;
     private String type;
+    private String recipient_mode;
     private String response;
     @ServerTimestamp
     private Date timestamp;
@@ -54,6 +59,7 @@ public class Notification {
         this.title = title;
         this.message = message;
         this.type = type;
+        this.recipient_mode = RECIPIENT_MODE_USER;
         if (TYPE_NOT_SELECTED.equals(type)) {
             this.response = null;
         } else {
@@ -97,6 +103,22 @@ public class Notification {
         } else if (this.response == null || this.response.trim().isEmpty()) {
             this.response = RESPONSE_PENDING;
         }
+    }
+
+    /** @return Notification recipient mode ({@code user} or {@code organizer}). */
+    public String getRecipientMode() {
+        if (RECIPIENT_MODE_ORGANIZER.equals(recipient_mode)) {
+            return RECIPIENT_MODE_ORGANIZER;
+        }
+        return RECIPIENT_MODE_USER;
+    }
+    /** @param recipientMode Recipient mode to set. */
+    public void setRecipientMode(String recipientMode) {
+        if (RECIPIENT_MODE_ORGANIZER.equals(recipientMode)) {
+            this.recipient_mode = RECIPIENT_MODE_ORGANIZER;
+            return;
+        }
+        this.recipient_mode = RECIPIENT_MODE_USER;
     }
 
     /** @return Notification response state (pending/accepted/declined). */

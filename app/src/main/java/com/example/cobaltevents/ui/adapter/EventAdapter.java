@@ -198,8 +198,14 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
         holder.layoutCategoryTags.removeAllViews();
         boolean hasTags = false;
+        // Tag order (left→right): private → age group → categories
         if (event.isPrivate()) {
             holder.layoutCategoryTags.addView(createPrivateChip(holder));
+            hasTags = true;
+        }
+        String ageGroup = event.getAgeGroup();
+        if (ageGroup != null && !ageGroup.trim().isEmpty()) {
+            holder.layoutCategoryTags.addView(createAgeGroupTag(holder, ageGroup.trim()));
             hasTags = true;
         }
         List<String> categories = event.getCategory();
@@ -224,9 +230,12 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 && capacity > 0
                 && count != null
                 && count >= capacity;
-        boolean privateBlocked = !isJoinedEffective && event.isPrivate();
+        boolean isOrganizer = deviceId != null && event.isDeviceAnOrganizer(deviceId);
+        // Organizers may see private events in browse but cannot join; use "your event" row, not "PRIVATE EVENT".
+        boolean privateBlocked = !isJoinedEffective && event.isPrivate() && !isOrganizer;
         boolean enrolled = WaitingList.STATUS_ENROLLED.equals(anyStatus);
-        boolean declined = WaitingList.STATUS_DECLINED.equals(anyStatus);
+        boolean declined = WaitingList.STATUS_DECLINED.equals(anyStatus)
+                || WaitingList.STATUS_DECLINED_FOUND_REPLACEMENT.equals(anyStatus);
 
         if (registrationClosed) {
             holder.btnJoin.setText("REGISTRATION CLOSED");
@@ -256,6 +265,11 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         } else if (privateBlocked) {
             // Declined must always win over "PRIVATE EVENT" styling.
             holder.btnJoin.setText("PRIVATE EVENT");
+            holder.btnJoin.setAlpha(0.45f);
+            holder.btnJoin.setEnabled(false);
+            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
+        } else if (isOrganizer && !isJoinedEffective) {
+            holder.btnJoin.setText(holder.itemView.getContext().getString(R.string.join_waitlist_your_event));
             holder.btnJoin.setAlpha(0.45f);
             holder.btnJoin.setEnabled(false);
             holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
@@ -304,8 +318,18 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
                 holder.tvCapacity.setText("Unlimited");
             }
 
+            if (event.getRegistrationOpen() != null) {
+                holder.tvRegOpen.setText(DATE_FORMAT.format(event.getRegistrationOpen().toDate())
+                        + " · "
+                        + TIME_FORMAT.format(event.getRegistrationOpen().toDate()));
+            } else {
+                holder.tvRegOpen.setText("TBD");
+            }
+
             if (event.getRegistrationClose() != null) {
-                holder.tvRegClose.setText(DATE_FORMAT.format(event.getRegistrationClose().toDate()));
+                holder.tvRegClose.setText(DATE_FORMAT.format(event.getRegistrationClose().toDate())
+                        + " · "
+                        + TIME_FORMAT.format(event.getRegistrationClose().toDate()));
             } else {
                 holder.tvRegClose.setText("TBD");
             }
@@ -374,6 +398,25 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         return chip;
     }
 
+    private TextView createAgeGroupTag(@NonNull EventViewHolder holder, @NonNull String label) {
+        TextView chip = new TextView(holder.itemView.getContext());
+        chip.setText(label);
+        chip.setTextSize(12f);
+        chip.setTypeface(chip.getTypeface(), android.graphics.Typeface.BOLD);
+        chip.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.age_group_tag_text));
+        chip.setBackgroundResource(R.drawable.bg_age_group_tag);
+        int hPad = dpToPx(holder, 10);
+        int vPad = dpToPx(holder, 4);
+        chip.setPadding(hPad, vPad, hPad, vPad);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        lp.setMarginEnd(dpToPx(holder, 6));
+        chip.setLayoutParams(lp);
+        return chip;
+    }
+
     private LinearLayout createPrivateChip(@NonNull EventViewHolder holder) {
         LinearLayout chip = new LinearLayout(holder.itemView.getContext());
         chip.setOrientation(LinearLayout.HORIZONTAL);
@@ -424,7 +467,8 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         LinearLayout layoutCategoryTags;
         TextView btnJoin;
         TextView tvWaitlistCount;
-        TextView tvDescription, tvDetailDate, tvDetailTime, tvDetailLocation, tvPrice, tvCapacity, tvRegClose, tvGeoNote, tvCriteriaDescription;
+        TextView tvRegistrationOpens;
+        TextView tvDescription, tvDetailDate, tvDetailTime, tvDetailLocation, tvPrice, tvCapacity, tvRegOpen, tvRegClose, tvGeoNote, tvCriteriaDescription;
         LinearLayout layoutExpandedDetails, layoutGeoNote;
 
         EventViewHolder(@NonNull View itemView) {
@@ -443,6 +487,7 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             tvDetailLocation = itemView.findViewById(R.id.tv_detail_location);
             tvPrice = itemView.findViewById(R.id.tv_price);
             tvCapacity = itemView.findViewById(R.id.tv_capacity);
+            tvRegOpen = itemView.findViewById(R.id.tv_reg_open);
             tvRegClose = itemView.findViewById(R.id.tv_reg_close);
             layoutGeoNote = itemView.findViewById(R.id.layout_geo_note);
             tvGeoNote = itemView.findViewById(R.id.tv_geo_note);

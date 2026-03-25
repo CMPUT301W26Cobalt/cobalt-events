@@ -1,9 +1,5 @@
 package com.example.cobaltevents.ui;
 
-import android.content.Context;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.widget.Button;
@@ -14,11 +10,13 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.cobaltevents.R;
+import com.example.cobaltevents.controller.GeolocationController;
 import com.example.cobaltevents.db.EntrantDB;
 import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Entrant;
 import com.example.cobaltevents.model.WaitingList;
+import com.example.cobaltevents.util.NetworkConnectivity;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -40,6 +38,7 @@ public class JoinWaitlistActivity extends AppCompatActivity {
     private EntrantDB entrantDB;
     private WaitingListDB waitingListDB;
     private EventDB eventDB;
+    private GeolocationController geolocationController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +50,8 @@ public class JoinWaitlistActivity extends AppCompatActivity {
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         entrantDB = new EntrantDB(this);
         waitingListDB = new WaitingListDB();
+        eventDB = new EventDB();
+        geolocationController = new GeolocationController();
 
         TextView tvEventName = findViewById(R.id.tv_event_name);
         tvEventName.setText(eventName != null ? eventName : "Event");
@@ -138,7 +139,7 @@ public class JoinWaitlistActivity extends AppCompatActivity {
         }
         if (hasError) return;
 
-        if (!isNetworkAvailable()) {
+        if (!NetworkConnectivity.hasValidatedInternet(this)) {
             Toast.makeText(this, getString(R.string.waitlist_fail) + " No internet connection.",
                     Toast.LENGTH_SHORT).show();
             return;
@@ -155,10 +156,19 @@ public class JoinWaitlistActivity extends AppCompatActivity {
         );
 
         eventDB.getEvent(eventId, event -> {
-            int capacity = event != null ? event.getWaitingListCapacity() : 0;
+            if (event == null) {
+                Toast.makeText(this, getString(R.string.waitlist_fail) + " Event not found.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (event.isDeviceAnOrganizer(deviceId)) {
+                Toast.makeText(this, R.string.waitlist_organizer_cannot_join, Toast.LENGTH_LONG).show();
+                return;
+            }
+            int capacity = event.getWaitingListCapacity();
             waitingListDB.addRegistrationWithJoinChecks(registration, capacity,
                     event.getRegistrationClose(),
                     id -> {
+                        recordLocationIfPermitted(eventId);
                         Toast.makeText(this, R.string.waitlist_success, Toast.LENGTH_SHORT).show();
                         setResult(RESULT_OK);
                         finish();
@@ -168,6 +178,8 @@ public class JoinWaitlistActivity extends AppCompatActivity {
                             Toast.makeText(this, R.string.waitlist_full_capacity, Toast.LENGTH_LONG).show();
                         } else if (WaitingListDB.REASON_REGISTRATION_CLOSED.equals(e.getMessage())) {
                             Toast.makeText(this, R.string.waitlist_registration_closed, Toast.LENGTH_LONG).show();
+                        } else if (WaitingListDB.REASON_ORGANIZER_CANNOT_JOIN.equals(e.getMessage())) {
+                            Toast.makeText(this, R.string.waitlist_organizer_cannot_join, Toast.LENGTH_LONG).show();
                         } else {
                             Toast.makeText(this, getString(R.string.waitlist_fail) + " " + e.getMessage(),
                                     Toast.LENGTH_SHORT).show();
@@ -175,6 +187,21 @@ public class JoinWaitlistActivity extends AppCompatActivity {
                     });
         }, e -> Toast.makeText(this, getString(R.string.waitlist_fail) + " " + e.getMessage(),
                 Toast.LENGTH_SHORT).show());
+    }
+
+    private void recordLocationIfPermitted(String eventId) {
+        if (eventId == null || eventId.isEmpty()) return;
+        if (geolocationController == null || !geolocationController.hasLocationPermission(this)) return;
+        geolocationController.getCurrentDeviceLocation(this, loc -> {
+            if (loc == null) return;
+            geolocationController.recordLocationForEvent(
+                    JoinWaitlistActivity.this,
+                    deviceId,
+                    eventId,
+                    loc,
+                    unused -> {},
+                    e -> {});
+        });
     }
 
     private void clearErrors() {
@@ -194,14 +221,4 @@ public class JoinWaitlistActivity extends AppCompatActivity {
         return null;
     }
 
-    private boolean isNetworkAvailable() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (cm == null) return false;
-        Network network = cm.getActiveNetwork();
-        if (network == null) return false;
-        NetworkCapabilities caps = cm.getNetworkCapabilities(network);
-        return caps != null && (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-                || caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-                || caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
-    }
 }
