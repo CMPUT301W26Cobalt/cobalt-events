@@ -1,7 +1,9 @@
 package com.example.cobaltevents.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Event discussion comment. Stored in Firestore at
@@ -14,14 +16,17 @@ public class Comment {
     private String userId;
     private String userName;
     private String text;
-    private int likes;
     /** Millis since epoch; maps to Firestore Timestamp / created_at. */
     private long createdAtMillis;
-    /** UI-only: whether current viewer has liked this comment. */
-    private boolean likedByCurrentUser;
+    /**
+     * Emoji reactions: emoji → list of userIds who have reacted with that emoji.
+     * Stored in Firestore as a nested map. UI-only state is derived at display time.
+     */
+    private Map<String, List<String>> reactions;
     private List<Reply> replies;
 
     public Comment() {
+        this.reactions = new HashMap<>();
         this.replies = new ArrayList<>();
     }
 
@@ -40,15 +45,32 @@ public class Comment {
     public String getText() { return text; }
     public void setText(String text) { this.text = text; }
 
-    public int getLikes() { return likes; }
-    public void setLikes(int likes) { this.likes = likes; }
-
     public long getCreatedAtMillis() { return createdAtMillis; }
     public void setCreatedAtMillis(long createdAtMillis) { this.createdAtMillis = createdAtMillis; }
 
-    public boolean isLikedByCurrentUser() { return likedByCurrentUser; }
-    public void setLikedByCurrentUser(boolean likedByCurrentUser) { this.likedByCurrentUser = likedByCurrentUser; }
+    public Map<String, List<String>> getReactions() {
+        return reactions != null ? reactions : new HashMap<>();
+    }
+    public void setReactions(Map<String, List<String>> reactions) {
+        this.reactions = reactions != null ? reactions : new HashMap<>();
+    }
 
     public List<Reply> getReplies() { return replies != null ? replies : new ArrayList<>(); }
     public void setReplies(List<Reply> replies) { this.replies = replies != null ? replies : new ArrayList<>(); }
+
+    /** Total number of reactions across all emojis. */
+    public int getTotalReactionCount() {
+        int total = 0;
+        for (List<String> users : getReactions().values()) {
+            if (users != null) total += users.size();
+        }
+        return total;
+    }
+
+    /** Whether the given user has reacted with the given emoji. */
+    public boolean hasReacted(String emoji, String userId) {
+        if (emoji == null || userId == null) return false;
+        List<String> users = getReactions().get(emoji);
+        return users != null && users.contains(userId);
+    }
 }

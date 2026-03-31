@@ -123,8 +123,7 @@ public class CommentDB {
         data.put("userId", userId != null ? userId : "");
         data.put("userName", userName != null && !userName.isEmpty() ? userName : "You");
         data.put("text", text.trim());
-        data.put("likes", 0L);
-        data.put("likedByIds", new ArrayList<String>());
+        data.put("reactions", new HashMap<String, Object>());
         data.put("createdAt", FieldValue.serverTimestamp());
         ref.set(data)
                 .addOnSuccessListener(v -> onSuccess.onSuccess(ref.getId()))
@@ -155,8 +154,7 @@ public class CommentDB {
         data.put("userId", userId != null ? userId : "");
         data.put("userName", userName != null && !userName.isEmpty() ? userName : "You");
         data.put("text", text.trim());
-        data.put("likes", 0L);
-        data.put("likedByIds", new ArrayList<String>());
+        data.put("reactions", new HashMap<String, Object>());
         data.put("createdAt", FieldValue.serverTimestamp());
         db.runTransaction(trx -> {
             DocumentSnapshot commentSnap = trx.get(commentRef);
@@ -170,14 +168,22 @@ public class CommentDB {
                 .addOnFailureListener(onFailure);
     }
 
-    public void toggleCommentLike(String eventId,
-                                  String commentId,
-                                  String userId,
-                                  OnSuccessListener<Boolean> onSuccess,
-                                  OnFailureListener onFailure) {
-        if (eventId == null || commentId == null || userId == null || userId.trim().isEmpty()) {
+    /**
+     * Toggles an emoji reaction on a comment. If the user already reacted with this emoji it is
+     * removed; otherwise it is added. Removes the emoji key entirely when the last user un-reacts.
+     *
+     * @param onSuccess called with the full updated reactions map after the transaction commits.
+     */
+    public void toggleCommentReaction(String eventId,
+                                      String commentId,
+                                      String userId,
+                                      String emoji,
+                                      OnSuccessListener<Map<String, List<String>>> onSuccess,
+                                      OnFailureListener onFailure) {
+        if (eventId == null || commentId == null || userId == null || userId.trim().isEmpty()
+                || emoji == null || emoji.isEmpty()) {
             if (onFailure != null) {
-                onFailure.onFailure(new IllegalArgumentException("eventId, commentId, userId required"));
+                onFailure.onFailure(new IllegalArgumentException("eventId, commentId, userId, emoji required"));
             }
             return;
         }
@@ -187,30 +193,32 @@ public class CommentDB {
                 .document(commentId);
         db.runTransaction(trx -> {
             DocumentSnapshot snap = trx.get(ref);
-            List<String> likedBy = asStringList(snap.get("likedByIds"));
-            boolean nowLiked;
-            if (likedBy.contains(userId)) {
-                likedBy.remove(userId);
-                nowLiked = false;
-            } else {
-                likedBy.add(userId);
-                nowLiked = true;
-            }
-            trx.update(ref, "likedByIds", likedBy, "likes", likedBy.size());
-            return nowLiked;
+            Map<String, List<String>> reactions = parseReactions(snap.get("reactions"));
+            toggleUserInReaction(reactions, emoji, userId);
+            trx.update(ref, "reactions", reactions);
+            return reactions;
         }).addOnSuccessListener(onSuccess)
                 .addOnFailureListener(onFailure);
     }
 
-    public void toggleReplyLike(String eventId,
-                                String commentId,
-                                String replyId,
-                                String userId,
-                                OnSuccessListener<Boolean> onSuccess,
-                                OnFailureListener onFailure) {
-        if (eventId == null || commentId == null || replyId == null || userId == null || userId.trim().isEmpty()) {
+    /**
+     * Toggles an emoji reaction on a reply.
+     *
+     * @param onSuccess called with the full updated reactions map after the transaction commits.
+     */
+    public void toggleReplyReaction(String eventId,
+                                    String commentId,
+                                    String replyId,
+                                    String userId,
+                                    String emoji,
+                                    OnSuccessListener<Map<String, List<String>>> onSuccess,
+                                    OnFailureListener onFailure) {
+        if (eventId == null || commentId == null || replyId == null
+                || userId == null || userId.trim().isEmpty()
+                || emoji == null || emoji.isEmpty()) {
             if (onFailure != null) {
-                onFailure.onFailure(new IllegalArgumentException("eventId, commentId, replyId, userId required"));
+                onFailure.onFailure(new IllegalArgumentException(
+                        "eventId, commentId, replyId, userId, emoji required"));
             }
             return;
         }
@@ -222,19 +230,29 @@ public class CommentDB {
                 .document(replyId);
         db.runTransaction(trx -> {
             DocumentSnapshot snap = trx.get(ref);
-            List<String> likedBy = asStringList(snap.get("likedByIds"));
-            boolean nowLiked;
-            if (likedBy.contains(userId)) {
-                likedBy.remove(userId);
-                nowLiked = false;
-            } else {
-                likedBy.add(userId);
-                nowLiked = true;
-            }
-            trx.update(ref, "likedByIds", likedBy, "likes", likedBy.size());
-            return nowLiked;
+            Map<String, List<String>> reactions = parseReactions(snap.get("reactions"));
+            toggleUserInReaction(reactions, emoji, userId);
+            trx.update(ref, "reactions", reactions);
+            return reactions;
         }).addOnSuccessListener(onSuccess)
                 .addOnFailureListener(onFailure);
+    }
+
+    /** Adds or removes {@code userId} from the emoji bucket; removes empty buckets. */
+    private static void toggleUserInReaction(Map<String, List<String>> reactions,
+                                             String emoji, String userId) {
+        List<String> users = reactions.containsKey(emoji)
+                ? new ArrayList<>(reactions.get(emoji)) : new ArrayList<>();
+        if (users.contains(userId)) {
+            users.remove(userId);
+        } else {
+            users.add(userId);
+        }
+        if (users.isEmpty()) {
+            reactions.remove(emoji);
+        } else {
+            reactions.put(emoji, users);
+        }
     }
 
     public void deleteCommentWithReplies(String eventId,
@@ -359,9 +377,7 @@ public class CommentDB {
         c.setUserId(doc.getString("userId"));
         c.setUserName(doc.getString("userName"));
         c.setText(doc.getString("text"));
-        Long likes = doc.getLong("likes");
-        c.setLikes(likes != null ? likes.intValue() : 0);
-        c.setLikedByCurrentUser(containsUserId(doc.get("likedByIds"), viewerUserId));
+        c.setReactions(parseReactions(doc.get("reactions")));
         Timestamp ts = doc.getTimestamp("createdAt");
         c.setCreatedAtMillis(ts != null ? ts.toDate().getTime() : 0L);
         c.setReplies(new ArrayList<>());
@@ -375,19 +391,22 @@ public class CommentDB {
         r.setUserId(doc.getString("userId"));
         r.setUserName(doc.getString("userName"));
         r.setText(doc.getString("text"));
-        Long likes = doc.getLong("likes");
-        r.setLikes(likes != null ? likes.intValue() : 0);
-        r.setLikedByCurrentUser(containsUserId(doc.get("likedByIds"), viewerUserId));
+        r.setReactions(parseReactions(doc.get("reactions")));
         Timestamp ts = doc.getTimestamp("createdAt");
         r.setCreatedAtMillis(ts != null ? ts.toDate().getTime() : 0L);
         return r;
     }
 
-    private static boolean containsUserId(Object raw, String userId) {
-        if (userId == null || userId.trim().isEmpty()) {
-            return false;
+    /** Parses the Firestore reactions map into {@code Map<emoji, List<userId>>}. */
+    @SuppressWarnings("unchecked")
+    static Map<String, List<String>> parseReactions(Object raw) {
+        Map<String, List<String>> out = new HashMap<>();
+        if (!(raw instanceof Map)) return out;
+        for (Map.Entry<?, ?> entry : ((Map<?, ?>) raw).entrySet()) {
+            if (!(entry.getKey() instanceof String)) continue;
+            out.put((String) entry.getKey(), asStringList(entry.getValue()));
         }
-        return asStringList(raw).contains(userId);
+        return out;
     }
 
     @SuppressWarnings("unchecked")

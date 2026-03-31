@@ -38,8 +38,9 @@ public class EventHistoryAdapterTest {
     public void setUp() {
         context = ApplicationProvider.getApplicationContext();
         testHistory = new ArrayList<>();
-        adapter = new EventHistoryAdapter(testHistory, history -> {
-            // Mock click listener
+        adapter = new EventHistoryAdapter(testHistory, new EventHistoryAdapter.Listener() {
+            @Override public void onHistoryClick(com.example.cobaltevents.model.EventHistory history) {}
+            @Override public void onDeleteClick(com.example.cobaltevents.model.EventHistory history) {}
         });
     }
 
@@ -53,7 +54,10 @@ public class EventHistoryAdapterTest {
     @Test
     public void adapter_initializes_withNonEmptyList() {
         testHistory.add(createMockEventHistory("event1", "Test Event", "pending"));
-        adapter = new EventHistoryAdapter(testHistory, history -> {});
+        adapter = new EventHistoryAdapter(testHistory, new EventHistoryAdapter.Listener() {
+            @Override public void onHistoryClick(com.example.cobaltevents.model.EventHistory history) {}
+            @Override public void onDeleteClick(com.example.cobaltevents.model.EventHistory history) {}
+        });
         
         assertEquals(1, adapter.getItemCount());
     }

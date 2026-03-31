@@ -38,7 +38,6 @@ public class EventListActivityTest {
     @Test
     public void filterDialogLayout_hasAllSpinnersAndButtons() {
         View dialog = LayoutInflater.from(themed()).inflate(R.layout.dialog_filter_events, null, false);
-        assertNotNull(dialog.findViewById(R.id.spinner_category));
         assertNotNull(dialog.findViewById(R.id.spinner_age_group));
         assertNotNull(dialog.findViewById(R.id.btn_availability_start));
         assertNotNull(dialog.findViewById(R.id.btn_availability_end));

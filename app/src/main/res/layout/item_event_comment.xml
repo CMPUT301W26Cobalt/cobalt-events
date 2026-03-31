@@ -75,6 +75,7 @@
                 android:textSize="13sp"
                 android:textColor="@color/grey_muted_text" />
 
+            <!-- Reactions row: scrollable pills + add-reaction button + reply button -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -82,13 +83,33 @@
                 android:layout_marginTop="6dp"
                 android:gravity="center_vertical">
 
+                <HorizontalScrollView
+                    android:id="@+id/scroll_reactions"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:scrollbars="none"
+                    android:fillViewport="false">
+
+                    <LinearLayout
+                        android:id="@+id/layout_reactions"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical" />
+                </HorizontalScrollView>
+
                 <TextView
-                    android:id="@+id/btn_comment_like"
+                    android:id="@+id/btn_add_reaction"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:paddingEnd="12dp"
-                    android:textSize="11sp"
-                    android:textColor="@color/grey_medium" />
+                    android:text="＋"
+                    android:textSize="13sp"
+                    android:textColor="@color/grey_medium"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="4dp"
+                    android:paddingTop="2dp"
+                    android:paddingBottom="2dp" />
 
                 <TextView
                     android:id="@+id/btn_comment_reply"
@@ -97,16 +118,48 @@
                     android:text="@string/reply"
                     android:textSize="11sp"
                     android:textColor="@color/header_teal"
-                    android:padding="4dp" />
+                    android:paddingStart="6dp"
+                    android:paddingEnd="4dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp" />
             </LinearLayout>
 
+            <!-- Thread toggle: "▶ N replies" / "▼ Hide replies" -->
+            <TextView
+                android:id="@+id/btn_thread_toggle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textSize="11sp"
+                android:textColor="@color/header_teal"
+                android:paddingTop="2dp"
+                android:paddingBottom="2dp"
+                android:visibility="gone" />
+
+            <!-- Thread container: vertical line + replies list -->
             <LinearLayout
-                android:id="@+id/layout_replies"
+                android:id="@+id/layout_replies_thread"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="6dp"
-                android:paddingStart="4dp" />
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp"
+                android:visibility="gone">
+
+                <!-- Visual thread line -->
+                <View
+                    android:layout_width="2dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="8dp"
+                    android:background="@color/header_teal"
+                    android:alpha="0.35" />
+
+                <LinearLayout
+                    android:id="@+id/layout_replies"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </LinearLayout>
 
             <LinearLayout
                 android:id="@+id/layout_reply_input"
