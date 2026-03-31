@@ -231,7 +231,8 @@ public class AdapterItemLayoutsTest {
         View root = LayoutInflater.from(themed())
                 .inflate(R.layout.item_event_comment, null, false);
 
-        assertNotNull(root.findViewById(R.id.btn_comment_like));
+        assertNotNull(root.findViewById(R.id.layout_reactions));
+        assertNotNull(root.findViewById(R.id.btn_add_reaction));
         assertNotNull(root.findViewById(R.id.btn_comment_reply));
         assertNotNull(root.findViewById(R.id.btn_comment_delete));
     }
@@ -265,7 +266,8 @@ public class AdapterItemLayoutsTest {
         assertNotNull(root.findViewById(R.id.tv_reply_body));
         assertNotNull(root.findViewById(R.id.tv_reply_time));
         assertNotNull(root.findViewById(R.id.tv_reply_avatar));
-        assertNotNull(root.findViewById(R.id.btn_reply_like));
+        assertNotNull(root.findViewById(R.id.layout_reply_reactions));
+        assertNotNull(root.findViewById(R.id.btn_add_reply_reaction));
     }
 
     // ── item_admin_event.xml ──────────────────────────────────────────────────

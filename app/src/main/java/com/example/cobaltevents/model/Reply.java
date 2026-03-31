@@ -1,5 +1,9 @@
 package com.example.cobaltevents.model;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Reply to an event comment. Firestore path:
  * {@code events/{eventId}/comments/{commentId}/replies/{replyId}}.
@@ -11,13 +15,17 @@ public class Reply {
     private String userId;
     private String userName;
     private String text;
-    private int likes;
     /** Millis since epoch; maps to Firestore Timestamp. */
     private long createdAtMillis;
-    /** UI-only: whether current viewer has liked this reply. */
-    private boolean likedByCurrentUser;
+    /**
+     * Emoji reactions: emoji → list of userIds who reacted.
+     * Mirrors the same field on {@link Comment}.
+     */
+    private Map<String, List<String>> reactions;
 
-    public Reply() {}
+    public Reply() {
+        this.reactions = new HashMap<>();
+    }
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -34,12 +42,20 @@ public class Reply {
     public String getText() { return text; }
     public void setText(String text) { this.text = text; }
 
-    public int getLikes() { return likes; }
-    public void setLikes(int likes) { this.likes = likes; }
-
     public long getCreatedAtMillis() { return createdAtMillis; }
     public void setCreatedAtMillis(long createdAtMillis) { this.createdAtMillis = createdAtMillis; }
 
-    public boolean isLikedByCurrentUser() { return likedByCurrentUser; }
-    public void setLikedByCurrentUser(boolean likedByCurrentUser) { this.likedByCurrentUser = likedByCurrentUser; }
+    public Map<String, List<String>> getReactions() {
+        return reactions != null ? reactions : new HashMap<>();
+    }
+    public void setReactions(Map<String, List<String>> reactions) {
+        this.reactions = reactions != null ? reactions : new HashMap<>();
+    }
+
+    /** Whether the given user has reacted with the given emoji. */
+    public boolean hasReacted(String emoji, String userId) {
+        if (emoji == null || userId == null) return false;
+        List<String> users = getReactions().get(emoji);
+        return users != null && users.contains(userId);
+    }
 }

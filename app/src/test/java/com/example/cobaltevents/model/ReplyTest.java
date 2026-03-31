@@ -5,6 +5,12 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Unit tests for the Reply model class.
  */
@@ -22,6 +28,12 @@ public class ReplyTest {
     @Test
     public void noArgConstructor_createsInstance() {
         assertNotNull(reply);
+    }
+
+    @Test
+    public void noArgConstructor_initializesReactionsAsEmptyMap() {
+        assertNotNull(reply.getReactions());
+        assertTrue(reply.getReactions().isEmpty());
     }
 
     // ── Setters / getters ────────────────────────────────────────────────────
@@ -57,37 +69,61 @@ public class ReplyTest {
     }
 
     @Test
-    public void setLikes_updatesValue() {
-        reply.setLikes(7);
-        assertEquals(7, reply.getLikes());
-    }
-
-    @Test
     public void setCreatedAtMillis_updatesValue() {
         long ts = 1_700_000_000_000L;
         reply.setCreatedAtMillis(ts);
         assertEquals(ts, reply.getCreatedAtMillis());
     }
 
+    // ── Reactions ────────────────────────────────────────────────────────────
+
     @Test
-    public void setLikedByCurrentUser_toggles() {
-        reply.setLikedByCurrentUser(true);
-        assertTrue(reply.isLikedByCurrentUser());
-        reply.setLikedByCurrentUser(false);
-        assertFalse(reply.isLikedByCurrentUser());
+    public void setReactions_updatesMap() {
+        Map<String, List<String>> r = new HashMap<>();
+        r.put("🔥", Arrays.asList("u1", "u2", "u3"));
+        reply.setReactions(r);
+        assertEquals(3, reply.getReactions().get("🔥").size());
+    }
+
+    @Test
+    public void setReactions_null_returnsEmptyMap() {
+        reply.setReactions(null);
+        assertNotNull(reply.getReactions());
+        assertTrue(reply.getReactions().isEmpty());
+    }
+
+    @Test
+    public void hasReacted_userInList_returnsTrue() {
+        Map<String, List<String>> r = new HashMap<>();
+        r.put("👍", Collections.singletonList("userA"));
+        reply.setReactions(r);
+        assertTrue(reply.hasReacted("👍", "userA"));
+    }
+
+    @Test
+    public void hasReacted_userNotInList_returnsFalse() {
+        Map<String, List<String>> r = new HashMap<>();
+        r.put("👍", Collections.singletonList("userA"));
+        reply.setReactions(r);
+        assertFalse(reply.hasReacted("👍", "userB"));
+    }
+
+    @Test
+    public void hasReacted_nullEmoji_returnsFalse() {
+        assertFalse(reply.hasReacted(null, "userA"));
+    }
+
+    @Test
+    public void hasReacted_nullUserId_returnsFalse() {
+        assertFalse(reply.hasReacted("👍", null));
+    }
+
+    @Test
+    public void hasReacted_missingEmoji_returnsFalse() {
+        assertFalse(reply.hasReacted("😂", "userA"));
     }
 
     // ── Defaults ─────────────────────────────────────────────────────────────
-
-    @Test
-    public void defaults_likesIsZero() {
-        assertEquals(0, reply.getLikes());
-    }
-
-    @Test
-    public void defaults_likedByCurrentUserIsFalse() {
-        assertFalse(reply.isLikedByCurrentUser());
-    }
 
     @Test
     public void defaults_allFieldsNullOrZero() {
@@ -96,7 +132,6 @@ public class ReplyTest {
         assertNull(reply.getUserId());
         assertNull(reply.getUserName());
         assertNull(reply.getText());
-        assertEquals(0, reply.getLikes());
         assertEquals(0L, reply.getCreatedAtMillis());
     }
 }
