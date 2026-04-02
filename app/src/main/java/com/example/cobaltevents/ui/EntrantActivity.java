@@ -10,6 +10,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.cobaltevents.R;
+import com.example.cobaltevents.ui.admin.AdminActivity;
 import com.example.cobaltevents.controller.EntrantController;
 import com.example.cobaltevents.db.EntrantDB;
 import com.example.cobaltevents.model.Entrant;
@@ -21,6 +22,11 @@ public class EntrantActivity extends AppCompatActivity {
     /** When set (e.g. from Welcome "Continue as Organizer"), go to {@link OrganizerActivity} after profile is complete. */
     public static final String EXTRA_LAUNCH_ORGANIZER_AFTER_SIGNUP =
             "com.example.cobaltevents.EXTRA_LAUNCH_ORGANIZER_AFTER_SIGNUP";
+
+    /** Set by AdminActivity when switching roles — back button returns to admin dashboard. */
+    public static final String IS_ADMIN_SWITCH = "IS_ADMIN_SWITCH";
+
+    private boolean isAdminSwitch = false;
 
     private boolean launchOrganizerAfterSignup;
 
@@ -41,6 +47,7 @@ public class EntrantActivity extends AppCompatActivity {
         controller = new EntrantController(entrantDB);
         currentEntrant = entrantDB.getEntrant();
         readLaunchOrganizerFlag(getIntent());
+        isAdminSwitch = getIntent().getBooleanExtra(IS_ADMIN_SWITCH, false);
         if (currentEntrant.isValid()) {
             navigateToMain();
             return;
@@ -59,7 +66,14 @@ public class EntrantActivity extends AppCompatActivity {
 
         loadProfileFields();
 
-        backButton.setOnClickListener(v -> finish());
+        backButton.setOnClickListener(v -> {
+            if (isAdminSwitch) {
+                startActivity(new Intent(this, AdminActivity.class));
+                finish();
+            } else {
+                finish();
+            }
+        });
         getStartedButton.setOnClickListener(v -> saveProfile());
     }
 

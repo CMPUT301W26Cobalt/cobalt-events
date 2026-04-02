@@ -20,6 +20,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cobaltevents.R;
+import com.example.cobaltevents.controller.AdminController;
+import com.example.cobaltevents.ui.admin.AdminActivity;
+import com.example.cobaltevents.ui.admin.AdminConfig;
+import android.provider.Settings;
+import androidx.cardview.widget.CardView;
 import com.example.cobaltevents.controller.EntrantController;
 import com.example.cobaltevents.db.CommentDB;
 import com.example.cobaltevents.db.EntrantDB;
@@ -98,6 +103,17 @@ public class AccountSettingsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_account_settings);
+
+        // ── Admin card — show only if device ID matches ───────────────────────
+        String deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        CardView adminCard = findViewById(R.id.adminCard);
+        if (AdminConfig.ADMIN_DEVICE_ID.equals(deviceId) && adminCard != null) {
+            adminCard.setVisibility(android.view.View.VISIBLE);
+            findViewById(R.id.btn_go_to_admin).setOnClickListener(v -> {
+                AdminController.invalidateAll();
+                startActivity(new Intent(this, AdminActivity.class));
+            });
+        }
         fromOrganizerFlow = getIntent().getBooleanExtra(NotificationsActivity.EXTRA_FROM_ORGANIZER, false);
 
         entrantDB = new EntrantDB(this);

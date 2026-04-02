@@ -46,6 +46,7 @@
         <activity android:name=".ui.admin.AdminProfileListActivity" />
         <activity android:name=".ui.admin.AdminImageListActivity" />
         <activity android:name=".ui.MapPreviewActivity" />
+        <activity android:name=".ui.admin.AdminCommentsActivity" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

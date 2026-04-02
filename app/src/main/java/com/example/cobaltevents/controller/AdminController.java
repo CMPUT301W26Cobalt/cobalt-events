@@ -1,7 +1,9 @@
 package com.example.cobaltevents.controller;
 
+import com.example.cobaltevents.db.CommentDB;
 import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.db.ProfileDB;
+import com.example.cobaltevents.model.Comment;
 import com.example.cobaltevents.model.Entrant;
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.Notification;
@@ -55,10 +57,13 @@ public class AdminController {
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
+    private final CommentDB commentDB;
+
     public AdminController() {
         this.eventDB   = new EventDB();
         this.profileDB = new ProfileDB();
         this.db        = FirebaseFirestore.getInstance();
+        this.commentDB = new CommentDB();
     }
 
     // ── Cache invalidation helpers ────────────────────────────────────────────
@@ -378,6 +383,78 @@ public class AdminController {
                     }
                     onSuccess.onSuccess(list);
                 })
+                .addOnFailureListener(onFailure);
+    }
+
+    // =========================================================================
+    // US 03.10.01 — Browse comments grouped by event
+    // =========================================================================
+
+    public void getAllCommentsGroupedByEvent(
+            OnSuccessListener<java.util.Map<Event, List<Comment>>> onSuccess,
+            OnFailureListener onFailure) {
+        getAllEvents(events -> {
+            if (events == null || events.isEmpty()) {
+                onSuccess.onSuccess(new java.util.LinkedHashMap<>());
+                return;
+            }
+            java.util.Map<Event, List<Comment>> result = new java.util.LinkedHashMap<>();
+            int[] remaining = {events.size()};
+            for (Event event : events) {
+                String eventId = event.getEventId();
+                if (eventId == null || eventId.trim().isEmpty()) {
+                    if (--remaining[0] == 0) onSuccess.onSuccess(result);
+                    continue;
+                }
+                db.collection("events")
+                        .document(eventId)
+                        .collection("comments")
+                        .get()
+                        .addOnSuccessListener(snapshot -> {
+                            List<Comment> comments = new java.util.ArrayList<>();
+                            for (com.google.firebase.firestore.DocumentSnapshot doc : snapshot.getDocuments()) {
+                                Comment c = doc.toObject(Comment.class);
+                                if (c != null) {
+                                    if (c.getId() == null) c.setId(doc.getId());
+                                    if (c.getEventId() == null) c.setEventId(eventId);
+                                    comments.add(c);
+                                }
+                            }
+                            if (!comments.isEmpty()) result.put(event, comments);
+                            if (--remaining[0] == 0) onSuccess.onSuccess(result);
+                        })
+                        .addOnFailureListener(e -> {
+                            if (--remaining[0] == 0) onSuccess.onSuccess(result);
+                        });
+            }
+        }, onFailure);
+    }
+
+    // US 03.10.01 — Remove a single comment
+    public void removeComment(String eventId, String commentId,
+                              OnSuccessListener<Void> onSuccess,
+                              OnFailureListener onFailure) {
+        db.collection("events")
+                .document(eventId)
+                .collection("comments")
+                .document(commentId)
+                .delete()
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
+    // US 03.10.01 — Remove a single reply
+    public void removeReply(String eventId, String commentId, String replyId,
+                            OnSuccessListener<Void> onSuccess,
+                            OnFailureListener onFailure) {
+        db.collection("events")
+                .document(eventId)
+                .collection("comments")
+                .document(commentId)
+                .collection("replies")
+                .document(replyId)
+                .delete()
+                .addOnSuccessListener(onSuccess)
                 .addOnFailureListener(onFailure);
     }
 }
