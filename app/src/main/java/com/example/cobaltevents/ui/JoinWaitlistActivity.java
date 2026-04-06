@@ -16,6 +16,7 @@ import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.db.WaitingListDB;
 import com.example.cobaltevents.model.Entrant;
 import com.example.cobaltevents.model.WaitingList;
+import com.example.cobaltevents.util.EventGoneUi;
 import com.example.cobaltevents.util.NetworkConnectivity;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -155,9 +156,10 @@ public class JoinWaitlistActivity extends AppCompatActivity {
                 notificationMethod
         );
 
-        eventDB.getEvent(eventId, event -> {
+        eventDB.getEventFromServer(eventId, event -> {
             if (event == null) {
-                Toast.makeText(this, getString(R.string.waitlist_fail) + " Event not found.", Toast.LENGTH_SHORT).show();
+                EventGoneUi.toast(this);
+                finish();
                 return;
             }
             if (event.isDeviceAnOrganizer(deviceId)) {
@@ -174,7 +176,10 @@ public class JoinWaitlistActivity extends AppCompatActivity {
                         finish();
                     },
                     e -> {
-                        if (WaitingListDB.REASON_WAITLIST_FULL.equals(e.getMessage())) {
+                        if (WaitingListDB.REASON_EVENT_DELETED.equals(e.getMessage())) {
+                            EventGoneUi.toast(this);
+                            finish();
+                        } else if (WaitingListDB.REASON_WAITLIST_FULL.equals(e.getMessage())) {
                             Toast.makeText(this, R.string.waitlist_full_capacity, Toast.LENGTH_LONG).show();
                         } else if (WaitingListDB.REASON_REGISTRATION_CLOSED.equals(e.getMessage())) {
                             Toast.makeText(this, R.string.waitlist_registration_closed, Toast.LENGTH_LONG).show();

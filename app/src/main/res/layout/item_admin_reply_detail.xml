@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:layout_marginBottom="8dp"
+    android:paddingStart="6dp"
+    android:paddingEnd="6dp">
+
+    <!-- Thread line -->
+    <View
+        android:layout_width="2dp"
+        android:layout_height="match_parent"
+        android:background="#0D6EFD"
+        android:layout_marginEnd="10dp"
+        android:alpha="0.3" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:background="@drawable/bg_reply_card"
+        android:padding="10dp">
+
+        <!-- Reply author row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="6dp">
+
+            <!-- Avatar — tappable -->
+            <TextView
+                android:id="@+id/tvReplyAvatar"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:gravity="center"
+                android:textColor="#FFFFFF"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:background="@drawable/bg_admin_icon"
+                android:layout_marginEnd="8dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <!-- Name — tappable -->
+                <TextView
+                    android:id="@+id/tvReplyAuthor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="#0D1B2A"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <TextView
+                    android:id="@+id/tvReplyTime"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp"
+                    android:textColor="#9CA3AF" />
+
+            </LinearLayout>
+
+            <!-- Delete button -->
+            <ImageView
+                android:id="@+id/btnDeleteReply"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="@android:color/transparent"
+                android:src="@drawable/ic_delete"
+                android:contentDescription="Delete reply"
+                android:padding="4dp"
+                app:tint="#E53935" />
+
+        </LinearLayout>
+
+        <!-- Reply text -->
+        <TextView
+            android:id="@+id/tvReplyText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:textColor="#374151"
+            android:lineSpacingExtra="3dp"
+            android:layout_marginStart="38dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

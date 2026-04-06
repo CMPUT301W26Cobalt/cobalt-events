@@ -48,6 +48,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -237,7 +239,8 @@ public class AdminTest {
     public void setUp() throws InterruptedException {
         db = FirebaseFirestore.getInstance();
         AdminController.invalidateAll(); // Always start with fresh cache
-        adminController = new AdminController();
+        adminController = new AdminController(
+                InstrumentationRegistry.getInstrumentation().getTargetContext());
 
         // Create test event (no image)
         createTestEvent(TEST_EVENT_ID, "Test Event Alpha", TEST_ORGANIZER_ID, null);
@@ -270,8 +273,11 @@ public class AdminTest {
         deleteDocumentIfExists("events",        TEST_EVENT_ID);
         deleteDocumentIfExists("events",        TEST_EVENT_ID_2);
         deleteDocumentIfExists("events",        TEST_IMAGE_EVENT_ID);
+        deleteDocumentIfExists("events",        "TEST_SHARED_ORG_EVENT_PROFILE_REMOVE");
         deleteDocumentIfExists("profiles",      TEST_PROFILE_ID);
         deleteDocumentIfExists("profiles",      TEST_ORGANIZER_ID);
+        deleteDocumentIfExists("profiles",      "TEST_CO_ORG_PROFILE_REMOVE");
+        deleteDocumentIfExists("profiles",      "TEST_PRIMARY_ORG_PROFILE_STAYS");
         deleteDocumentIfExists("notifications", TEST_NOTIF_ID);
         AdminController.invalidateAll();
     }
@@ -523,13 +529,13 @@ public class AdminTest {
     }
 
     // =========================================================================
-    // US 03.02.01 — Remove profile also deletes their events (Controller test)
+    // US 03.02.01 — Remove profile also deletes events where they were sole organizer
     // =========================================================================
 
     @Test
     public void testRemoveProfile_AlsoDeletesEvents_US_03_02_01()
             throws InterruptedException {
-        // Create a dedicated owner + their event
+        // Create a dedicated owner + their event (single organizer → event deleted with profile)
         String ownerId = "TEST_OWNER_CASCADE_DELETE";
         String ownedEventId = "TEST_OWNED_EVENT_CASCADE";
         createTestProfile(ownerId, "Cascade Owner", "cascade@test.com", "");
@@ -552,6 +558,36 @@ public class AdminTest {
         // Cleanup
         deleteDocumentIfExists("profiles", ownerId);
         deleteDocumentIfExists("events",   ownedEventId);
+    }
+
+    @Test
+    public void testRemoveProfile_CoOrganizer_RemovedFromOrganizers_EventStays_US_03_02_01()
+            throws InterruptedException {
+        String coId = "TEST_CO_ORG_PROFILE_REMOVE";
+        String primaryId = "TEST_PRIMARY_ORG_PROFILE_STAYS";
+        String sharedEventId = "TEST_SHARED_ORG_EVENT_PROFILE_REMOVE";
+        createTestProfile(coId, "Co Org Remove", "co-remove@test.com", "");
+        createTestProfile(primaryId, "Primary Stays", "primary-stays@test.com", "");
+        createTestEventWithOrganizers(sharedEventId, "Shared Org Event",
+                Arrays.asList(coId, primaryId), null);
+
+        assertTrue(documentExists("profiles", coId));
+        assertTrue(documentExists("events", sharedEventId));
+
+        CountDownLatch latch = new CountDownLatch(1);
+        adminController.removeProfile(coId, unused -> latch.countDown(), e -> latch.countDown());
+        latch.await(TIMEOUT_SECS, TimeUnit.SECONDS);
+
+        assertFalse("Co-organizer profile should be deleted",
+                documentExists("profiles", coId));
+        assertTrue("Event should remain when another organizer exists",
+                documentExists("events", sharedEventId));
+        List<String> orgs = readOrganizerIdsFromEventDoc(sharedEventId);
+        assertEquals(Collections.singletonList(primaryId), orgs);
+
+        deleteDocumentIfExists("profiles", coId);
+        deleteDocumentIfExists("profiles", primaryId);
+        deleteDocumentIfExists("events", sharedEventId);
     }
 
     // =========================================================================
@@ -750,7 +786,7 @@ public class AdminTest {
     }
 
     // =========================================================================
-    // US 03.07.01 — Remove organizer also deletes their events (Controller + UI)
+    // US 03.07.01 — Remove organizer: event-side cleanup like profile removal, profile stays (UI)
     // =========================================================================
 
     @Test
@@ -771,15 +807,15 @@ public class AdminTest {
         onView(withId(R.id.btnConfirmDelete)).perform(click());
         SystemClock.sleep(LONG_WAIT_MS);
 
-        // Card gone from list
+        // Card gone from list (no longer listed as an organizer on any event)
         onView(withId(R.id.adminRecycler))
                 .check(matches(not(hasDescendant(withText("Test Organizer")))));
 
-        // Organizer profile deleted from Firestore
-        assertFalse("Organizer should be deleted",
+        // Profile remains — admin remove-organizer does not delete the account
+        assertTrue("Organizer profile should still exist",
                 documentExists("profiles", TEST_ORGANIZER_ID));
 
-        // All their events also deleted from Firestore
+        // Sole-organizer events are cascade-deleted (same as account-delete organizer pass)
         assertFalse("Organizer's first event should be deleted",
                 documentExists("events", TEST_EVENT_ID));
         assertFalse("Organizer's second event should be deleted",
@@ -985,13 +1021,21 @@ public class AdminTest {
     private void createTestEvent(String eventId, String name,
                                  String organizerDeviceId, String posterImageUrl)
             throws InterruptedException {
+        createTestEventWithOrganizers(eventId, name,
+                Collections.singletonList(organizerDeviceId), posterImageUrl);
+    }
+
+    private void createTestEventWithOrganizers(String eventId, String name,
+                                               List<String> organizerDeviceIds,
+                                               String posterImageUrl)
+            throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         Map<String, Object> data = new HashMap<>();
         data.put("eventId",           eventId);
         data.put("name",              name);
         data.put("description",       "Test description for " + name);
         data.put("location",          "Test Location");
-        data.put("organizers", java.util.Arrays.asList(organizerDeviceId));
+        data.put("organizers",        new ArrayList<>(organizerDeviceIds));
         data.put("eventDate",         new Timestamp(new Date()));
         data.put("category",          "TEST");
         data.put("posterImageUrl",    posterImageUrl);
@@ -999,6 +1043,28 @@ public class AdminTest {
                 .addOnSuccessListener(v -> latch.countDown())
                 .addOnFailureListener(e -> latch.countDown());
         latch.await(TIMEOUT_SECS, TimeUnit.SECONDS);
+    }
+
+    private List<String> readOrganizerIdsFromEventDoc(String eventId) throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        final List<String> out = new ArrayList<>();
+        db.collection("events").document(eventId).get()
+                .addOnSuccessListener(snap -> {
+                    if (snap != null && snap.exists()) {
+                        Object raw = snap.get("organizers");
+                        if (raw instanceof List<?>) {
+                            for (Object item : (List<?>) raw) {
+                                if (item instanceof String) {
+                                    out.add((String) item);
+                                }
+                            }
+                        }
+                    }
+                    latch.countDown();
+                })
+                .addOnFailureListener(e -> latch.countDown());
+        latch.await(TIMEOUT_SECS, TimeUnit.SECONDS);
+        return out;
     }
 
     private void createTestProfile(String deviceId, String name,

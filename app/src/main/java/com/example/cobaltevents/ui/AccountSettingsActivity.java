@@ -20,6 +20,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.cobaltevents.R;
+import com.example.cobaltevents.controller.AdminController;
+import com.example.cobaltevents.ui.admin.AdminActivity;
+import com.example.cobaltevents.ui.admin.AdminConfig;
+import android.provider.Settings;
 import com.example.cobaltevents.controller.EntrantController;
 import com.example.cobaltevents.db.CommentDB;
 import com.example.cobaltevents.db.EntrantDB;
@@ -42,6 +46,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Profile, account mode (user vs organizer), notification toggles, and account deletion.
+ *
+ * <p>The admin dashboard entry (US 03.09.01) appears as a third row inside the account mode card when
+ * {@link android.provider.Settings.Secure#ANDROID_ID} matches {@link com.example.cobaltevents.ui.admin.AdminConfig#ADMIN_DEVICE_ID},
+ * using the same neutral icon-well style as the user and organizer rows ({@code R.id.btn_go_to_admin}).
+ */
 public class AccountSettingsActivity extends AppCompatActivity {
 
     /**
@@ -98,6 +109,16 @@ public class AccountSettingsActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_account_settings);
+
+        String deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        View btnGoToAdmin = findViewById(R.id.btn_go_to_admin);
+        if (AdminConfig.ADMIN_DEVICE_ID.equals(deviceId) && btnGoToAdmin != null) {
+            btnGoToAdmin.setVisibility(View.VISIBLE);
+            btnGoToAdmin.setOnClickListener(v -> {
+                AdminController.invalidateAll();
+                startActivity(new Intent(this, AdminActivity.class));
+            });
+        }
         fromOrganizerFlow = getIntent().getBooleanExtra(NotificationsActivity.EXTRA_FROM_ORGANIZER, false);
 
         entrantDB = new EntrantDB(this);

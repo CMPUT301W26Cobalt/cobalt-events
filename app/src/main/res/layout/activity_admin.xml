@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -54,14 +55,40 @@
                     android:textSize="12sp"
                     android:layout_marginTop="1dp" />
             </LinearLayout>
+
+            <!-- Search toggle button -->
+
+            <!-- Three dot menu -->
+
+            <ImageView
+                android:id="@+id/btnSearchToggle"
+                android:layout_width="wrap_content"
+                android:layout_height="22dp"
+                android:layout_marginStart="12dp"
+                android:contentDescription="Search"
+                android:src="@drawable/ic_nav_search"
+                app:tint="#FFFFFF" />
+
+            <TextView
+                android:id="@+id/btnMoreOptions"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:text="&#8942;"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
         </LinearLayout>
 
-        <!-- Search bar -->
+        <!-- Search bar — hidden by default, shown on search icon tap -->
         <EditText
             android:id="@+id/etSearch"
             android:layout_width="match_parent"
             android:layout_height="44dp"
-            android:layout_marginTop="14dp"
+            android:layout_marginTop="10dp"
             android:hint="@string/admin_search_hint"
             android:textColor="#0D1B2A"
             android:textColorHint="#9CA3AF"
@@ -70,7 +97,8 @@
             android:paddingEnd="14dp"
             android:inputType="text"
             android:autofillHints="off"
-            android:background="@drawable/bg_search_field" />
+            android:background="@drawable/bg_search_field"
+            android:visibility="gone" />
 
     </LinearLayout>
 
@@ -185,6 +213,25 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
+            <!-- Comments tab -->
+            <LinearLayout
+                android:id="@+id/tab_comments"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:background="@drawable/bg_tab_underline">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Comments"
+                    android:textSize="13sp"
+                    android:textColor="@drawable/tab_text_selector"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
         </LinearLayout>
     </HorizontalScrollView>
 
@@ -215,42 +262,72 @@
             android:layout_height="wrap_content"
             android:text=""
             android:textSize="12sp"
-            android:textColor="#6B7280" />
+            android:textColor="#6B7280"
+            android:layout_marginEnd="8dp" />
+
+        <!-- Sort button -->
+        <TextView
+            android:id="@+id/btnSort"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:text="&#8645; Sort"
+            android:textSize="12sp"
+            android:textColor="#0D6EFD"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:background="@drawable/bg_sort_btn" />
+
     </LinearLayout>
 
-    <!-- Loading spinner -->
-    <ProgressBar
-        android:id="@+id/loadingSpinner"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="60dp"
-        android:indeterminateTint="#0D6EFD"
-        android:visibility="gone"
-        style="?android:attr/progressBarStyle" />
-
-    <!-- Empty state -->
-    <TextView
-        android:id="@+id/emptyMessage"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/admin_no_results"
-        android:textSize="15sp"
-        android:textColor="#9CA3AF"
-        android:gravity="center"
-        android:padding="48dp"
-        android:visibility="gone" />
-
-    <!-- RecyclerView -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/adminRecycler"
+    <!-- Content area: SwipeRefreshLayout wrapping spinner + list + empty state -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="6dp"
-        android:paddingBottom="16dp"
-        android:clipToPadding="false" />
+        android:layout_weight="1">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <!-- Loading spinner -->
+            <ProgressBar
+                android:id="@+id/loadingSpinner"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_gravity="center"
+                android:indeterminateTint="#0D6EFD"
+                android:visibility="gone"
+                style="?android:attr/progressBarStyle" />
+
+            <!-- Empty state -->
+            <TextView
+                android:id="@+id/emptyMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="@string/admin_no_results"
+                android:textSize="15sp"
+                android:textColor="#9CA3AF"
+                android:gravity="center"
+                android:padding="48dp"
+                android:visibility="gone" />
+
+            <!-- RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/adminRecycler"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="16dp"
+                android:clipToPadding="false" />
+
+        </FrameLayout>
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
 </LinearLayout>

@@ -31,7 +31,9 @@ import com.example.cobaltevents.model.Notification;
 import com.example.cobaltevents.model.WaitingList;
 import com.example.cobaltevents.ui.comments.EventCommentsUiBinder;
 import com.example.cobaltevents.ui.waitlist.RegistrationPeriodUi;
+import com.example.cobaltevents.ui.waitlist.WaitlistCountDisplayUi;
 import com.example.cobaltevents.ui.waitlist.WaitlistStatusUi;
+import com.example.cobaltevents.util.EventGoneUi;
 import com.example.cobaltevents.util.NetworkConnectivity;
 import com.google.firebase.Timestamp;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -59,6 +61,8 @@ public class QRScanActivity extends AppCompatActivity {
     private androidx.appcompat.app.AlertDialog qrActiveDialog;
     private View qrPopupCanvasSpinner;
     private TextView qrPopupTvWaitlist;
+    /** Join/waitlist state for the open QR dialog; used to allow comments on private events when already enrolled. */
+    private boolean qrPopupIsJoinedActive;
     private final ActivityResultLauncher<String> locationPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), granted -> {
                 if (granted && pendingGeoJoinEvent != null) {
@@ -150,6 +154,7 @@ public class QRScanActivity extends AppCompatActivity {
 
     private void showEventPopup(Event event) {
         qrRefreshJoinUi = null;
+        qrPopupIsJoinedActive = false;
         View content = LayoutInflater.from(this).inflate(R.layout.dialog_event_card, null, false);
         content.setVisibility(View.INVISIBLE);
         android.widget.FrameLayout popupCanvas = new android.widget.FrameLayout(this);
@@ -257,13 +262,6 @@ public class QRScanActivity extends AppCompatActivity {
                 : "No special criteria.";
         tvCriteria.setText(criteriaText);
 
-        String commentName = currentEntrant != null && currentEntrant.getName() != null
-                && !currentEntrant.getName().trim().isEmpty()
-                ? currentEntrant.getName().trim() : "You";
-        final Runnable[] rebindComments = new Runnable[1];
-        rebindComments[0] = () -> EventCommentsUiBinder.bind(content, event, deviceId, commentName, rebindComments[0]);
-        EventCommentsUiBinder.bind(content, event, deviceId, commentName, rebindComments[0]);
-
         final androidx.appcompat.app.AlertDialog dialog =
                 new MaterialAlertDialogBuilder(this)
                         .setView(popupCanvas)
@@ -309,6 +307,36 @@ public class QRScanActivity extends AppCompatActivity {
         qrActiveDialog = dialog;
         qrPopupCanvasSpinner = canvasSpinner;
         qrPopupTvWaitlist = tvWaitlist;
+
+        wireQrPopupComments(content, event);
+    }
+
+    private void wireQrPopupComments(View content, Event event) {
+        String commentName = currentEntrant != null && currentEntrant.getName() != null
+                && !currentEntrant.getName().trim().isEmpty()
+                ? currentEntrant.getName().trim() : "You";
+        final Runnable[] rebindComments = new Runnable[1];
+        Runnable onCommentsEventGone = () -> runOnUiThread(() -> {
+            if (qrActiveDialog != null && qrActiveDialog.isShowing()) {
+                qrActiveDialog.dismiss();
+            }
+        });
+        java.util.function.Predicate<Event> privateOk = freshEv ->
+                !freshEv.isPrivate()
+                        || qrPopupIsJoinedActive
+                        || (deviceId != null && freshEv.isDeviceAnOrganizer(deviceId));
+        java.util.function.Consumer<Event> onPrivateDenied = freshEv -> runOnUiThread(() -> {
+            applyQrPopupEventFields(content, freshEv);
+            View popupContent = qrPopupContent != null ? qrPopupContent : content;
+            if (qrPopupBtnJoin != null && qrActiveDialog != null) {
+                loadQrPopupJoinButtonState(freshEv, qrPopupBtnJoin, qrActiveDialog, popupContent,
+                        qrPopupCanvasSpinner, qrPopupTvWaitlist);
+            }
+        });
+        rebindComments[0] = () -> EventCommentsUiBinder.bind(content, event, deviceId, commentName,
+                rebindComments[0], onCommentsEventGone, privateOk, onPrivateDenied);
+        EventCommentsUiBinder.bind(content, event, deviceId, commentName, rebindComments[0],
+                onCommentsEventGone, privateOk, onPrivateDenied);
     }
 
     /**
@@ -457,12 +485,7 @@ public class QRScanActivity extends AppCompatActivity {
                     : "No special criteria.";
             tvCriteria.setText(criteriaText);
         }
-        String commentName = currentEntrant != null && currentEntrant.getName() != null
-                && !currentEntrant.getName().trim().isEmpty()
-                ? currentEntrant.getName().trim() : "You";
-        final Runnable[] rebindComments = new Runnable[1];
-        rebindComments[0] = () -> EventCommentsUiBinder.bind(content, event, deviceId, commentName, rebindComments[0]);
-        EventCommentsUiBinder.bind(content, event, deviceId, commentName, rebindComments[0]);
+        wireQrPopupComments(content, event);
     }
 
     private static String formatPrice(String raw) {
@@ -617,12 +640,14 @@ public class QRScanActivity extends AppCompatActivity {
     private void bindJoinButton(TextView btn, Event event, String status, boolean isJoinedActive,
                                 Integer waitlistCount, androidx.appcompat.app.AlertDialog dialog,
                                 View content, View canvasSpinner, TextView tvWaitlist) {
+        qrPopupIsJoinedActive = isJoinedActive;
         if (canvasSpinner != null) canvasSpinner.setVisibility(View.GONE);
         content.setVisibility(View.VISIBLE);
         if (tvWaitlist != null) {
             if (waitlistCount != null) {
                 tvWaitlist.setVisibility(View.VISIBLE);
-                tvWaitlist.setText(waitlistCount + " on waitlist");
+                tvWaitlist.setText(WaitlistCountDisplayUi.formatLine(
+                        this, waitlistCount, event.getWaitingListCapacity()));
             } else {
                 tvWaitlist.setText("");
             }
@@ -713,7 +738,10 @@ public class QRScanActivity extends AppCompatActivity {
         }
         eventDB.getEventFromServer(event.getEventId(), fresh -> runOnUiThread(() -> {
             if (fresh == null) {
-                android.widget.Toast.makeText(this, "Could not load event.", android.widget.Toast.LENGTH_SHORT).show();
+                EventGoneUi.toast(this);
+                if (qrActiveDialog != null && qrActiveDialog.isShowing()) {
+                    qrActiveDialog.dismiss();
+                }
                 return;
             }
             applyQrPopupEventFields(content, fresh);
@@ -917,7 +945,12 @@ public class QRScanActivity extends AppCompatActivity {
                     refreshQrPopupAfterWaitlistMutation(event.getEventId(), dismissDialog);
                 },
                 e -> {
-                    if (WaitingListDB.REASON_WAITLIST_FULL.equals(e.getMessage())) {
+                    if (WaitingListDB.REASON_EVENT_DELETED.equals(e.getMessage())) {
+                        EventGoneUi.toast(this);
+                        if (dismissDialog != null) {
+                            dismissDialog.run();
+                        }
+                    } else if (WaitingListDB.REASON_WAITLIST_FULL.equals(e.getMessage())) {
                         android.widget.Toast.makeText(this, R.string.waitlist_capacity_altered, android.widget.Toast.LENGTH_LONG).show();
                     } else if (WaitingListDB.REASON_REGISTRATION_CLOSED.equals(e.getMessage())) {
                         android.widget.Toast.makeText(this, R.string.waitlist_registration_closed, android.widget.Toast.LENGTH_LONG).show();
@@ -953,6 +986,21 @@ public class QRScanActivity extends AppCompatActivity {
                     android.widget.Toast.LENGTH_SHORT).show();
             return;
         }
+        eventDB.getEventFromServer(event.getEventId(), fresh -> runOnUiThread(() -> {
+            if (fresh == null) {
+                EventGoneUi.toast(this);
+                if (qrActiveDialog != null && qrActiveDialog.isShowing()) {
+                    qrActiveDialog.dismiss();
+                }
+                return;
+            }
+            continueQrLeaveWaitlist(event);
+        }), e -> runOnUiThread(() ->
+                android.widget.Toast.makeText(this, "Could not verify event.",
+                        android.widget.Toast.LENGTH_SHORT).show()));
+    }
+
+    private void continueQrLeaveWaitlist(Event event) {
         notificationDB.getNotificationsForRecipientAndEvent(deviceId, event.getEventId(),
                 notifications -> {
                     boolean hasSelectionNotification = false;
@@ -978,12 +1026,23 @@ public class QRScanActivity extends AppCompatActivity {
                                 android.widget.Toast.makeText(this, "Left waitlist for " + (event.getName() != null ? event.getName() : "event"), android.widget.Toast.LENGTH_SHORT).show();
                                 refreshQrPopupAfterWaitlistMutation(event.getEventId(), null);
                             },
-                            e -> android.widget.Toast.makeText(this, "Failed to leave: " + e.getMessage(), android.widget.Toast.LENGTH_SHORT).show());
+                            e -> {
+                                if (EventGoneUi.isFirestoreNotFound(e)) {
+                                    EventGoneUi.toast(this);
+                                    if (qrActiveDialog != null && qrActiveDialog.isShowing()) {
+                                        qrActiveDialog.dismiss();
+                                    }
+                                } else {
+                                    android.widget.Toast.makeText(this, "Failed to leave: " + e.getMessage(),
+                                            android.widget.Toast.LENGTH_SHORT).show();
+                                }
+                            });
                 },
                 e -> android.widget.Toast.makeText(this,
                         "Unable to verify selection status. Please try again.",
                         android.widget.Toast.LENGTH_SHORT).show());
     }
+
     private void setupBottomNavigation() {
         findViewById(R.id.nav_events).setOnClickListener(v -> {
             startActivity(new Intent(this, EventListActivity.class));

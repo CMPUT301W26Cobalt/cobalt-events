@@ -41,6 +41,7 @@ import com.example.cobaltevents.controller.GeolocationController;
 import com.example.cobaltevents.ui.adapter.EventAdapter;
 import com.example.cobaltevents.ui.waitlist.RegistrationPeriodUi;
 import com.example.cobaltevents.ui.waitlist.WaitlistStatusUi;
+import com.example.cobaltevents.util.EventGoneUi;
 import com.example.cobaltevents.util.NetworkConnectivity;
 import com.google.firebase.Timestamp;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -183,6 +184,18 @@ public class EventListActivity extends AppCompatActivity {
                 adapter.notifyItemChanged(pos);
             }
         });
+        adapter.setOnEventDeletedListener(this::removeStaleEventFromBrowse);
+        adapter.setOnPrivateCommentDeniedRefresh(fresh -> runOnUiThread(() -> {
+            if (fresh == null) {
+                return;
+            }
+            mergeServerEventIntoAllEvents(fresh);
+            applyFilters();
+            Toast.makeText(this, R.string.event_switched_to_private, Toast.LENGTH_LONG).show();
+            if (fresh.getEventId() != null) {
+                refreshEventRowUi(fresh.getEventId());
+            }
+        }));
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setHasFixedSize(true);
@@ -1169,7 +1182,8 @@ public class EventListActivity extends AppCompatActivity {
         }
         eventController.getEventFromServer(event.getEventId(), fresh -> runOnUiThread(() -> {
             if (fresh == null) {
-                Toast.makeText(this, "Could not load event.", Toast.LENGTH_SHORT).show();
+                EventGoneUi.toast(this);
+                removeStaleEventFromBrowse(event.getEventId());
                 return;
             }
             mergeServerEventIntoAllEvents(fresh);
@@ -1325,10 +1339,12 @@ public class EventListActivity extends AppCompatActivity {
             return;
         }
         eventController.getEventFromServer(eventId, fresh -> runOnUiThread(() -> {
-            if (fresh != null) {
-                mergeServerEventIntoAllEvents(fresh);
-                applyFilters();
+            if (fresh == null) {
+                removeStaleEventFromBrowse(eventId);
+                return;
             }
+            mergeServerEventIntoAllEvents(fresh);
+            applyFilters();
             refreshEventRowUi(eventId);
             refreshWaitlistCountForEventId(eventId);
         }), e -> runOnUiThread(() -> {
@@ -1360,7 +1376,10 @@ public class EventListActivity extends AppCompatActivity {
                     refreshEventFromServerAfterWaitlistMutation(event.getEventId());
                 },
                 e -> {
-                    if (WaitingListDB.REASON_WAITLIST_FULL.equals(e.getMessage())) {
+                    if (WaitingListDB.REASON_EVENT_DELETED.equals(e.getMessage())) {
+                        EventGoneUi.toast(this);
+                        removeStaleEventFromBrowse(event.getEventId());
+                    } else if (WaitingListDB.REASON_WAITLIST_FULL.equals(e.getMessage())) {
                         Toast.makeText(this, R.string.waitlist_capacity_altered, Toast.LENGTH_LONG).show();
                         refreshEventFromServerAfterWaitlistMutation(event.getEventId());
                     } else if (WaitingListDB.REASON_REGISTRATION_CLOSED.equals(e.getMessage())) {
@@ -1391,6 +1410,21 @@ public class EventListActivity extends AppCompatActivity {
         });
     }
 
+    private void removeStaleEventFromBrowse(String eventId) {
+        if (eventId == null) {
+            return;
+        }
+        allEvents.removeIf(e -> e != null && eventId.equals(e.getEventId()));
+        activeRegistrationsByEventId.remove(eventId);
+        registrationsByEventId.remove(eventId);
+        waitlistCountByEventId.remove(eventId);
+        adapter.clearAuxiliaryStateForEvent(eventId);
+        adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
+        adapter.setRegistrationsByEventId(registrationsByEventId);
+        adapter.setWaitlistCountByEventId(waitlistCountByEventId);
+        applyFilters();
+    }
+
     private void leaveWaitlist(Event event) {
         if (event.getEventId() == null) {
             Toast.makeText(this, "Invalid event", Toast.LENGTH_SHORT).show();
@@ -1405,6 +1439,18 @@ public class EventListActivity extends AppCompatActivity {
             Toast.makeText(this, "Failed to leave waitlist: No internet connection.", Toast.LENGTH_SHORT).show();
             return;
         }
+        eventController.getEventFromServer(event.getEventId(), fresh -> runOnUiThread(() -> {
+            if (fresh == null) {
+                EventGoneUi.toast(this);
+                removeStaleEventFromBrowse(event.getEventId());
+                return;
+            }
+            continueLeaveWaitlistAfterEventVerified(event, reg);
+        }), e -> runOnUiThread(() ->
+                Toast.makeText(this, "Could not verify event.", Toast.LENGTH_SHORT).show()));
+    }
+
+    private void continueLeaveWaitlistAfterEventVerified(Event event, WaitingList reg) {
         // If user has a selection/replacement notification for this event, force response via Notifications tab.
         notificationDB.getNotificationsForRecipientAndEvent(deviceId, event.getEventId(),
                 notifications -> {
@@ -1446,17 +1492,25 @@ public class EventListActivity extends AppCompatActivity {
         btnCancel.setOnClickListener(v -> dialog.dismiss());
         btnLeave.setOnClickListener(v -> {
             dialog.dismiss();
-            waitingListDB.deleteRegistration(event.getEventId(), reg.getDeviceId(),
+            final String eid = event.getEventId();
+            waitingListDB.deleteRegistration(eid, reg.getDeviceId(),
                     unused -> {
                         Toast.makeText(this, "Left waitlist for " + event.getName(), Toast.LENGTH_SHORT).show();
-                        String eid = event.getEventId();
                         activeRegistrationsByEventId.remove(eid);
                         registrationsByEventId.remove(eid);
                         adapter.setActiveRegistrationsByEventId(activeRegistrationsByEventId);
                         adapter.setRegistrationsByEventId(registrationsByEventId);
                         refreshEventFromServerAfterWaitlistMutation(eid);
                     },
-                    e -> Toast.makeText(this, "Failed to leave waitlist: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                    e -> {
+                        if (EventGoneUi.isFirestoreNotFound(e)) {
+                            EventGoneUi.toast(this);
+                            removeStaleEventFromBrowse(eid);
+                        } else {
+                            Toast.makeText(this, "Failed to leave waitlist: " + e.getMessage(),
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    });
         });
 
         dialog.show();

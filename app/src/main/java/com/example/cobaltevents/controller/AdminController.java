@@ -1,49 +1,75 @@
 package com.example.cobaltevents.controller;
 
+import android.content.Context;
+
+import com.example.cobaltevents.R;
+import com.example.cobaltevents.db.CommentDB;
 import com.example.cobaltevents.db.EventDB;
+import com.example.cobaltevents.db.NotificationDB;
 import com.example.cobaltevents.db.ProfileDB;
+import com.example.cobaltevents.db.WaitingListDB;
+import com.example.cobaltevents.model.Comment;
 import com.example.cobaltevents.model.Entrant;
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.Notification;
+import com.example.cobaltevents.model.WaitingList;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.WriteBatch;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.Source;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 /**
- * AdminController handles all Firestore operations for the Admin dashboard.
+ * Controller that mediates between admin UI ({@link com.example.cobaltevents.ui.admin.AdminActivity}
+ * and related screens) and Firestore for system administration.
  *
- * Covers all Admin user stories:
- *   US 03.01.01 — Remove events
- *   US 03.02.01 — Remove profiles
- *   US 03.03.01 — Remove images (clears posterImageUrl on the event document)
- *   US 03.04.01 — Browse events
- *   US 03.05.01 — Browse profiles
- *   US 03.06.01 — Browse images
- *   US 03.07.01 — Remove organizers (also deletes their events)
- *   US 03.08.01 — Review notification logs (read-only)
+ * <p>User stories (admin role):
+ * <ul>
+ *   <li>US 03.01.01 – Remove events (alerts organizers and waitlisted users via
+ *       {@link Notification#TYPE_EVENT_ALERT}, then deletes the document)</li>
+ *   <li>US 03.02.01 – Remove profiles (same organizer/event cleanup as account self-delete, then
+ *       {@link WaitingListDB#removeUserFromAllWaitlists} and {@link ProfileDB#deleteProfile})</li>
+ *   <li>US 03.03.01 – Remove images (clears {@code posterImageUrl} only if it still matches the URL
+ *       the admin saw)</li>
+ *   <li>US 03.04.01 – Browse events</li>
+ *   <li>US 03.05.01 – Browse profiles</li>
+ *   <li>US 03.06.01 – Browse images</li>
+ *   <li>US 03.07.01 – Browse organizers; remove organizer (event-side cleanup only—no profile delete
+ *       or waitlist removal for that user)</li>
+ *   <li>US 03.08.01 – Review notification logs</li>
+ *   <li>US 03.10.01 – Browse and remove comments (via {@link #getAllCommentsGroupedByEvent},
+ *       {@link #removeComment}, {@link #removeReply})</li>
+ * </ul>
  *
- * Performance notes:
- *   - Static in-memory caches for events and profiles survive tab switches
- *     and activity re-creation, so Firestore is only hit once per session.
- *   - The Images and Organizers tabs reuse the event/profile caches —
- *     zero extra Firestore fetches after the first load.
- *   - Deletes use Firestore WriteBatch (single round trip for bulk deletes).
- *   - Cache is invalidated after every mutation so the next fetch is fresh.
+ * <p>Events and profiles are cached in memory for the session so tab switches avoid extra Firestore
+ * reads; {@link #invalidateAll()} clears both. Co-organizer updates use per-document writes so a
+ * missing document does not abort the whole chain.
  */
 public class AdminController {
+
+    /**
+     * {@link #removeEventImage} reports this via {@code onFailure} when the server poster URL no longer
+     * matches the URL shown in the admin Images list ({@link #isPosterUrlMismatchFailure}).
+     */
+    public static final String ERR_POSTER_URL_MISMATCH = "POSTER_URL_MISMATCH";
 
     // ── Database helpers ──────────────────────────────────────────────────────
 
     private final EventDB eventDB;
     private final ProfileDB profileDB;
     private final FirebaseFirestore db;
+    private final Context appContext;
+    private final WaitingListDB waitingListDB;
+    private final NotificationDB notificationDB;
 
     // ── Static caches — survive tab switches and activity re-creation ─────────
     // These are static so a new AdminController instance reuses the same data.
@@ -55,10 +81,23 @@ public class AdminController {
 
     // ── Constructor ───────────────────────────────────────────────────────────
 
+    private final CommentDB commentDB;
+
     public AdminController() {
-        this.eventDB   = new EventDB();
-        this.profileDB = new ProfileDB();
-        this.db        = FirebaseFirestore.getInstance();
+        this(null);
+    }
+
+    /**
+     * @param appContext application context for notification strings; if {@code null}, English fallbacks are used
+     */
+    public AdminController(Context appContext) {
+        this.appContext = appContext != null ? appContext.getApplicationContext() : null;
+        this.eventDB         = new EventDB();
+        this.profileDB       = new ProfileDB();
+        this.db              = FirebaseFirestore.getInstance();
+        this.commentDB       = new CommentDB();
+        this.waitingListDB   = new WaitingListDB();
+        this.notificationDB  = new NotificationDB();
     }
 
     // ── Cache invalidation helpers ────────────────────────────────────────────
@@ -69,25 +108,23 @@ public class AdminController {
     /** Clears the profile cache so the next getAllProfiles() hits Firestore. */
     private void invalidateProfiles() { cachedProfiles = null; }
 
-    /** Clears both caches — used after deletes that affect both collections. */
+    /** Clears event and profile session caches; next browse calls hit Firestore again. */
     public static void invalidateAll() {
         cachedEvents   = null;
         cachedProfiles = null;
     }
 
-    // =========================================================================
-    // US 03.04.01 — Browse events
-    // Returns all events from Firestore (cached after first fetch).
-    // =========================================================================
-
+    /** US 03.04.01: Load all events for admin browse (cached after the first fetch in the session). */
     public void getAllEvents(OnSuccessListener<List<Event>> onSuccess,
                              OnFailureListener onFailure) {
         getAllEvents(onSuccess, onFailure, null);
     }
 
     /**
-     * @param onUsedInMemoryCache if non-null, invoked when the static session cache is used
-     *                            instead of fetching from Firestore.
+     * US 03.04.01: Same as {@link #getAllEvents(OnSuccessListener, OnFailureListener)} with an optional
+     * callback when the in-memory cache is used instead of Firestore.
+     *
+     * @param onUsedInMemoryCache if non-null, invoked when the session cache is served
      */
     public void getAllEvents(OnSuccessListener<List<Event>> onSuccess,
                              OnFailureListener onFailure,
@@ -120,32 +157,139 @@ public class AdminController {
                 .addOnFailureListener(onFailure);
     }
 
-    // =========================================================================
-    // US 03.01.01 — Remove events
-    // Deletes the event document from Firestore and invalidates the cache.
-    // =========================================================================
-
+    /**
+     * US 03.01.01: Delete an event after collecting organizers and waitlisted device IDs; sends
+     * {@link Notification#TYPE_EVENT_ALERT} best-effort (delete is not blocked by a failed notification write).
+     */
     public void removeEvent(String eventId,
                             OnSuccessListener<Void> onSuccess,
                             OnFailureListener onFailure) {
-        eventDB.deleteEvent(eventId, v -> {
-            invalidateEvents(); // Force fresh fetch on next browse
-            onSuccess.onSuccess(v);
+        if (eventId == null || eventId.trim().isEmpty()) {
+            if (onFailure != null) {
+                onFailure.onFailure(new IllegalArgumentException("eventId required"));
+            }
+            return;
+        }
+        final String id = eventId.trim();
+
+        eventDB.getEvent(id, event -> {
+            final String displayName = resolveEventDisplayName(event);
+            final Set<String> organizerIds = new HashSet<>();
+            if (event != null && event.getOrganizers() != null) {
+                for (String o : event.getOrganizers()) {
+                    if (o != null && !o.trim().isEmpty()) {
+                        organizerIds.add(o.trim());
+                    }
+                }
+            }
+
+            waitingListDB.getEntrantsForEvent(id, Source.SERVER, registrations -> {
+                LinkedHashSet<String> recipientIds = new LinkedHashSet<>();
+                if (registrations != null) {
+                    for (WaitingList reg : registrations) {
+                        if (reg == null) continue;
+                        String did = reg.getDeviceId();
+                        if (did != null && !did.trim().isEmpty()) {
+                            recipientIds.add(did.trim());
+                        }
+                    }
+                }
+                recipientIds.addAll(organizerIds);
+                deleteEventThenSendDeletionAlerts(id, displayName, recipientIds, organizerIds,
+                        onSuccess, onFailure);
+            }, e -> {
+                LinkedHashSet<String> recipientIds = new LinkedHashSet<>(organizerIds);
+                deleteEventThenSendDeletionAlerts(id, displayName, recipientIds, organizerIds,
+                        onSuccess, onFailure);
+            });
+        }, e -> finishAdminEventDelete(id, onSuccess, onFailure));
+    }
+
+    private void deleteEventThenSendDeletionAlerts(String eventId,
+                                                   String displayName,
+                                                   LinkedHashSet<String> recipientIds,
+                                                   Set<String> organizerDeviceIds,
+                                                   OnSuccessListener<Void> onSuccess,
+                                                   OnFailureListener onFailure) {
+        finishAdminEventDelete(eventId, v -> {
+            if (onSuccess != null) onSuccess.onSuccess(v);
+            if (recipientIds == null || recipientIds.isEmpty()) return;
+            String title = resolveEventAlertTitle();
+            String message = resolveAdminEventDeletedMessage(displayName);
+            List<String> ordered = new ArrayList<>(recipientIds);
+            sendAdminDeletionEventAlerts(ordered, 0, eventId, title, message, organizerDeviceIds);
         }, onFailure);
     }
 
-    // =========================================================================
-    // US 03.05.01 — Browse profiles
-    // Returns all user profiles from Firestore (cached after first fetch).
-    // =========================================================================
+    private void finishAdminEventDelete(String eventId,
+                                        OnSuccessListener<Void> onSuccess,
+                                        OnFailureListener onFailure) {
+        eventDB.deleteEvent(eventId, v -> {
+            invalidateEvents();
+            if (onSuccess != null) onSuccess.onSuccess(v);
+        }, onFailure);
+    }
 
+    private static String resolveEventDisplayName(Event event) {
+        if (event == null) return "Untitled Event";
+        String n = event.getName();
+        if (n != null && !n.trim().isEmpty()) return n.trim();
+        return "Untitled Event";
+    }
+
+    private String resolveEventAlertTitle() {
+        if (appContext != null) {
+            return appContext.getString(R.string.notification_event_alert_title);
+        }
+        return "Event Alert";
+    }
+
+    private String resolveAdminEventDeletedMessage(String displayName) {
+        if (appContext != null) {
+            return appContext.getString(R.string.notification_admin_event_deleted_message, displayName);
+        }
+        return "The event \"" + displayName + "\" has been permanently deleted.";
+    }
+
+    /** Best-effort: continue after failures so one bad write does not abort the chain. */
+    private void sendAdminDeletionEventAlerts(List<String> recipientIds,
+                                              int index,
+                                              String eventId,
+                                              String title,
+                                              String message,
+                                              Set<String> organizerDeviceIds) {
+        if (index >= recipientIds.size()) return;
+        String recipientId = recipientIds.get(index);
+        Notification n = new Notification(
+                recipientId,
+                eventId,
+                title,
+                message,
+                Notification.TYPE_EVENT_ALERT);
+        if (organizerDeviceIds.contains(recipientId)) {
+            n.setRecipientMode(Notification.RECIPIENT_MODE_ORGANIZER);
+        } else {
+            n.setRecipientMode(Notification.RECIPIENT_MODE_USER);
+        }
+        n.setResponse(null);
+        notificationDB.saveNotification(n,
+                unused -> sendAdminDeletionEventAlerts(recipientIds, index + 1, eventId, title, message,
+                        organizerDeviceIds),
+                e -> sendAdminDeletionEventAlerts(recipientIds, index + 1, eventId, title, message,
+                        organizerDeviceIds));
+    }
+
+    /** US 03.05.01: Load all user profiles for admin browse (cached after the first fetch). */
     public void getAllProfiles(OnSuccessListener<List<Entrant>> onSuccess,
                                OnFailureListener onFailure) {
         getAllProfiles(onSuccess, onFailure, null);
     }
 
     /**
-     * @param onUsedInMemoryCache if non-null, invoked when the static session cache is used.
+     * US 03.05.01: Same as {@link #getAllProfiles(OnSuccessListener, OnFailureListener)} with an optional
+     * cache-hit callback.
+     *
+     * @param onUsedInMemoryCache if non-null, invoked when the session cache is served
      */
     public void getAllProfiles(OnSuccessListener<List<Entrant>> onSuccess,
                                OnFailureListener onFailure,
@@ -177,60 +321,216 @@ public class AdminController {
                 .addOnFailureListener(onFailure);
     }
 
-    // =========================================================================
-    // US 03.02.01 — Remove profiles
-    // Deletes the profile document AND all events where this device id appears in organizers
-    // (using whereArrayContains + WriteBatch for efficiency).
-    // =========================================================================
+    private static boolean isFirestoreNotFound(Throwable t) {
+        while (t != null) {
+            if (t instanceof FirebaseFirestoreException) {
+                return ((FirebaseFirestoreException) t).getCode() == FirebaseFirestoreException.Code.NOT_FOUND;
+            }
+            t = t.getCause();
+        }
+        return false;
+    }
 
+    /**
+     * Co-organizer-only writes (sole-organizer deletes use {@link #deleteEventCascadeForRemovedOrganizer}).
+     */
+    private static final class OrganizerEventMutation {
+        final DocumentReference ref;
+        /** Delete the whole event document. */
+        final boolean deleteEvent;
+        /** Replace {@code organizers} with this list (non-null when not deleting and not using arrayRemove). */
+        final List<String> newOrganizers;
+        /** When we could not rebuild the list but the query matched, use {@link FieldValue#arrayRemove(Object)}. */
+        final boolean arrayRemoveFallback;
+
+        OrganizerEventMutation(DocumentReference ref, boolean deleteEvent,
+                               List<String> newOrganizers, boolean arrayRemoveFallback) {
+            this.ref = ref;
+            this.deleteEvent = deleteEvent;
+            this.newOrganizers = newOrganizers;
+            this.arrayRemoveFallback = arrayRemoveFallback;
+        }
+    }
+
+    private static List<String> readOrganizerStringsFromDoc(DocumentSnapshot doc) {
+        List<String> out = new ArrayList<>();
+        Object raw = doc.get("organizers");
+        if (!(raw instanceof List<?>)) {
+            return out;
+        }
+        for (Object item : (List<?>) raw) {
+            if (item instanceof String) {
+                out.add((String) item);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Builds a delete or {@code organizers} update for one event; {@code removedDeviceId} is trimmed.
+     */
+    private static OrganizerEventMutation buildOrganizerRemovalMutation(DocumentSnapshot doc,
+                                                                        String removedDeviceId) {
+        DocumentReference ref = doc.getReference();
+        List<String> raw = readOrganizerStringsFromDoc(doc);
+        List<String> next = new ArrayList<>();
+        boolean removedAny = false;
+        for (String o : raw) {
+            if (o == null) {
+                continue;
+            }
+            if (o.trim().equals(removedDeviceId)) {
+                removedAny = true;
+                continue;
+            }
+            next.add(o);
+        }
+        if (removedAny) {
+            if (next.isEmpty()) {
+                return new OrganizerEventMutation(ref, true, null, false);
+            }
+            return new OrganizerEventMutation(ref, false, next, false);
+        }
+        return new OrganizerEventMutation(ref, false, null, true);
+    }
+
+    /**
+     * Applies co-organizer updates one document at a time so a missing event (e.g. user already
+     * deleted their account) does not fail the whole admin delete.
+     */
+    private void applyCoOrganizerMutationsSequentially(List<OrganizerEventMutation> mutations,
+                                                       String removedDeviceId,
+                                                       int index,
+                                                       Runnable onDone,
+                                                       OnFailureListener onFailure) {
+        if (index >= mutations.size()) {
+            onDone.run();
+            return;
+        }
+        OrganizerEventMutation m = mutations.get(index);
+        com.google.android.gms.tasks.Task<Void> task;
+        if (m.arrayRemoveFallback) {
+            task = m.ref.update("organizers", FieldValue.arrayRemove(removedDeviceId));
+        } else if (m.newOrganizers != null) {
+            task = m.ref.update("organizers", m.newOrganizers);
+        } else {
+            applyCoOrganizerMutationsSequentially(mutations, removedDeviceId, index + 1, onDone, onFailure);
+            return;
+        }
+        task.addOnSuccessListener(v -> applyCoOrganizerMutationsSequentially(
+                        mutations, removedDeviceId, index + 1, onDone, onFailure))
+                .addOnFailureListener(e -> {
+                    if (isFirestoreNotFound(e)) {
+                        applyCoOrganizerMutationsSequentially(
+                                mutations, removedDeviceId, index + 1, onDone, onFailure);
+                    } else if (onFailure != null) {
+                        onFailure.onFailure(e);
+                    }
+                });
+    }
+
+    /** Same ordering as {@link com.example.cobaltevents.ui.AccountSettingsActivity#performAccountDeletion}. */
+    private void deleteEventCascadeForRemovedOrganizer(String eventId,
+                                                       Runnable onSuccess,
+                                                       OnFailureListener onFailure) {
+        commentDB.deleteAllCommentsAndRepliesForEvent(eventId,
+                unused -> waitingListDB.deleteAllWaitlistDataForEvent(eventId,
+                        unused2 -> eventDB.deleteEvent(eventId,
+                                unused3 -> {
+                                    if (onSuccess != null) {
+                                        onSuccess.run();
+                                    }
+                                },
+                                e -> {
+                                    if (isFirestoreNotFound(e)) {
+                                        if (onSuccess != null) {
+                                            onSuccess.run();
+                                        }
+                                    } else if (onFailure != null) {
+                                        onFailure.onFailure(e);
+                                    }
+                                }),
+                        onFailure),
+                onFailure);
+    }
+
+    private void runCascadeDeletesThenCoOrganizerUpdates(List<String> soleOrganizerEventIds,
+                                                         int cascadeIndex,
+                                                         List<OrganizerEventMutation> coOrgMutations,
+                                                         String removedDeviceId,
+                                                         Runnable onDone,
+                                                         OnFailureListener onFailure) {
+        if (cascadeIndex < soleOrganizerEventIds.size()) {
+            deleteEventCascadeForRemovedOrganizer(soleOrganizerEventIds.get(cascadeIndex),
+                    () -> runCascadeDeletesThenCoOrganizerUpdates(
+                            soleOrganizerEventIds, cascadeIndex + 1, coOrgMutations,
+                            removedDeviceId, onDone, onFailure),
+                    onFailure);
+            return;
+        }
+        if (coOrgMutations.isEmpty()) {
+            onDone.run();
+            return;
+        }
+        applyCoOrganizerMutationsSequentially(coOrgMutations, removedDeviceId, 0, onDone, onFailure);
+    }
+
+    /**
+     * For every event that lists {@code deviceId} in {@code organizers}: sole organizer → cascade
+     * delete (comments, waitlists, event); else → update {@code organizers}. Then {@code onDone}.
+     */
+    private void runOrganizerRemovalPhase(String deviceId,
+                                          Runnable onDone,
+                                          OnFailureListener onFailure) {
+        db.collection("events")
+                .whereArrayContains("organizers", deviceId)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    List<DocumentSnapshot> docs = snapshot.getDocuments();
+                    if (docs.isEmpty()) {
+                        onDone.run();
+                        return;
+                    }
+                    List<String> soleOrganizerEventIds = new ArrayList<>();
+                    List<OrganizerEventMutation> coOrgMutations = new ArrayList<>();
+                    for (DocumentSnapshot doc : docs) {
+                        OrganizerEventMutation m = buildOrganizerRemovalMutation(doc, deviceId);
+                        if (m.deleteEvent) {
+                            soleOrganizerEventIds.add(doc.getId());
+                        } else {
+                            coOrgMutations.add(m);
+                        }
+                    }
+                    runCascadeDeletesThenCoOrganizerUpdates(
+                            soleOrganizerEventIds, 0, coOrgMutations, deviceId, onDone, onFailure);
+                })
+                .addOnFailureListener(onFailure);
+    }
+
+    /**
+     * US 03.02.01: Remove a user profile—same organizer/event pass as account self-delete (cascade sole-org
+     * events or drop from {@code organizers}), then {@link WaitingListDB#removeUserFromAllWaitlists}
+     * and {@link ProfileDB#deleteProfile}.
+     */
     public void removeProfile(String deviceId,
                               OnSuccessListener<Void> onSuccess,
                               OnFailureListener onFailure) {
-        // Step 1: Delete the profile document from the profiles collection
-        profileDB.deleteProfile(deviceId, unused -> {
-            invalidateProfiles(); // Profile cache is now stale
-
-            // Step 2: Find and delete all events this user organised
-            // We use whereEqualTo instead of scanning all events — much faster
-            db.collection("events")
-                    .whereArrayContains("organizers", deviceId)
-                    .get()
-                    .addOnSuccessListener(snapshot -> {
-                        if (snapshot.isEmpty()) {
-                            // No events to delete — we're done
-                            onSuccess.onSuccess(null);
-                            return;
-                        }
-
-                        // Batch delete all found events in a single Firestore round trip
-                        WriteBatch batch = db.batch();
-                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                            batch.delete(doc.getReference());
-                        }
-                        batch.commit()
-                                .addOnSuccessListener(v -> {
-                                    invalidateEvents(); // Event cache is now stale
-                                    onSuccess.onSuccess(null);
-                                })
-                                .addOnFailureListener(onFailure);
-                    })
-                    .addOnFailureListener(onFailure);
-        }, onFailure);
+        removeEntrantAndFixOrganizedEvents(deviceId, onSuccess, onFailure);
     }
 
-    // =========================================================================
-    // US 03.06.01 — Browse images
-    // Reuses the event cache — filters to only events that have a poster image.
-    // No extra Firestore fetch needed after events are loaded.
-    // =========================================================================
-
+    /**
+     * US 03.06.01: Events that have a non-empty {@code posterImageUrl} (reuses {@link #getAllEvents} cache).
+     */
     public void getAllImagesFromEvents(OnSuccessListener<List<Event>> onSuccess,
                                        OnFailureListener onFailure) {
         getAllImagesFromEvents(onSuccess, onFailure, null);
     }
 
     /**
-     * @param onUsedInMemoryCache forwarded to {@link #getAllEvents} when the event cache is used.
+     * US 03.06.01: Same as {@link #getAllImagesFromEvents(OnSuccessListener, OnFailureListener)}; forwards
+     * {@code onUsedInMemoryCache} to {@link #getAllEvents}.
+     *
+     * @param onUsedInMemoryCache forwarded to {@link #getAllEvents} when the event cache is used
      */
     public void getAllImagesFromEvents(OnSuccessListener<List<Event>> onSuccess,
                                        OnFailureListener onFailure,
@@ -247,40 +547,95 @@ public class AdminController {
         }, onFailure, onUsedInMemoryCache);
     }
 
-    // =========================================================================
-    // US 03.03.01 — Remove images
-    // Clears the posterImageUrl field on the event document (does NOT delete
-    // the event itself — admin chooses that separately in the Images dialog).
-    // =========================================================================
-
+    /**
+     * US 03.03.01: Clear {@code posterImageUrl} on the event only if it still equals {@code posterUrlWhenListed}
+     * (avoids wiping a poster an organizer changed concurrently). Does not delete the event document.
+     *
+     * @param posterUrlWhenListed poster URL from the admin Images row; required for the transactional check
+     */
     public void removeEventImage(String eventId,
+                                 String posterUrlWhenListed,
                                  OnSuccessListener<Void> onSuccess,
                                  OnFailureListener onFailure) {
-        // Only nullify the image field — leave the rest of the event intact
-        db.collection("events")
-                .document(eventId)
-                .update("posterImageUrl", null)
-                .addOnSuccessListener(v -> {
-                    invalidateEvents(); // Event cache is stale (posterImageUrl changed)
-                    onSuccess.onSuccess(v);
-                })
-                .addOnFailureListener(onFailure);
+        if (eventId == null || eventId.trim().isEmpty()) {
+            if (onFailure != null) {
+                onFailure.onFailure(new IllegalArgumentException("eventId required"));
+            }
+            return;
+        }
+        if (posterUrlWhenListed == null || posterUrlWhenListed.trim().isEmpty()) {
+            if (onFailure != null) {
+                onFailure.onFailure(new IllegalArgumentException("posterUrlWhenListed required"));
+            }
+            return;
+        }
+        final String expected = posterUrlWhenListed.trim();
+        DocumentReference docRef = db.collection("events").document(eventId.trim());
+        db.runTransaction(transaction -> {
+            DocumentSnapshot snap = transaction.get(docRef);
+            if (!snap.exists()) {
+                throw new IllegalStateException("EVENT_NOT_FOUND");
+            }
+            String current = snap.getString("posterImageUrl");
+            if (!posterImageUrlsMatch(current, expected)) {
+                return false;
+            }
+            transaction.update(docRef, "posterImageUrl", null);
+            return true;
+        }).addOnSuccessListener(cleared -> {
+            if (Boolean.TRUE.equals(cleared)) {
+                invalidateEvents();
+                if (onSuccess != null) {
+                    onSuccess.onSuccess(null);
+                }
+            } else {
+                invalidateEvents();
+                if (onFailure != null) {
+                    onFailure.onFailure(new IllegalStateException(ERR_POSTER_URL_MISMATCH));
+                }
+            }
+        }).addOnFailureListener(e -> {
+            invalidateEvents();
+            if (onFailure != null) {
+                onFailure.onFailure(e);
+            }
+        });
     }
 
-    // =========================================================================
-    // US 03.07.01 — Browse organizers
-    // Reuses BOTH caches: gets organizer IDs from events, then matches them
-    // against profiles. Zero extra Firestore fetches after initial load.
-    // =========================================================================
+    private static String normalizePosterImageUrl(String url) {
+        return url == null ? "" : url.trim();
+    }
 
+    private static boolean posterImageUrlsMatch(String firestoreUrl, String expectedUrl) {
+        return normalizePosterImageUrl(firestoreUrl).equals(normalizePosterImageUrl(expectedUrl));
+    }
+
+    /** Whether {@code e} (or a cause) indicates {@link #ERR_POSTER_URL_MISMATCH} from {@link #removeEventImage}. */
+    public static boolean isPosterUrlMismatchFailure(Exception e) {
+        Throwable t = e;
+        while (t != null) {
+            if (t instanceof IllegalStateException
+                    && ERR_POSTER_URL_MISMATCH.equals(t.getMessage())) {
+                return true;
+            }
+            t = t.getCause();
+        }
+        return false;
+    }
+
+    /**
+     * US 03.07.01: Profiles that appear as an organizer on at least one event (joins cached events + profiles).
+     */
     public void getAllOrganizers(OnSuccessListener<List<Entrant>> onSuccess,
                                  OnFailureListener onFailure) {
         getAllOrganizers(onSuccess, onFailure, null);
     }
 
     /**
-     * @param onUsedInMemoryCache forwarded to both {@link #getAllEvents} and {@link #getAllProfiles}
-     *                            when either session cache is used (may run twice — UI may dedupe).
+     * US 03.07.01: Same as {@link #getAllOrganizers(OnSuccessListener, OnFailureListener)} with cache-hit
+     * callbacks forwarded to {@link #getAllEvents} and {@link #getAllProfiles} (may run twice per load).
+     *
+     * @param onUsedInMemoryCache forwarded when either cache is used
      */
     public void getAllOrganizers(OnSuccessListener<List<Entrant>> onSuccess,
                                  OnFailureListener onFailure,
@@ -315,52 +670,70 @@ public class AdminController {
         }, onFailure, onUsedInMemoryCache);
     }
 
-    // =========================================================================
-    // US 03.07.01 — Remove organizer
-    // Deletes the organizer's profile AND all events they created.
-    // Same pattern as removeProfile but semantically for organizer removal.
-    // =========================================================================
-
+    /**
+     * US 03.07.01: Strip this device from organizer duties—same event-side logic as the organizer pass in
+     * account self-delete / {@link #removeProfile} (cascade-delete sole-org events; else remove from
+     * {@code organizers}). Does not remove waitlists or delete the profile (unlike {@link #removeProfile}).
+     */
     public void removeOrganizer(String organizerDeviceId,
                                 OnSuccessListener<Void> onSuccess,
                                 OnFailureListener onFailure) {
-        // Step 1: Delete the organizer's profile document
-        profileDB.deleteProfile(organizerDeviceId, unused -> {
-            invalidateProfiles(); // Profile cache is now stale
-
-            // Step 2: Batch delete all events this organizer created
-            db.collection("events")
-                    .whereArrayContains("organizers", organizerDeviceId)
-                    .get()
-                    .addOnSuccessListener(snapshot -> {
-                        if (snapshot.isEmpty()) {
-                            // Organizer had no events — done
-                            onSuccess.onSuccess(null);
-                            return;
-                        }
-
-                        // Delete all their events in one Firestore round trip
-                        WriteBatch batch = db.batch();
-                        for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                            batch.delete(doc.getReference());
-                        }
-                        batch.commit()
-                                .addOnSuccessListener(v -> {
-                                    invalidateEvents(); // Event cache is now stale
-                                    onSuccess.onSuccess(null);
-                                })
-                                .addOnFailureListener(onFailure);
-                    })
-                    .addOnFailureListener(onFailure);
-        }, onFailure);
+        if (organizerDeviceId == null || organizerDeviceId.trim().isEmpty()) {
+            if (onFailure != null) {
+                onFailure.onFailure(new IllegalArgumentException("organizerDeviceId required"));
+            }
+            return;
+        }
+        final String id = organizerDeviceId.trim();
+        runOrganizerRemovalPhase(id,
+                () -> {
+                    invalidateEvents();
+                    if (onSuccess != null) {
+                        onSuccess.onSuccess(null);
+                    }
+                },
+                onFailure);
     }
 
-    // =========================================================================
-    // US 03.08.01 — Review notification logs (read-only)
-    // Fetches all notification documents. Not cached because notifications
-    // are high-frequency and admins expect to see the latest logs each time.
-    // =========================================================================
+    private void removeEntrantAndFixOrganizedEvents(String deviceId,
+                                                    OnSuccessListener<Void> onSuccess,
+                                                    OnFailureListener onFailure) {
+        if (deviceId == null || deviceId.trim().isEmpty()) {
+            if (onFailure != null) {
+                onFailure.onFailure(new IllegalArgumentException("deviceId required"));
+            }
+            return;
+        }
+        final String id = deviceId.trim();
+        runOrganizerRemovalPhase(id,
+                () -> {
+                    invalidateEvents();
+                    waitingListDB.removeUserFromAllWaitlists(id,
+                            v -> profileDB.deleteProfile(id,
+                                    unused -> {
+                                        invalidateProfiles();
+                                        if (onSuccess != null) {
+                                            onSuccess.onSuccess(null);
+                                        }
+                                    },
+                                    e -> {
+                                        if (isFirestoreNotFound(e)) {
+                                            invalidateProfiles();
+                                            if (onSuccess != null) {
+                                                onSuccess.onSuccess(null);
+                                            }
+                                        } else if (onFailure != null) {
+                                            onFailure.onFailure(e);
+                                        }
+                                    }),
+                            onFailure);
+                },
+                onFailure);
+    }
 
+    /**
+     * US 03.08.01: Load all notification documents for read-only review (not session-cached).
+     */
     public void getAllNotifications(OnSuccessListener<List<Notification>> onSuccess,
                                     OnFailureListener onFailure) {
         db.collection("notifications")
@@ -378,6 +751,77 @@ public class AdminController {
                     }
                     onSuccess.onSuccess(list);
                 })
+                .addOnFailureListener(onFailure);
+    }
+
+    /**
+     * US 03.10.01: Map each event to its top-level comments (for admin Comments tab); events with no comments are omitted.
+     */
+    public void getAllCommentsGroupedByEvent(
+            OnSuccessListener<java.util.Map<Event, List<Comment>>> onSuccess,
+            OnFailureListener onFailure) {
+        getAllEvents(events -> {
+            if (events == null || events.isEmpty()) {
+                onSuccess.onSuccess(new java.util.LinkedHashMap<>());
+                return;
+            }
+            java.util.Map<Event, List<Comment>> result = new java.util.LinkedHashMap<>();
+            int[] remaining = {events.size()};
+            for (Event event : events) {
+                String eventId = event.getEventId();
+                if (eventId == null || eventId.trim().isEmpty()) {
+                    if (--remaining[0] == 0) onSuccess.onSuccess(result);
+                    continue;
+                }
+                db.collection("events")
+                        .document(eventId)
+                        .collection("comments")
+                        .get()
+                        .addOnSuccessListener(snapshot -> {
+                            List<Comment> comments = new java.util.ArrayList<>();
+                            for (com.google.firebase.firestore.DocumentSnapshot doc : snapshot.getDocuments()) {
+                                Comment c = doc.toObject(Comment.class);
+                                if (c != null) {
+                                    if (c.getId() == null) c.setId(doc.getId());
+                                    if (c.getEventId() == null) c.setEventId(eventId);
+                                    comments.add(c);
+                                }
+                            }
+                            if (!comments.isEmpty()) result.put(event, comments);
+                            if (--remaining[0] == 0) onSuccess.onSuccess(result);
+                        })
+                        .addOnFailureListener(e -> {
+                            if (--remaining[0] == 0) onSuccess.onSuccess(result);
+                        });
+            }
+        }, onFailure);
+    }
+
+    /** US 03.10.01: Delete a comment document under an event. */
+    public void removeComment(String eventId, String commentId,
+                              OnSuccessListener<Void> onSuccess,
+                              OnFailureListener onFailure) {
+        db.collection("events")
+                .document(eventId)
+                .collection("comments")
+                .document(commentId)
+                .delete()
+                .addOnSuccessListener(onSuccess)
+                .addOnFailureListener(onFailure);
+    }
+
+    /** US 03.10.01: Delete one reply document under a comment. */
+    public void removeReply(String eventId, String commentId, String replyId,
+                            OnSuccessListener<Void> onSuccess,
+                            OnFailureListener onFailure) {
+        db.collection("events")
+                .document(eventId)
+                .collection("comments")
+                .document(commentId)
+                .collection("replies")
+                .document(replyId)
+                .delete()
+                .addOnSuccessListener(onSuccess)
                 .addOnFailureListener(onFailure);
     }
 }

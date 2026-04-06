@@ -91,7 +91,7 @@ public class EventHistoryAdapter extends RecyclerView.Adapter<EventHistoryAdapte
         holder.ivDelete.setOnClickListener(null);
         if (canLeave) {
             // Consume touch events so tapping the trash does not also trigger the parent row click
-            // (which navigates to EventDetailActivity).
+            // (which opens the read-only event detail popup).
             holder.ivDelete.setOnTouchListener((v, event) -> {
                 if (event == null) return false;
                 if (event.getAction() == MotionEvent.ACTION_UP) {

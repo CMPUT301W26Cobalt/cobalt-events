@@ -1,65 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="24dp"
-    android:background="@android:color/white">
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="8dp"
+    app:cardUseCompatPadding="true">
 
-    <TextView
-        android:id="@+id/tvDeleteTitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="#0D1B2A"
-        android:gravity="center"
-        android:paddingBottom="12dp" />
-
-    <TextView
-        android:id="@+id/tvDeleteMessage"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="14sp"
-        android:textColor="#444444"
-        android:gravity="center"
-        android:paddingBottom="8dp" />
-
-    <!-- Warning box -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:background="#FFEBEE"
-        android:padding="10dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="16dp">
+        android:orientation="vertical"
+        android:padding="24dp">
 
         <TextView
+            android:id="@+id/tvDeleteTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="⚠ Warning: This action cannot be undone."
-            android:textColor="#B71C1C"
-            android:textSize="12sp"
-            android:gravity="center" />
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#0D1B2A"
+            android:gravity="center"
+            android:paddingBottom="12dp" />
+
+        <TextView
+            android:id="@+id/tvDeleteMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="#444444"
+            android:gravity="center"
+            android:paddingBottom="8dp" />
+
+        <!-- Warning box -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="#FFEBEE"
+            android:padding="10dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⚠ Warning: This action cannot be undone."
+                android:textColor="#B71C1C"
+                android:textSize="12sp"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnConfirmDelete"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="DELETE"
+            android:textColor="#FFFFFF"
+            android:backgroundTint="#D32F2F"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnCancelDelete"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Cancel"
+            android:textColor="#333333"
+            android:backgroundTint="@android:color/transparent"
+            android:layout_marginTop="4dp" />
+
     </LinearLayout>
 
-    <Button
-        android:id="@+id/btnConfirmDelete"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="DELETE"
-        android:textColor="#FFFFFF"
-        android:backgroundTint="#D32F2F"
-        android:textStyle="bold" />
-
-    <Button
-        android:id="@+id/btnCancelDelete"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:text="Cancel"
-        android:textColor="#333333"
-        android:backgroundTint="@android:color/transparent"
-        android:layout_marginTop="4dp" />
-
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

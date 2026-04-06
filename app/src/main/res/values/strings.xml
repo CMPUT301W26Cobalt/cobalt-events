@@ -1,6 +1,7 @@
 <resources>
 
     <string name="app_name">Cobalt Events</string>
+    <string name="event_has_been_deleted">Event has been deleted</string>
     <string name="back">Back</string>
     <string name="waitlisted_label">Waitlisted</string>
     <string name="invited_label">Invited</string>
@@ -153,6 +154,7 @@
     <string name="event_manage_private_status_pending">Pending</string>
     <string name="notification_private_event_title">Private Event Invitation</string>
     <string name="notification_event_alert_title">Event Alert</string>
+    <string name="notification_admin_event_deleted_message">The event \"%1$s\" has been permanently deleted.</string>
     <string name="notification_private_event_message">You have been invited to join the private event: %1$s</string>
     <string name="notification_event_fallback">this event</string>
     <string name="event_manage_map_popup_close">Close map popup</string>
@@ -343,8 +345,10 @@
 
     <string name="admin_dashboard_title">Admin Dashboard</string>
     <string name="admin_dashboard_subtitle">System Administration</string>
+    <string name="admin_role_switch_current_subtitle">Current role</string>
     <string name="admin_search_hint">Search…</string>
     <string name="admin_no_results">No results found</string>
+    <string name="admin_remove_image_poster_changed">The poster was changed or removed by an organizer. The list has been refreshed.</string>
     <string name="tab_events">Events</string>
     <string name="tab_profiles">Profiles</string>
     <string name="tab_images">Images</string>
@@ -390,6 +394,10 @@
     <string name="comment_like_format">👍 %1$d</string>
     <string name="comment_like_count">%1$d</string>
     <string name="comments_empty_local">No comments yet. Be the first.</string>
+
+    <!-- Event card waitlist line (browse, QR, My Events read-only) -->
+    <string name="waitlist_summary_unlimited">%1$d on waitlist</string>
+    <string name="waitlist_summary_with_capacity">%1$d/%2$d people on waitlist</string>
 
     <plurals name="dialog_run_lottery_waitlist_helper">
         <item quantity="one">%d person currently on waitlist</item>

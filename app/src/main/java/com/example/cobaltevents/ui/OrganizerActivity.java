@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.cobaltevents.R;
+import com.example.cobaltevents.ui.admin.AdminActivity;
 import com.example.cobaltevents.db.EntrantDB;
 import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.model.Event;
@@ -25,6 +26,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OrganizerActivity extends AppCompatActivity {
+
+    /** True when launched from AdminActivity via role switch. */
+    private boolean isAdminSwitch = false;
 
     private RecyclerView recyclerView;
     private ProgressBar progressBar;
@@ -48,6 +52,7 @@ public class OrganizerActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_organizer);
 
+        isAdminSwitch = getIntent().getBooleanExtra("IS_ADMIN_SWITCH", false);
         deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
         eventDB = new EventDB();
 
@@ -67,6 +72,15 @@ public class OrganizerActivity extends AppCompatActivity {
 
         loadOrganizerEvents(false);
         setupBottomNavigation();
+
+        // If launched from admin role switch, back button returns to admin dashboard
+        if (isAdminSwitch) {
+            View backBtn = findViewById(R.id.btn_back);
+            if (backBtn != null) backBtn.setOnClickListener(v -> {
+                startActivity(new Intent(this, AdminActivity.class));
+                finish();
+            });
+        }
     }
 
     @Override

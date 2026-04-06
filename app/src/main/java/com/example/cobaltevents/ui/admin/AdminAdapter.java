@@ -20,9 +20,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Adapter for the Admin RecyclerView.
- * Uses DiffUtil for performance — only changed rows are redrawn.
- * Supports rich card data: badge, detail line, meta row, image thumbnail.
+ * RecyclerView adapter for {@link AdminActivity} lists (events, profiles, images, organizers, etc.).
+ *
+ * <p>Uses {@link DiffUtil} so only changed rows rebind. Card model supports badges, detail lines,
+ * meta rows, and thumbnails for browse tabs (US 03.04.01–03.07.01 and related).
  */
 public class AdminAdapter extends RecyclerView.Adapter<AdminAdapter.AdminViewHolder> {
 
