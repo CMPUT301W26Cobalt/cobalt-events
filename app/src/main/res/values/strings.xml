@@ -1,6 +1,9 @@
 <resources>
 
     <string name="app_name">Cobalt Events</string>
+    <string name="organizer_dashboard_search_hint">Search your events…</string>
+    <string name="organizer_empty_no_events">No events created yet.\nTap + to create your first event.</string>
+    <string name="organizer_empty_no_search_match">No events match your search.</string>
     <string name="event_has_been_deleted">Event has been deleted</string>
     <string name="back">Back</string>
     <string name="waitlisted_label">Waitlisted</string>
@@ -77,7 +80,7 @@
     <string name="edit_location_need_address_for_map">Enter a location first</string>
     <string name="edit_categories_title">Categories</string>
     <string name="edit_categories_helper">Add keywords one at a time. Tap × on a chip to remove it.</string>
-    <string name="event_manage_action_replacement">Replacement</string>
+    <string name="event_manage_action_replacement">Replace</string>
     <string name="event_manage_action_qr">QR Code</string>
     <string name="event_manage_action_map">Map</string>
     <string name="event_manage_geo_title">Require Geolocation</string>
@@ -90,6 +93,16 @@
     <string name="event_manage_registration_range">Registration: %1$s – %2$s</string>
     <string name="event_manage_entrant_location">📍 %1$.4f, %2$.4f</string>
     <string name="event_manage_entrant_joined">Joined %1$s</string>
+    <string name="event_manage_rescind_invite_cd">Rescind invitation</string>
+    <string name="event_manage_rescind_invite_title">Rescind invitation?</string>
+    <string name="event_manage_rescind_invite_subtitle">Invited guest: %1$s</string>
+    <string name="event_manage_rescind_invite_message">This removes them from the invited list and returns them to the waitlist as pending. Their selection notification will be removed from their log.</string>
+    <string name="event_manage_rescind_invite_confirm">Rescind</string>
+    <string name="event_manage_rescind_invite_success">Invitation rescinded.</string>
+    <string name="event_manage_rescind_invite_failed">Couldn\'t rescind invitation.</string>
+    <string name="event_manage_rescind_invite_notif_cleanup_failed">Invitation rescinded, but the notification could not be removed from the server.</string>
+    <string name="event_manage_rescind_invite_already_done">This invitation was already updated (another organizer may have rescinded it).</string>
+    <string name="event_manage_rescind_invite_entrant_enrolled">This entrant already accepted. The invitation cannot be rescinded.</string>
     <string name="event_manage_todo_replacement">Replacement flow coming soon</string>
     <string name="event_manage_todo_qr">Event QR view coming soon</string>
     <string name="event_manage_date_tbd">Date TBD</string>
@@ -154,6 +167,9 @@
     <string name="event_manage_private_status_pending">Pending</string>
     <string name="notification_private_event_title">Private Event Invitation</string>
     <string name="notification_event_alert_title">Event Alert</string>
+    <string name="notification_stale_selection_invite">This invitation is no longer active (for example, it was rescinded). It has been removed from your log.</string>
+    <string name="notification_already_declined">You already declined this invitation.</string>
+    <string name="notification_cannot_decline_enrolled">You already accepted — you can\'t decline this invitation.</string>
     <string name="notification_admin_event_deleted_message">The event \"%1$s\" has been permanently deleted.</string>
     <string name="notification_private_event_message">You have been invited to join the private event: %1$s</string>
     <string name="notification_event_fallback">this event</string>
@@ -181,6 +197,9 @@
     <string name="event_manage_notify_dialog_required">Message cannot be blank</string>
     <string name="event_manage_notify_dialog_none">No recipients in this section.</string>
     <string name="event_manage_notify_dialog_sent_format">Alert sent to %1$d recipients</string>
+    <string name="event_manage_action_notify_entire_waitlist">Notify</string>
+    <string name="event_manage_action_notify_entire_waitlist_cd">Notify everyone on the waitlist</string>
+    <string name="event_manage_notify_entire_waitlist_scope">Everyone on the waitlist (all statuses)</string>
 
     <!-- Notifications (US 01.04.01) -->
     <string name="notification_channel_name">Event Lottery Results</string>

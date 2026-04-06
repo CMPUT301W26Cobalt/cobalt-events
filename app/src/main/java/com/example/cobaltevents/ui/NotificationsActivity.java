@@ -17,10 +17,12 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.controller.GeolocationController;
+import com.example.cobaltevents.controller.LotteryController;
 import com.example.cobaltevents.db.EntrantDB;
 import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.db.NotificationDB;
 import com.example.cobaltevents.db.WaitingListDB;
+import com.example.cobaltevents.model.DeclineSelectionInviteOutcome;
 import com.example.cobaltevents.model.Notification;
 import com.example.cobaltevents.model.WaitingList;
 import com.example.cobaltevents.ui.adapter.NotificationListAdapter;
@@ -41,6 +43,7 @@ public class NotificationsActivity extends AppCompatActivity {
     private EventDB eventDB;
     private WaitingListDB waitingListDB;
     private GeolocationController geolocationController;
+    private LotteryController lotteryController;
     private NotificationListAdapter adapter;
     private String deviceId;
     private SwipeRefreshLayout swipeRefreshLayout;
@@ -69,6 +72,7 @@ public class NotificationsActivity extends AppCompatActivity {
         eventDB = new EventDB();
         waitingListDB = new WaitingListDB();
         geolocationController = new GeolocationController();
+        lotteryController = new LotteryController();
         deviceId = new EntrantDB(this).getEntrant().getDeviceId();
 
         RecyclerView recycler = findViewById(R.id.recycler_notifications);
@@ -419,6 +423,27 @@ public class NotificationsActivity extends AppCompatActivity {
         if (tv != null) tv.setTextColor(active);
     }
 
+    /**
+     * Selection / replacement invite no longer matches waitlist (e.g. organizer rescinded). Remove the card.
+     */
+    private void dismissStaleSelectionInvite(Notification notification) {
+        Toast.makeText(this, R.string.notification_stale_selection_invite, Toast.LENGTH_LONG).show();
+        if (notification == null || notification.getId() == null || notification.getId().isEmpty()) {
+            loadNotifications();
+            notificationActionInProgress = false;
+            return;
+        }
+        notificationDB.deleteNotification(notification.getId(),
+                unused -> {
+                    loadNotifications();
+                    notificationActionInProgress = false;
+                },
+                e -> {
+                    loadNotifications();
+                    notificationActionInProgress = false;
+                });
+    }
+
     private void updateResponseThenWaitlist(com.example.cobaltevents.model.Notification notification,
                                             String newResponse,
                                             String newStatus) {
@@ -456,9 +481,85 @@ public class NotificationsActivity extends AppCompatActivity {
                                 });
                         return;
                     }
-                    // Only update notification/DB after we confirm the waitlist entry exists.
-                    // Also, don't update UI until both DB writes succeed so DB and button stay aligned.
-                    // For faster feedback, update only the notification response badge locally now.
+
+                    boolean acceptEnroll = WaitingList.STATUS_ENROLLED.equals(newStatus)
+                            && Notification.RESPONSE_ACCEPTED.equals(newResponse);
+                    boolean declineInvite = WaitingList.STATUS_DECLINED.equals(newStatus)
+                            && Notification.RESPONSE_DECLINED.equals(newResponse);
+
+                    if (acceptEnroll) {
+                        if (!WaitingList.STATUS_SELECTED.equals(reg.getStatus())) {
+                            dismissStaleSelectionInvite(notification);
+                            return;
+                        }
+                        lotteryController.acceptInvitation(deviceId, eventId,
+                                unused -> notificationDB.updateResponse(notificationId, newResponse,
+                                        unused3 -> {
+                                            loadNotifications();
+                                            notificationActionInProgress = false;
+                                        },
+                                        e2 -> {
+                                            String msg = e2 != null ? e2.toString()
+                                                    : "Failed to update notification response";
+                                            Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                                            loadNotifications();
+                                            notificationActionInProgress = false;
+                                        }),
+                                err -> {
+                                    String msg = err != null && err.getMessage() != null
+                                            ? err.getMessage() : "";
+                                    if (LotteryController.ERR_INVITATION_NOT_ACTIVE.equals(msg)) {
+                                        Toast.makeText(this, R.string.notification_stale_selection_invite,
+                                                Toast.LENGTH_LONG).show();
+                                    } else {
+                                        Toast.makeText(this,
+                                                msg.isEmpty() ? "Failed to accept invitation" : msg,
+                                                Toast.LENGTH_LONG).show();
+                                    }
+                                    loadNotifications();
+                                    notificationActionInProgress = false;
+                                });
+                        return;
+                    }
+
+                    if (declineInvite) {
+                        lotteryController.declineInvitation(deviceId, eventId, outcome -> {
+                            if (outcome == DeclineSelectionInviteOutcome.NOT_INVITED_ANYMORE) {
+                                dismissStaleSelectionInvite(notification);
+                                return;
+                            }
+                            if (outcome == DeclineSelectionInviteOutcome.ALREADY_ENROLLED) {
+                                Toast.makeText(this, R.string.notification_cannot_decline_enrolled,
+                                        Toast.LENGTH_LONG).show();
+                                loadNotifications();
+                                notificationActionInProgress = false;
+                                return;
+                            }
+                            if (outcome == DeclineSelectionInviteOutcome.ALREADY_DECLINED) {
+                                Toast.makeText(this, R.string.notification_already_declined,
+                                        Toast.LENGTH_LONG).show();
+                            }
+                            notificationDB.updateResponse(notificationId, newResponse,
+                                    unused3 -> {
+                                        loadNotifications();
+                                        notificationActionInProgress = false;
+                                    },
+                                    e2 -> {
+                                        String msg = e2 != null ? e2.toString()
+                                                : "Failed to update notification response";
+                                        Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                                        loadNotifications();
+                                        notificationActionInProgress = false;
+                                    });
+                        }, err -> {
+                            String msg = err != null ? err.toString() : "Failed to decline invitation";
+                            Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                            loadNotifications();
+                            notificationActionInProgress = false;
+                        });
+                        return;
+                    }
+
                     currentEventIdToStatus.put(eventId, newStatus);
                     applyLocalResponseUpdate(notification, newResponse);
                     waitingListDB.updateStatus(eventId, deviceId, newStatus,
@@ -468,13 +569,14 @@ public class NotificationsActivity extends AppCompatActivity {
                                         notificationActionInProgress = false;
                                     },
                                     e2 -> {
-                                        String msg = e2 != null ? e2.toString() : "Failed to update notification response";
+                                        String msg = e2 != null ? e2.toString()
+                                                : "Failed to update notification response";
                                         Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
                                         loadNotifications();
                                         notificationActionInProgress = false;
                                     }),
-                            e -> {
-                                String msg = e != null ? e.toString() : "Failed to update waitlist status";
+                            err -> {
+                                String msg = err != null ? err.toString() : "Failed to update waitlist status";
                                 Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
                                 loadNotifications();
                                 notificationActionInProgress = false;

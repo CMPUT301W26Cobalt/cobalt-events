@@ -47,6 +47,7 @@ import com.example.cobaltevents.model.Entrant;
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.LotteryErrorCodes;
 import com.example.cobaltevents.model.Notification;
+import com.example.cobaltevents.model.RescindSelectionInviteOutcome;
 import com.example.cobaltevents.model.WaitingList;
 import com.example.cobaltevents.ui.adapter.WaitlistEntrantAdapter;
 import com.example.cobaltevents.ui.comments.EventCommentsUiBinder;
@@ -259,6 +260,8 @@ public class EventManageActivity extends AppCompatActivity {
         RecyclerView recyclerView = findViewById(R.id.recycler_entrants);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new WaitlistEntrantAdapter();
+        adapter.setOnRescindInviteListener(reg ->
+                verifyOrganizerAccessAndThen(() -> confirmRescindInvite(reg)));
         recyclerView.setAdapter(adapter);
         recyclerView.setNestedScrollingEnabled(false);
 
@@ -300,6 +303,12 @@ public class EventManageActivity extends AppCompatActivity {
         // TODO US 02.02.02 – Map tab
         findViewById(R.id.tab_map).setOnClickListener(v ->
                 verifyOrganizerAccessAndThen(this::showEntrantLocationsMapPopup));
+
+        View tabNotifyEntireWaitlist = findViewById(R.id.tab_notify_entire_waitlist);
+        if (tabNotifyEntireWaitlist != null) {
+            tabNotifyEntireWaitlist.setOnClickListener(v ->
+                    verifyOrganizerAccessAndThen(this::showNotifyEntireWaitlistDialog));
+        }
 
         panelUserWaitlist = findViewById(R.id.panel_user_waitlist);
         panelOrganizers = findViewById(R.id.panel_organizers);
@@ -2031,6 +2040,74 @@ public class EventManageActivity extends AppCompatActivity {
                 Toast.makeText(this, R.string.comments_action_failed, Toast.LENGTH_SHORT).show()));
     }
 
+    private void showNotifyEntireWaitlistDialog() {
+        if (currentEvent == null || currentEvent.getEventId() == null || currentEvent.getEventId().trim().isEmpty()) {
+            Toast.makeText(this, "Event not loaded yet", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_event_manage_notify_alert, null);
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setView(dialogView)
+                .create();
+        TextView tvScope = dialogView.findViewById(R.id.tv_notify_dialog_scope);
+        EditText input = dialogView.findViewById(R.id.et_notify_dialog_message);
+        View btnCancel = dialogView.findViewById(R.id.btn_notify_dialog_cancel);
+        View btnSend = dialogView.findViewById(R.id.btn_notify_dialog_send);
+
+        if (tvScope != null) {
+            tvScope.setText(getString(R.string.event_manage_notify_dialog_scope_format,
+                    getString(R.string.event_manage_notify_entire_waitlist_scope)));
+        }
+        if (btnCancel != null) {
+            btnCancel.setOnClickListener(v -> dialog.dismiss());
+        }
+        if (btnSend != null && input != null) {
+            btnSend.setOnClickListener(v -> {
+                String message = input.getText() != null ? input.getText().toString().trim() : "";
+                if (message.isEmpty()) {
+                    input.setError(getString(R.string.event_manage_notify_dialog_required));
+                    return;
+                }
+                dialog.dismiss();
+                sendNotifyEntireWaitlist(message);
+            });
+        }
+
+        dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+    }
+
+    private void sendNotifyEntireWaitlist(String userMessage) {
+        if (currentEvent == null || currentEvent.getEventId() == null || currentEvent.getEventId().trim().isEmpty()) {
+            Toast.makeText(this, "Event not loaded yet", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        waitingListDB.getEntrantsForEvent(currentEvent.getEventId(), Source.SERVER, registrations -> {
+            LinkedHashSet<String> recipientIds = new LinkedHashSet<>();
+            if (registrations != null) {
+                for (WaitingList reg : registrations) {
+                    if (reg == null || reg.getDeviceId() == null || reg.getDeviceId().trim().isEmpty()) {
+                        continue;
+                    }
+                    recipientIds.add(reg.getDeviceId().trim());
+                }
+            }
+            List<String> targets = new ArrayList<>(recipientIds);
+            if (targets.isEmpty()) {
+                runOnUiThread(() ->
+                        Toast.makeText(this, R.string.event_manage_notify_dialog_none, Toast.LENGTH_SHORT).show());
+                return;
+            }
+            sendEventAlertNotificationsSequentially(targets, 0, userMessage, () -> runOnUiThread(() ->
+                    Toast.makeText(this,
+                            getString(R.string.event_manage_notify_dialog_sent_format, targets.size()),
+                            Toast.LENGTH_SHORT).show()));
+        }, e -> runOnUiThread(() ->
+                Toast.makeText(this, R.string.comments_action_failed, Toast.LENGTH_SHORT).show()));
+    }
+
     private boolean matchesNotifyBucketForCurrentTab(String status) {
         if (WaitingList.STATUS_SELECTED.equals(currentTab)) {
             return WaitingList.STATUS_SELECTED.equals(status);
@@ -2156,6 +2233,101 @@ public class EventManageActivity extends AppCompatActivity {
                 + " " + TIME_FORMAT.format(reg.getRegisteredAt().toDate());
     }
 
+    private void confirmRescindInvite(WaitingList reg) {
+        if (reg == null || eventId == null || eventId.trim().isEmpty()) {
+            return;
+        }
+        if (!WaitingList.STATUS_SELECTED.equals(reg.getStatus())) {
+            Toast.makeText(this, R.string.event_manage_rescind_invite_failed, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_rescind_invite_confirm, null);
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setView(dialogView)
+                .create();
+
+        TextView tvSubtitle = dialogView.findViewById(R.id.tv_rescind_subtitle);
+        if (tvSubtitle != null) {
+            String name = reg.getName();
+            if (name != null && !name.trim().isEmpty()) {
+                tvSubtitle.setVisibility(View.VISIBLE);
+                tvSubtitle.setText(getString(R.string.event_manage_rescind_invite_subtitle, name.trim()));
+            } else {
+                tvSubtitle.setVisibility(View.GONE);
+            }
+        }
+
+        View btnCancel = dialogView.findViewById(R.id.btn_rescind_cancel);
+        View btnConfirm = dialogView.findViewById(R.id.btn_rescind_confirm);
+        if (btnCancel != null) {
+            btnCancel.setOnClickListener(v -> dialog.dismiss());
+        }
+        if (btnConfirm != null) {
+            btnConfirm.setOnClickListener(v -> {
+                dialog.dismiss();
+                performRescindInvite(reg);
+            });
+        }
+
+        dialog.show();
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+    }
+
+    private void performRescindInvite(WaitingList reg) {
+        if (reg == null || eventId == null || eventId.trim().isEmpty()) {
+            return;
+        }
+        if (!WaitingList.STATUS_SELECTED.equals(reg.getStatus())) {
+            runOnUiThread(() ->
+                    Toast.makeText(this, R.string.event_manage_rescind_invite_failed, Toast.LENGTH_SHORT).show());
+            return;
+        }
+        String entryDocId = reg.getId();
+        if (entryDocId == null || entryDocId.isEmpty()) {
+            entryDocId = reg.getDeviceId();
+        }
+        String deviceId = reg.getDeviceId();
+        if (entryDocId == null || entryDocId.isEmpty() || deviceId == null || deviceId.isEmpty()) {
+            runOnUiThread(() ->
+                    Toast.makeText(this, R.string.event_manage_rescind_invite_failed, Toast.LENGTH_SHORT).show());
+            return;
+        }
+        waitingListDB.rescindSelectionInviteIfStillSelected(eventId, entryDocId,
+                outcome -> {
+                    if (outcome == RescindSelectionInviteOutcome.APPLIED) {
+                        notificationDB.deleteLotteryInviteNotifications(deviceId, eventId,
+                                v2 -> runOnUiThread(() -> {
+                                    Toast.makeText(this, R.string.event_manage_rescind_invite_success,
+                                            Toast.LENGTH_SHORT).show();
+                                    loadEventData(true);
+                                }),
+                                e2 -> runOnUiThread(() -> {
+                                    Toast.makeText(this, R.string.event_manage_rescind_invite_notif_cleanup_failed,
+                                            Toast.LENGTH_LONG).show();
+                                    loadEventData(true);
+                                }));
+                    } else if (outcome == RescindSelectionInviteOutcome.ALREADY_ENROLLED) {
+                        runOnUiThread(() -> {
+                            Toast.makeText(this, R.string.event_manage_rescind_invite_entrant_enrolled,
+                                    Toast.LENGTH_LONG).show();
+                            loadEventData(true);
+                        });
+                    } else {
+                        runOnUiThread(() -> {
+                            Toast.makeText(this, R.string.event_manage_rescind_invite_already_done,
+                                    Toast.LENGTH_SHORT).show();
+                            loadEventData(true);
+                        });
+                    }
+                },
+                e -> runOnUiThread(() -> {
+                    Toast.makeText(this, R.string.event_manage_rescind_invite_failed, Toast.LENGTH_SHORT).show();
+                    loadEventData(true);
+                }));
+    }
+
     private void showFilteredEntrants() {
         List<WaitingList> filtered = new ArrayList<>();
         for (WaitingList reg : allEntrants) {
@@ -2178,7 +2350,7 @@ public class EventManageActivity extends AppCompatActivity {
             }
             if (include) filtered.add(reg);
         }
-        adapter.setItems(filtered);
+        adapter.setItems(filtered, WaitingList.STATUS_SELECTED.equals(currentTab));
         if (filtered.isEmpty()) {
             loadingContainer.setVisibility(View.VISIBLE);
             progressBar.setVisibility(View.GONE);

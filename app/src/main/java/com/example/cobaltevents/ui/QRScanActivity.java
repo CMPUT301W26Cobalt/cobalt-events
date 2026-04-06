@@ -587,7 +587,18 @@ public class QRScanActivity extends AppCompatActivity {
         // If you're already joined, you should be able to leave even when the waitlist is full.
         boolean full = !isJoined && capacity > 0 && waitlistCount != null && waitlistCount >= capacity;
 
-        if (registrationClosed) {
+        if (WaitingList.STATUS_ENROLLED.equals(status)) {
+            btn.setText("ENROLLED");
+            btn.setBackgroundResource(R.drawable.bg_button_join_solid);
+            btn.setAlpha(0.45f);
+            btn.setEnabled(false);
+        } else if (WaitingList.STATUS_DECLINED.equals(status)
+                || WaitingList.STATUS_DECLINED_FOUND_REPLACEMENT.equals(status)) {
+            btn.setText("DECLINED");
+            btn.setBackgroundResource(R.drawable.bg_button_join_solid);
+            btn.setAlpha(0.45f);
+            btn.setEnabled(false);
+        } else if (registrationClosed) {
             btn.setText("REGISTRATION CLOSED");
             btn.setBackgroundResource(R.drawable.bg_button_join_solid);
             btn.setAlpha(0.45f);
@@ -599,17 +610,6 @@ public class QRScanActivity extends AppCompatActivity {
             btn.setEnabled(false);
         } else if (full) {
             btn.setText("WAITLIST FULL");
-            btn.setBackgroundResource(R.drawable.bg_button_join_solid);
-            btn.setAlpha(0.45f);
-            btn.setEnabled(false);
-        } else if (WaitingList.STATUS_ENROLLED.equals(status)) {
-            btn.setText("ENROLLED");
-            btn.setBackgroundResource(R.drawable.bg_button_join_solid);
-            btn.setAlpha(0.45f);
-            btn.setEnabled(false);
-        } else if (WaitingList.STATUS_DECLINED.equals(status)
-                || WaitingList.STATUS_DECLINED_FOUND_REPLACEMENT.equals(status)) {
-            btn.setText("DECLINED");
             btn.setBackgroundResource(R.drawable.bg_button_join_solid);
             btn.setAlpha(0.45f);
             btn.setEnabled(false);

@@ -14,4 +14,13 @@ public final class LotteryErrorCodes {
     public static final String NO_CAPACITY = "LOTTERY_NO_CAPACITY";
     /** Waitlist has more documents than Firestore allows reading in one transaction. */
     public static final String TOO_MANY_WAITS = "LOTTERY_TOO_MANY_WAITS";
+
+    /** Rescind invite: waitlist entry document missing during transactional read. */
+    public static final String WAITLIST_ENTRY_NOT_FOUND = "WAITLIST_ENTRY_NOT_FOUND";
+
+    /** Accept invitation: waitlist is not {@code selected}. */
+    public static final String INVITATION_NOT_ACTIVE = "Invitation is no longer active";
+
+    /** Accept invitation: waitlist already {@code enrolled}. */
+    public static final String INVITATION_ALREADY_ENROLLED = "Already enrolled";
 }

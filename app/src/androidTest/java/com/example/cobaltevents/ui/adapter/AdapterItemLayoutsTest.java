@@ -183,6 +183,7 @@ public class AdapterItemLayoutsTest {
         assertNotNull(root.findViewById(R.id.tv_entrant_phone));
         assertNotNull(root.findViewById(R.id.tv_entrant_location));
         assertNotNull(root.findViewById(R.id.tv_joined_date));
+        assertNotNull(root.findViewById(R.id.btn_rescind_invite));
     }
 
     @Test

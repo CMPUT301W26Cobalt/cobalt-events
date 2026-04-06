@@ -3,7 +3,10 @@ package com.example.cobaltevents.ui;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -38,6 +41,10 @@ public class OrganizerActivity extends AppCompatActivity {
     private EventDB eventDB;
     private String deviceId;
 
+    /** Full list from the server; {@link #applySearchFilter()} drives what the adapter shows. */
+    private final List<Event> allOrganizerEvents = new ArrayList<>();
+    private String currentQuery = "";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,6 +77,7 @@ public class OrganizerActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(adapter);
 
+        setupSearchField();
         loadOrganizerEvents(false);
         setupBottomNavigation();
 
@@ -108,8 +116,9 @@ public class OrganizerActivity extends AppCompatActivity {
                         swipeRefreshLayout.setRefreshing(false);
                     }
                     List<Event> list = events != null ? events : new ArrayList<>();
-                    adapter.updateEvents(list);
-                    tvEmpty.setVisibility(list.isEmpty() ? View.VISIBLE : View.GONE);
+                    allOrganizerEvents.clear();
+                    allOrganizerEvents.addAll(list);
+                    applySearchFilter();
                 },
                 e -> {
                     progressBar.setVisibility(View.GONE);
@@ -117,7 +126,57 @@ public class OrganizerActivity extends AppCompatActivity {
                         swipeRefreshLayout.setRefreshing(false);
                     }
                     Toast.makeText(this, "Failed to load events: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    applySearchFilter();
                 });
+    }
+
+    private void setupSearchField() {
+        EditText et = findViewById(R.id.et_organizer_search);
+        if (et == null) return;
+        et.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                currentQuery = s != null ? s.toString().trim() : "";
+                applySearchFilter();
+            }
+        });
+    }
+
+    /**
+     * Same text matching as {@link EventListActivity#applyFilters()} for the query (name, description, location).
+     */
+    private void applySearchFilter() {
+        List<Event> filtered = new ArrayList<>();
+        for (Event event : allOrganizerEvents) {
+            if (!currentQuery.isEmpty()) {
+                final String query = currentQuery.toLowerCase();
+                String name = event.getName();
+                String desc = event.getDescription();
+                String loc = event.getLocation();
+                boolean matches =
+                        (name != null && name.toLowerCase().contains(query)) ||
+                        (desc != null && desc.toLowerCase().contains(query)) ||
+                        (loc != null && loc.toLowerCase().contains(query));
+                if (!matches) continue;
+            }
+            filtered.add(event);
+        }
+        adapter.updateEvents(filtered);
+        if (allOrganizerEvents.isEmpty()) {
+            tvEmpty.setText(R.string.organizer_empty_no_events);
+            tvEmpty.setVisibility(View.VISIBLE);
+        } else if (filtered.isEmpty()) {
+            tvEmpty.setText(R.string.organizer_empty_no_search_match);
+            tvEmpty.setVisibility(View.VISIBLE);
+        } else {
+            tvEmpty.setVisibility(View.GONE);
+        }
     }
 
     private void openManageEvent(Event event) {

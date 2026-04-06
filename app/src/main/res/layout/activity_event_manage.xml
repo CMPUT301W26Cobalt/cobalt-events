@@ -415,6 +415,7 @@
                             android:id="@+id/tab_map"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_marginEnd="4dp"
                             android:layout_weight="1"
                             android:background="@drawable/bg_event_manage_outline_ripple"
                             android:clickable="true"
@@ -437,6 +438,38 @@
                                 android:layout_marginStart="4dp"
                                 android:letterSpacing="0.04"
                                 android:text="@string/event_manage_action_map"
+                                android:textAllCaps="true"
+                                android:textColor="@color/event_manage_on_surface"
+                                android:textSize="10sp"
+                                android:fontFamily="sans-serif-medium" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/tab_notify_entire_waitlist"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_event_manage_outline_ripple"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center"
+                            android:orientation="horizontal"
+                            android:paddingTop="8dp"
+                            android:paddingBottom="8dp">
+
+                            <ImageView
+                                android:layout_width="15dp"
+                                android:layout_height="15dp"
+                                android:contentDescription="@string/event_manage_action_notify_entire_waitlist_cd"
+                                android:src="@drawable/ic_notify_plane"
+                                app:tint="@color/event_manage_on_surface" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
+                                android:letterSpacing="0.04"
+                                android:text="@string/event_manage_action_notify_entire_waitlist"
                                 android:textAllCaps="true"
                                 android:textColor="@color/event_manage_on_surface"
                                 android:textSize="10sp"

@@ -1,23 +1,22 @@
 package com.example.cobaltevents.controller;
 
-import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.db.WaitingListDB;
-import com.example.cobaltevents.model.Event;
+import com.example.cobaltevents.model.DeclineSelectionInviteOutcome;
+import com.example.cobaltevents.model.LotteryErrorCodes;
 import com.example.cobaltevents.model.WaitingList;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class LotteryController {
 
-    private final EventDB eventDB;
+    public static final String ERR_INVITATION_NOT_ACTIVE = LotteryErrorCodes.INVITATION_NOT_ACTIVE;
+
+    public static final String ERR_ALREADY_ENROLLED = LotteryErrorCodes.INVITATION_ALREADY_ENROLLED;
+
     private final WaitingListDB waitingListDB;
     private final NotificationController notificationController;
 
     public LotteryController() {
-        this.eventDB = new EventDB();
         this.waitingListDB = new WaitingListDB();
         this.notificationController = new NotificationController();
     }
@@ -60,48 +59,54 @@ public class LotteryController {
     public void acceptInvitation(String deviceId, String eventId,
                                  OnSuccessListener<Void> onSuccess,
                                  OnFailureListener onFailure) {
-        waitingListDB.getActiveRegistrationForEvent(eventId, deviceId, reg -> {
+        waitingListDB.getRegistrationForEventAnyStatus(eventId, deviceId, reg -> {
             if (reg == null) {
                 onFailure.onFailure(new Exception("No active registration found"));
                 return;
             }
             if (WaitingList.STATUS_ENROLLED.equals(reg.getStatus())) {
-                onFailure.onFailure(new Exception("Already enrolled"));
+                onSuccess.onSuccess(null);
                 return;
             }
-
-            waitingListDB.updateStatus(eventId, reg.getDeviceId(), WaitingList.STATUS_ENROLLED, v -> {
-                eventDB.getEvent(eventId, event -> {
-                    if (event != null) {
-                        List<String> confirmed = event.getConfirmedAttendeeIds();
-                        if (confirmed == null) confirmed = new ArrayList<>();
-                        if (!confirmed.contains(deviceId)) {
-                            confirmed.add(deviceId);
-                            event.setConfirmedAttendeeIds(confirmed);
-                            eventDB.updateEvent(event, onSuccess, onFailure);
-                        } else {
-                            onSuccess.onSuccess(null);
-                        }
-                    } else {
-                        onSuccess.onSuccess(null);
-                    }
-                }, onFailure);
-            }, onFailure);
+            String entryDocId = reg.getId();
+            if (entryDocId == null || entryDocId.isEmpty()) {
+                entryDocId = reg.getDeviceId();
+            }
+            if (entryDocId == null || entryDocId.isEmpty()) {
+                onFailure.onFailure(new Exception("No active registration found"));
+                return;
+            }
+            waitingListDB.acceptSelectedInvitationTransactional(eventId, entryDocId, deviceId,
+                    onSuccess, onFailure);
         }, onFailure);
     }
 
     /**
-     * Declines an invitation to an event and triggers replacement logic.
+     * Declines an invitation ({@code selected} → {@code declined}) in one transaction, or reports
+     * {@link DeclineSelectionInviteOutcome#ALREADY_DECLINED} / {@link DeclineSelectionInviteOutcome#ALREADY_ENROLLED} / etc.
      */
     public void declineInvitation(String deviceId, String eventId,
-                                  OnSuccessListener<Void> onSuccess,
+                                  OnSuccessListener<DeclineSelectionInviteOutcome> onSuccess,
                                   OnFailureListener onFailure) {
-        waitingListDB.getActiveRegistrationForEvent(eventId, deviceId, reg -> {
+        waitingListDB.getRegistrationForEventAnyStatus(eventId, deviceId, reg -> {
             if (reg == null) {
                 onFailure.onFailure(new Exception("No active registration found"));
                 return;
             }
-            waitingListDB.updateStatus(eventId, reg.getDeviceId(), WaitingList.STATUS_DECLINED, onSuccess, onFailure);
+            if (WaitingList.STATUS_DECLINED.equals(reg.getStatus())
+                    || WaitingList.STATUS_DECLINED_FOUND_REPLACEMENT.equals(reg.getStatus())) {
+                onSuccess.onSuccess(DeclineSelectionInviteOutcome.ALREADY_DECLINED);
+                return;
+            }
+            String entryDocId = reg.getId();
+            if (entryDocId == null || entryDocId.isEmpty()) {
+                entryDocId = reg.getDeviceId();
+            }
+            if (entryDocId == null || entryDocId.isEmpty()) {
+                onFailure.onFailure(new Exception("No active registration found"));
+                return;
+            }
+            waitingListDB.declineSelectedInvitationTransactional(eventId, entryDocId, onSuccess, onFailure);
         }, onFailure);
     }
 

@@ -18,8 +18,9 @@ scale 1.6
 ' ------------------------------------------------------------------------------
 legend left
   + public    # protected    - private
-  Dependencies show high-level "uses" relationships only (not every call).
-  Comments explain intent, constraints, and noteworthy design decisions.
+  Dependencies show compile-time / architectural "uses" (not every call).
+  Coverage: all 77 top-level .java types under com.example.cobaltevents (model, db,
+  controller, util, ui and subpackages). Nested types (e.g. DB outcome classes) noted on parents.
 endlegend
 
 ' ==============================================================================
@@ -46,6 +47,7 @@ package "com.example.cobaltevents.model" as model {
     +qrCodeData: String
     +confirmedAttendeeIds: List<String>
     +category: Object
+    ' Firestore may store list or string; getCategory() normalizes to List<String>.
     +ageGroup: String
     +criteria: String
     +isPrivate: boolean
@@ -71,11 +73,6 @@ package "com.example.cobaltevents.model" as model {
     +STATUS_* (pending, selected, enrolled, declined, …)
   }
 
-  class WaitlistEntryInfo {
-    +status: String
-    +notificationsAllowed: boolean
-  }
-
   class Notification {
     +id: String
     +recipientId: String
@@ -83,13 +80,14 @@ package "com.example.cobaltevents.model" as model {
     +title: String
     +message: String
     +type: String
-    +read: String
+    +response: String
     +timestamp: Date
     +recipient_mode: String
     --
     +TYPE_SELECTED, TYPE_GOT_OFF_WAITLIST, TYPE_NOT_SELECTED
     +TYPE_PRIVATE_EVENT, TYPE_CO_ORGANIZER, TYPE_EVENT_ALERT
     +RECIPIENT_MODE_USER, RECIPIENT_MODE_ORGANIZER
+    +RESPONSE_PENDING, RESPONSE_ACCEPTED, RESPONSE_DECLINED
   }
 
   class Entrant {
@@ -123,6 +121,32 @@ package "com.example.cobaltevents.model" as model {
   }
 
   class Organizer
+
+  enum DeclineSelectionInviteOutcome {
+    APPLIED
+    NOT_INVITED_ANYMORE
+    ALREADY_DECLINED
+    ALREADY_ENROLLED
+  }
+
+  enum RescindSelectionInviteOutcome {
+    APPLIED
+    NOT_INVITED_ANYMORE
+    ALREADY_ENROLLED
+  }
+
+  class LotteryErrorCodes <<utility>> {
+    {static} +NO_PENDING_ENTRANTS, REQUEST_EXCEEDS_PENDING, REQUEST_EXCEEDS_REPLACEMENT_CAPACITY
+    {static} +NO_CAPACITY, TOO_MANY_WAITS, WAITLIST_ENTRY_NOT_FOUND
+    {static} +INVITATION_NOT_ACTIVE, INVITATION_ALREADY_ENROLLED
+  }
+
+  class EventHistory {
+    +event: Event
+    +registration: WaitingList
+    --
+    +getStatus()
+  }
 }
 
 package "com.example.cobaltevents.db" as db {
@@ -141,22 +165,36 @@ package "com.example.cobaltevents.db" as db {
     ..catalog prefers server read; optional cache fallback..
   }
   class WaitingListDB {
-    +getEntrantsForEvent(eventId, source, onSuccess, onFailure)
-    +addRegistration(…)
+    ' Nested: LotteryDrawOutcome, ReplacementLotteryOutcome, ReplacementDrawOutcome (transaction results).
+    +createWaitlistContainerForEvent(eventId, …)
+    +getEntrantsForEvent(eventId, source, …)
+    +getEntrantHistory(deviceId, …)
+    +countEntriesWithStatus / countLotteryEligibleEntries / countReplacementPoolEntries …
+    +addRegistration / addRegistrationWithJoinChecks(…)
     +getActiveRegistrationForEvent(…)
     +getRegistrationForEventAnyStatus(…)
     +updateStatus(…)
+    +runLotteryDrawTransactional / runReplacementLotteryTransactional / runReplacementDrawTransactional
+    +rescindSelectionInviteIfStillSelected(…)
+    +acceptSelectedInvitationTransactional(…)
+    +declineSelectedInvitationTransactional(…)
+    +deleteRegistration(…)
     +deleteAllWaitlistDataForEvent(eventId, …)
     +getActiveCountForEvent(…)
     +removeUserFromAllWaitlists(deviceId, …)
-    +transactions for capacity / atomic updates
+    +saveLocation(eventId, deviceId, …)
   }
   class NotificationDB {
+    ' Inner type: OnNotificationListener (snapshot listener callback).
     +saveNotification(notification, onSuccess, onFailure)
     +deleteNotification(notificationId, onSuccess, onFailure)
-    +getNotificationsForRecipient(recipientId, onSuccess, onFailure)
+    +deleteLotteryInviteNotifications(recipientId, eventId, …)
+    +updateResponse(notificationId, …)
+    +getNotificationsForRecipient(recipientId, …)
+    +getNotificationsForRecipientAndEvent(…)
+    +getNotificationsForEventTypeAndMode(eventId, type, …)
+    +countNotificationsForEventAndResponse(…)
     +listenForNotifications(recipientId, listener)
-    +updateReadStatus(notificationId, readStatus, onSuccess, onFailure)
   }
   class ProfileDB {
     +saveProfile(entrant, onSuccess, onFailure)
@@ -221,18 +259,23 @@ package "com.example.cobaltevents.controller" as ctl {
     ..removeEventImage: transactional if poster URL still matches..
   }
   class LotteryController {
-    +acceptInvitation / declineInvitation / draw replacement flows
+    +runLotteryDraw, runReplacementLottery
+    +acceptInvitation, declineInvitation
     --
-    ..updates WaitingListDB; coordinates notifications..
+    ..accept/decline use WaitingListDB transactions (waitlist + event confirmed list for accept)..
+    ..lottery sends in-app notifications via NotificationController..
   }
   class NotificationController {
     +createNotificationChannel(context)
     +requestNotificationPermission(activity)
     +sendSelectedNotification(entrantId, eventId, eventName)
+    +sendNotSelectedNotification(…)
+    +sendGotOffWaitlistNotification(…)
+    +sendCoOrganizerNotification(context, …)
     +startNotificationListener(context, deviceId)
     +stopNotificationListener()
     --
-    ..tap opens NotificationsActivity..
+    ..persists via NotificationDB; tap opens NotificationsActivity..
   }
   class QRCodeController {
     +generateQRCode(eventId): Bitmap
@@ -242,11 +285,23 @@ package "com.example.cobaltevents.controller" as ctl {
     +uploadPoster(imageUri, event, onSuccess, onFailure)
   }
   class OrganizerController
+  note bottom of OrganizerController
+    Placeholder class (TODO); no orchestration methods yet.
+  end note
   class GeolocationController
 }
 
+package "com.example.cobaltevents.util" as util {
+  class EventGoneUi
+  class NetworkConnectivity
+  class GeoUtils
+  note bottom of GeoUtils
+    Haversine / distance helpers. No external references in app/ yet.
+  end note
+}
+
 package "com.example.cobaltevents.ui" as ui {
-  ' Primary screens (Activities). Delegate to controllers / DB.
+  ' Matches app/src/.../ui/*.java (one class per file).
   class MainActivity
   class WelcomeActivity
   class EventListActivity
@@ -258,11 +313,34 @@ package "com.example.cobaltevents.ui" as ui {
   class EntrantActivity
   class EntrantEditActivity
   class OrganizerActivity
+  note bottom of OrganizerActivity
+    Dashboard: EventDB.getEventsByOrganizer loads the full list; a search field
+    filters client-side by substring on name, description, and location (aligned
+    with EventListActivity text search; no browse filters or keyword chips).
+    OrganizerEventAdapter displays the filtered rows.
+  end note
   class AccountSettingsActivity
   class NotificationsActivity
   class MapPreviewActivity
+  class EventReadOnlyCardPopup
   class EditEventDialog
-  ' Also: EditFieldActivity, EditLocationActivity, EditCapacityActivity, etc. for inline edits.
+  class EditResultKinds
+  class EditFieldActivity
+  class EditFieldContract
+  class EditLocationActivity
+  class EditLocationContract
+  class EditPriceActivity
+  class EditRadioChoiceActivity
+  class EditRadioChoiceContract
+  class EditCapacityActivity
+  class EditCapacityPriceContract
+  class EditCategoriesActivity
+  class EditCategoriesContract
+  class EditEventDateTimeActivity
+  class EditEventDateTimeContract
+  note bottom of EntrantEditActivity
+    Stub Activity; no controller/DB wiring yet.
+  end note
 }
 
 package "com.example.cobaltevents.ui.admin" as uiAdmin {
@@ -283,11 +361,21 @@ package "com.example.cobaltevents.ui.comments" as uicomments {
   end note
 }
 
+package "com.example.cobaltevents.ui.waitlist" as uiwaitlist {
+  ' Shared waitlist UI on browse list and QR card (status chip, counts, registration window).
+  class WaitlistStatusUi
+  class WaitlistCountDisplayUi
+  class RegistrationPeriodUi
+}
+
 package "com.example.cobaltevents.ui.adapter" as adapter {
   class EventAdapter
   class OrganizerEventAdapter
   class EventHistoryAdapter
   class WaitlistEntrantAdapter
+  note bottom of WaitlistEntrantAdapter
+    Manage screen tabs; invited tab supports rescind invite (selected → pending).
+  end note
   class NotificationListAdapter
 }
 
@@ -309,14 +397,14 @@ ctl.AdminController ..> model.Entrant : caches
 ctl.ImageController --> db.ImageDB
 ctl.ImageController --> db.EventDB
 ctl.LotteryController --> db.WaitingListDB
-ctl.LotteryController --> db.EventDB
-ctl.LotteryController --> db.NotificationDB
+ctl.LotteryController --> ctl.NotificationController
 ctl.NotificationController --> db.NotificationDB
-ctl.QRCodeController ..> model.Event : generates QR from eventId
+ctl.GeolocationController --> db.WaitingListDB
+ctl.GeolocationController ..> model.Event : distance / join checks
+' QRCodeController encodes eventId strings only (no model.Event import).
 
 db.EventDB --> model.Event
 db.WaitingListDB --> model.WaitingList
-db.WaitingListDB ..> model.WaitlistEntryInfo
 db.NotificationDB --> model.Notification
 db.ProfileDB --> model.Entrant
 db.ImageDB ..> model.Event : persists poster URL
@@ -324,46 +412,159 @@ db.EntrantDB --> model.Entrant
 db.CommentDB --> model.Comment
 db.CommentDB --> model.Reply
 model.Comment *-- model.Reply : nested in memory
+model.EventHistory *-- model.Event
+model.EventHistory *-- model.WaitingList
+
+db.WaitingListDB ..> model.DeclineSelectionInviteOutcome : transactional outcomes
+db.WaitingListDB ..> model.RescindSelectionInviteOutcome
+db.WaitingListDB ..> model.LotteryErrorCodes : exception messages
+ctl.LotteryController ..> model.DeclineSelectionInviteOutcome
+ctl.LotteryController ..> model.LotteryErrorCodes
+
+util.EventGoneUi ..> db.WaitingListDB
 
 ui.MainActivity ..> ctl.NotificationController : start/stop listener
 ui.EventListActivity ..> ctl.EventController
 ui.EventListActivity ..> ctl.GeolocationController
+ui.EventListActivity ..> db.EntrantDB
+ui.EventListActivity ..> db.NotificationDB
+ui.EventListActivity ..> db.WaitingListDB
+ui.EventListActivity ..> uiwaitlist.RegistrationPeriodUi
+ui.EventListActivity ..> uiwaitlist.WaitlistStatusUi
+ui.EventListActivity ..> util.EventGoneUi
+ui.EventListActivity ..> util.NetworkConnectivity
 ui.EventCreateActivity ..> ctl.EventController
-ui.EventManageActivity ..> ctl.EventController
+ui.EventCreateActivity ..> ctl.ImageController
+ui.EventCreateActivity ..> ctl.QRCodeController
+ui.EventCreateActivity ..> db.WaitingListDB
+ui.EventCreateActivity ..> util.NetworkConnectivity
+ui.EditEventDialog ..> ctl.ImageController
+ui.EditEventDialog ..> ctl.QRCodeController
+ui.EditEventDialog ..> db.EventDB
+ui.EditEventDialog ..> util.NetworkConnectivity
+ui.EventManageActivity ..> db.EventDB
+ui.EventManageActivity ..> db.ProfileDB
+ui.EventManageActivity ..> db.EntrantDB
 ui.EventManageActivity ..> ctl.ImageController
 ui.EventManageActivity ..> ctl.LotteryController
 ui.EventManageActivity ..> ctl.QRCodeController
+ui.EventManageActivity ..> db.NotificationDB
+ui.EventManageActivity ..> db.WaitingListDB
+ui.EventManageActivity ..> model.LotteryErrorCodes
+ui.EventManageActivity ..> model.RescindSelectionInviteOutcome
+ui.EventManageActivity ..> ui.EditEventDialog
+ui.EventManageActivity ..> util.NetworkConnectivity
 ui.EventHistoryActivity ..> ctl.EventController
+ui.EventHistoryActivity ..> db.NotificationDB
+ui.EventHistoryActivity ..> db.WaitingListDB
+ui.EventHistoryActivity ..> ui.EventReadOnlyCardPopup
+ui.JoinWaitlistActivity ..> ctl.GeolocationController
+ui.JoinWaitlistActivity ..> db.EventDB
+ui.JoinWaitlistActivity ..> db.EntrantDB
 ui.JoinWaitlistActivity ..> db.WaitingListDB
+ui.JoinWaitlistActivity ..> util.EventGoneUi
+ui.JoinWaitlistActivity ..> util.NetworkConnectivity
+ui.QRScanActivity ..> ctl.GeolocationController
 ui.QRScanActivity ..> db.EventDB
 ui.QRScanActivity ..> db.WaitingListDB
-ui.QRScanActivity ..> ctl.QRCodeController
+ui.QRScanActivity ..> db.NotificationDB
+ui.QRScanActivity ..> db.EntrantDB
+ui.QRScanActivity ..> util.EventGoneUi
+ui.QRScanActivity ..> util.NetworkConnectivity
+ui.QRScanActivity ..> ui.MapPreviewActivity
 ui.EntrantActivity ..> ctl.EntrantController
-ui.EntrantEditActivity ..> ctl.EntrantController
+ui.EntrantActivity ..> db.EntrantDB
+ui.WelcomeActivity ..> ctl.AdminController
+ui.WelcomeActivity ..> db.EntrantDB
 ui.OrganizerActivity ..> db.EventDB
+ui.OrganizerActivity ..> db.EntrantDB
+ui.OrganizerActivity ..> adapter.OrganizerEventAdapter
+ui.AccountSettingsActivity ..> ctl.EntrantController
 ui.AccountSettingsActivity ..> db.ProfileDB
 ui.AccountSettingsActivity ..> db.EventDB
+ui.AccountSettingsActivity ..> db.EntrantDB
+ui.AccountSettingsActivity ..> db.ImageDB
 ui.AccountSettingsActivity ..> db.WaitingListDB
 ui.AccountSettingsActivity ..> db.CommentDB
 ui.AccountSettingsActivity ..> ctl.AdminController : invalidate cache
 ui.AccountSettingsActivity ..> uiAdmin.AdminActivity : admin device only
+ui.AccountSettingsActivity ..> util.NetworkConnectivity
+ui.NotificationsActivity ..> ctl.GeolocationController
 ui.NotificationsActivity ..> db.NotificationDB
+ui.NotificationsActivity ..> db.EventDB
+ui.NotificationsActivity ..> db.EntrantDB
+ui.NotificationsActivity ..> ctl.LotteryController
+ui.NotificationsActivity ..> db.WaitingListDB
+ui.NotificationsActivity ..> model.DeclineSelectionInviteOutcome
+ui.NotificationsActivity ..> util.NetworkConnectivity
 uicomments.EventCommentsUiBinder ..> db.CommentDB
 uicomments.EventCommentsUiBinder ..> db.EventDB
 uicomments.EventCommentsUiBinder ..> ui.EventListActivity : browse cards
 uicomments.EventCommentsUiBinder ..> ui.QRScanActivity : QR popup card
+uicomments.EventCommentsUiBinder ..> util.EventGoneUi
+uicomments.EventCommentsUiBinder ..> util.NetworkConnectivity
+
+ui.EventReadOnlyCardPopup ..> db.EventDB
+ui.EventReadOnlyCardPopup ..> db.WaitingListDB
+ui.EventReadOnlyCardPopup ..> model.Event
+ui.EventReadOnlyCardPopup ..> uiwaitlist.WaitlistCountDisplayUi
+ui.EventReadOnlyCardPopup ..> ui.MapPreviewActivity
+
+ui.EditEventDialog ..> ui.EditResultKinds
+ui.EditEventDialog ..> ui.EditFieldContract
+ui.EditEventDialog ..> ui.EditLocationContract
+ui.EditEventDialog ..> ui.EditEventDateTimeContract
+ui.EditEventDialog ..> ui.EditCapacityPriceContract
+ui.EditEventDialog ..> ui.EditRadioChoiceContract
+ui.EditEventDialog ..> ui.EditCategoriesContract
+ui.EditEventDialog ..> ui.EditFieldActivity
+ui.EditEventDialog ..> ui.EditEventDateTimeActivity
+ui.EditEventDialog ..> ui.EditCapacityActivity
+ui.EditEventDialog ..> ui.EditPriceActivity
+ui.EditEventDialog ..> ui.EditRadioChoiceActivity
+ui.EditEventDialog ..> ui.EditLocationActivity
+ui.EditEventDialog ..> ui.EditCategoriesActivity
+
+ui.EditFieldActivity ..> ui.EditFieldContract
+ui.EditFieldActivity ..> ui.EditResultKinds
+ui.EditLocationActivity ..> ui.EditLocationContract
+ui.EditLocationActivity ..> ui.EditResultKinds
+ui.EditLocationActivity ..> ui.MapPreviewActivity
+ui.EditEventDateTimeActivity ..> ui.EditEventDateTimeContract
+ui.EditEventDateTimeActivity ..> ui.EditResultKinds
+ui.EditCapacityActivity ..> ui.EditCapacityPriceContract
+ui.EditCapacityActivity ..> ui.EditResultKinds
+ui.EditPriceActivity ..> ui.EditCapacityPriceContract
+ui.EditPriceActivity ..> ui.EditResultKinds
+ui.EditRadioChoiceActivity ..> ui.EditRadioChoiceContract
+ui.EditRadioChoiceActivity ..> ui.EditResultKinds
+ui.EditCategoriesActivity ..> ui.EditCategoriesContract
+ui.EditCategoriesActivity ..> ui.EditResultKinds
 
 uiAdmin.AdminActivity ..> ctl.AdminController
 uiAdmin.AdminCommentsActivity ..> ctl.AdminController
+uiAdmin.AdminCommentsActivity ..> db.CommentDB
+uiAdmin.AdminCommentsActivity ..> db.ProfileDB
 uiAdmin.AdminAdapter ..> model.Event
 uiAdmin.AdminAdapter ..> model.Entrant
 
 adapter.EventAdapter ..> model.Event
 adapter.EventAdapter ..> uicomments.EventCommentsUiBinder
+adapter.EventAdapter ..> uiwaitlist.WaitlistStatusUi
+adapter.EventAdapter ..> uiwaitlist.WaitlistCountDisplayUi
+adapter.EventAdapter ..> ui.MapPreviewActivity
+ui.QRScanActivity ..> uiwaitlist.WaitlistStatusUi
+ui.QRScanActivity ..> uiwaitlist.WaitlistCountDisplayUi
+ui.QRScanActivity ..> uiwaitlist.RegistrationPeriodUi
+uiwaitlist.WaitlistStatusUi ..> model.Notification
+uiwaitlist.WaitlistStatusUi ..> model.WaitingList
+uiwaitlist.RegistrationPeriodUi ..> model.Event
 adapter.OrganizerEventAdapter ..> model.Event
-adapter.EventHistoryAdapter ..> model.Event
+adapter.EventHistoryAdapter ..> model.EventHistory
+adapter.EventHistoryAdapter ..> ui.MapPreviewActivity
 adapter.WaitlistEntrantAdapter ..> model.WaitingList
 adapter.NotificationListAdapter ..> model.Notification
+adapter.NotificationListAdapter ..> model.WaitingList
 
 ' ==============================================================================
 ' Notes on design choices
@@ -376,8 +577,10 @@ end note
 
 note as N2
   Notification flow: waitlist changes write WaitingListDB / NotificationDB.
-  TYPE_EVENT_ALERT is used for organizer “notify waitlisted” and admin
-  event deletion alerts. recipient_mode distinguishes user vs organizer rows.
+  TYPE_EVENT_ALERT is used for organizer “notify current tab”, “notify entire
+  waitlist (all statuses)”, and admin event deletion alerts. Rescind invite
+  deletes selection-style notifications for that entrant. recipient_mode
+  distinguishes user vs organizer rows.
 end note
 
 model.Event .. N1

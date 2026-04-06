@@ -95,6 +95,7 @@ public class EventManageActivityTest {
         assertNotNull(root.findViewById(R.id.tab_declined));
         assertNotNull(root.findViewById(R.id.tab_replacement));
         assertNotNull(root.findViewById(R.id.tab_map));
+        assertNotNull(root.findViewById(R.id.tab_notify_entire_waitlist));
         assertNotNull(root.findViewById(R.id.tab_qr_code));
     }
 
