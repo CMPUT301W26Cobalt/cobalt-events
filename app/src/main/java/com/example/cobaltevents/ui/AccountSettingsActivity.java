@@ -79,7 +79,7 @@ public class AccountSettingsActivity extends AppCompatActivity {
     private Entrant currentEntrant;
     private SharedPreferences notificationPrefs;
 
-    /** Matches {@link NotificationsActivity#EXTRA_FROM_ORGANIZER} — drives accent colors on this screen. */
+    /** Matches {@link NotificationsActivity#EXTRA_FROM_ORGANIZER} — drives and controls accent colors on this screen. */
     private boolean fromOrganizerFlow;
     private View accountHeaderBar;
     private ImageView ivNotificationSettingsCardBell;

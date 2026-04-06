@@ -19,7 +19,7 @@ public class EventController {
     }
 
     /**
-     * US 2.01.01: Creates a new event in the database
+     * @param event event to create Creates a new event in the database
      */
     public void createEvent(Event event,
                             OnSuccessListener<String> onSuccess,
