@@ -116,6 +116,13 @@ public final class WaitlistStatusUi {
                 && (WaitingList.STATUS_ENROLLED.equals(dbStatus) || WaitingList.STATUS_SELECTED.equals(dbStatus))) {
             return dbStatus;
         }
+        // Notification "accepted" can be stale (e.g. invite rescinded → pending) while Firestore still has the old response briefly.
+        if (WaitingList.STATUS_ENROLLED.equals(effectiveOverride)
+                && (WaitingList.STATUS_PENDING.equals(dbStatus)
+                || WaitingList.STATUS_SELECTED.equals(dbStatus)
+                || WaitingList.STATUS_NOT_SELECTED.equals(dbStatus))) {
+            return dbStatus;
+        }
         return effectiveOverride;
     }
 }

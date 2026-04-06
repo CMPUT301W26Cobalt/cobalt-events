@@ -6,6 +6,7 @@ import android.content.Context;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -40,6 +41,7 @@ public class OrganizerActivityTest {
         assertNotNull(root.findViewById(R.id.swipe_refresh_organizer));
         assertNotNull(root.findViewById(R.id.progress_bar));
         assertNotNull(root.findViewById(R.id.tv_empty));
+        assertNotNull(root.findViewById(R.id.et_organizer_search));
     }
 
     @Test
@@ -61,6 +63,13 @@ public class OrganizerActivityTest {
         View root = LayoutInflater.from(themed())
                 .inflate(R.layout.activity_organizer, null, false);
         assertTrue(root.findViewById(R.id.progress_bar) instanceof ProgressBar);
+    }
+
+    @Test
+    public void searchField_isEditTextInstance() {
+        View root = LayoutInflater.from(themed())
+                .inflate(R.layout.activity_organizer, null, false);
+        assertTrue(root.findViewById(R.id.et_organizer_search) instanceof EditText);
     }
 
     @Test

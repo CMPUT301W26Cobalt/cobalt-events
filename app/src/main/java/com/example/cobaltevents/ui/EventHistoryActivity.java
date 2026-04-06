@@ -549,6 +549,15 @@ public class EventHistoryActivity extends AppCompatActivity {
             }
         }
 
+        if (WaitingList.STATUS_ENROLLED.equals(effective)) {
+            String base = history.getStatus();
+            if (WaitingList.STATUS_PENDING.equals(base)
+                    || WaitingList.STATUS_SELECTED.equals(base)
+                    || WaitingList.STATUS_NOT_SELECTED.equals(base)) {
+                return base;
+            }
+        }
+
         return effective;
     }
 

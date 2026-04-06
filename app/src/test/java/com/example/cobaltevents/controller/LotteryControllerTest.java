@@ -3,7 +3,6 @@ package com.example.cobaltevents.controller;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.db.NotificationDB;
 import com.example.cobaltevents.db.WaitingListDB;
 
@@ -16,7 +15,7 @@ import org.mockito.Mockito;
 /**
  * Unit tests for {@link LotteryController}.
  *
- * All DB dependencies (EventDB, WaitingListDB, NotificationDB) call Firebase in their
+ * All DB dependencies (WaitingListDB, NotificationDB) call Firebase in their
  * constructors; they are intercepted with {@code Mockito.mockConstruction} so that no
  * network or Android runtime is needed.
  *
@@ -25,7 +24,6 @@ import org.mockito.Mockito;
  */
 public class LotteryControllerTest {
 
-    private MockedConstruction<EventDB>            mockedEventDB;
     private MockedConstruction<WaitingListDB>      mockedWaitingListDB;
     private MockedConstruction<NotificationDB>     mockedNotificationDB;
 
@@ -33,7 +31,6 @@ public class LotteryControllerTest {
 
     @Before
     public void setUp() {
-        mockedEventDB        = Mockito.mockConstruction(EventDB.class);
         mockedWaitingListDB  = Mockito.mockConstruction(WaitingListDB.class);
         mockedNotificationDB = Mockito.mockConstruction(NotificationDB.class);
 
@@ -42,7 +39,6 @@ public class LotteryControllerTest {
 
     @After
     public void tearDown() {
-        mockedEventDB.close();
         mockedWaitingListDB.close();
         mockedNotificationDB.close();
     }

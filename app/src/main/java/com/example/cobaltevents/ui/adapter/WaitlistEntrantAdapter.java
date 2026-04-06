@@ -3,6 +3,7 @@ package com.example.cobaltevents.ui.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -20,19 +21,34 @@ import java.util.Map;
 
 public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrantAdapter.ViewHolder> {
 
+    /** Invited-tab only: organizer rescinds lottery/replacement invite (back to pending). */
+    public interface OnRescindInviteListener {
+        void onRescindInvite(WaitingList registration);
+    }
+
     private List<WaitingList> items = new ArrayList<>();
     private Map<String, String> names = new HashMap<>();
+    private boolean showRescindInvite;
+    private OnRescindInviteListener rescindInviteListener;
     private static final SimpleDateFormat DATE_FORMAT =
             new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
 
-    public void setItems(List<WaitingList> items) {
+    /**
+     * @param showRescindInvite when true (Invited tab), shows trash control to rescind lottery/replacement invite.
+     */
+    public void setItems(List<WaitingList> items, boolean showRescindInvite) {
         this.items = items != null ? items : new ArrayList<>();
+        this.showRescindInvite = showRescindInvite;
         notifyDataSetChanged();
     }
 
     public void setNames(Map<String, String> names) {
         this.names = names != null ? names : new HashMap<>();
         notifyDataSetChanged();
+    }
+
+    public void setOnRescindInviteListener(OnRescindInviteListener listener) {
+        this.rescindInviteListener = listener;
     }
 
     @NonNull
@@ -81,6 +97,15 @@ public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrant
         } else {
             holder.tvJoined.setVisibility(View.GONE);
         }
+
+        if (holder.btnRescindInvite != null) {
+            holder.btnRescindInvite.setVisibility(showRescindInvite ? View.VISIBLE : View.GONE);
+            holder.btnRescindInvite.setOnClickListener(v -> {
+                if (rescindInviteListener != null) {
+                    rescindInviteListener.onRescindInvite(reg);
+                }
+            });
+        }
     }
 
     @Override
@@ -90,6 +115,7 @@ public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrant
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvName, tvEmail, tvPhone, tvLocation, tvJoined;
+        ImageButton btnRescindInvite;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -98,6 +124,7 @@ public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrant
             tvPhone = itemView.findViewById(R.id.tv_entrant_phone);
             tvLocation = itemView.findViewById(R.id.tv_entrant_location);
             tvJoined = itemView.findViewById(R.id.tv_joined_date);
+            btnRescindInvite = itemView.findViewById(R.id.btn_rescind_invite);
         }
     }
 }

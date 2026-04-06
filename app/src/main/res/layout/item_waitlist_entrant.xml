@@ -78,5 +78,17 @@
                 android:textColor="@color/event_manage_muted"
                 android:textSize="11sp" />
         </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btn_rescind_invite"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center_vertical"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/event_manage_rescind_invite_cd"
+            android:padding="10dp"
+            android:src="@drawable/ic_delete"
+            android:tint="@color/status_error_red"
+            android:visibility="gone" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

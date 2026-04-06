@@ -10,6 +10,7 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.Source;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,6 +59,48 @@ public class NotificationDB {
                 .delete()
                 .addOnSuccessListener(onSuccess)
                 .addOnFailureListener(onFailure);
+    }
+
+    /**
+     * Removes in-app lottery / replacement invite notifications for an entrant and event so the
+     * notification log no longer shows an active selection invite after the organizer rescinds it.
+     * Deletes {@link Notification#TYPE_SELECTED} and {@link Notification#TYPE_GOT_OFF_WAITLIST}
+     * with {@link Notification#RECIPIENT_MODE_USER}.
+     */
+    public void deleteLotteryInviteNotifications(String recipientId,
+                                                 String eventId,
+                                                 OnSuccessListener<Void> onSuccess,
+                                                 OnFailureListener onFailure) {
+        if (recipientId == null || recipientId.isEmpty() || eventId == null || eventId.isEmpty()) {
+            if (onFailure != null) {
+                onFailure.onFailure(new IllegalArgumentException("recipientId and eventId required"));
+            }
+            return;
+        }
+        getNotificationsForRecipientAndEvent(recipientId, eventId, notifications -> {
+            WriteBatch batch = db.batch();
+            int n = 0;
+            for (Notification notif : notifications) {
+                if (notif == null || notif.getId() == null) continue;
+                if (!Notification.RECIPIENT_MODE_USER.equals(notif.getRecipientMode())) continue;
+                String t = notif.getType();
+                if (Notification.TYPE_SELECTED.equals(t) || Notification.TYPE_GOT_OFF_WAITLIST.equals(t)) {
+                    batch.delete(db.collection(COLLECTION).document(notif.getId()));
+                    n++;
+                }
+            }
+            if (n == 0) {
+                if (onSuccess != null) onSuccess.onSuccess(null);
+                return;
+            }
+            batch.commit()
+                    .addOnSuccessListener(v -> {
+                        if (onSuccess != null) onSuccess.onSuccess(null);
+                    })
+                    .addOnFailureListener(e -> {
+                        if (onFailure != null) onFailure.onFailure(e);
+                    });
+        }, onFailure);
     }
 
     public void updateResponse(String notificationId,

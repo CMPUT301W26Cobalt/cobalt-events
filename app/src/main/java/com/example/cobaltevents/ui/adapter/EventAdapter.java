@@ -275,7 +275,18 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         boolean declined = WaitingList.STATUS_DECLINED.equals(anyStatus)
                 || WaitingList.STATUS_DECLINED_FOUND_REPLACEMENT.equals(anyStatus);
 
-        if (registrationClosed) {
+        // Terminal waitlist outcomes win over registration window (enrolled users still see ENROLLED after close).
+        if (enrolled) {
+            holder.btnJoin.setText("ENROLLED");
+            holder.btnJoin.setAlpha(0.45f);
+            holder.btnJoin.setEnabled(false);
+            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
+        } else if (declined) {
+            holder.btnJoin.setText("DECLINED");
+            holder.btnJoin.setAlpha(0.45f);
+            holder.btnJoin.setEnabled(false);
+            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
+        } else if (registrationClosed) {
             holder.btnJoin.setText("REGISTRATION CLOSED");
             holder.btnJoin.setAlpha(0.45f);
             holder.btnJoin.setEnabled(false);
@@ -287,16 +298,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             holder.btnJoin.setBackgroundResource(R.drawable.bg_button_upcoming);
         } else if (full) {
             holder.btnJoin.setText("WAITLIST FULL");
-            holder.btnJoin.setAlpha(0.45f);
-            holder.btnJoin.setEnabled(false);
-            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
-        } else if (enrolled) {
-            holder.btnJoin.setText("ENROLLED");
-            holder.btnJoin.setAlpha(0.45f);
-            holder.btnJoin.setEnabled(false);
-            holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);
-        } else if (declined) {
-            holder.btnJoin.setText("DECLINED");
             holder.btnJoin.setAlpha(0.45f);
             holder.btnJoin.setEnabled(false);
             holder.btnJoin.setBackgroundResource(R.drawable.bg_button_join_solid);

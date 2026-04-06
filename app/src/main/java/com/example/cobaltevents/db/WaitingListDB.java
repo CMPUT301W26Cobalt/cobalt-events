@@ -2,6 +2,8 @@ package com.example.cobaltevents.db;
 
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.LotteryErrorCodes;
+import com.example.cobaltevents.model.DeclineSelectionInviteOutcome;
+import com.example.cobaltevents.model.RescindSelectionInviteOutcome;
 import com.example.cobaltevents.model.WaitingList;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -513,7 +515,10 @@ public class WaitingListDB {
                         return;
                     }
                     WaitingList reg = docSnapshot.toObject(WaitingList.class);
-                    if (reg != null) reg.setEventId(eventId);
+                    if (reg != null) {
+                        reg.setEventId(eventId);
+                        reg.setId(docSnapshot.getId());
+                    }
                     onSuccess.onSuccess(reg);
                 })
                 .addOnFailureListener(onFailure);
@@ -945,6 +950,164 @@ public class WaitingListDB {
                 .update("status", status)
                 .addOnSuccessListener(onSuccess)
                 .addOnFailureListener(onFailure);
+    }
+
+    /**
+     * Atomically moves one entrant from {@link WaitingList#STATUS_SELECTED} to
+     * {@link WaitingList#STATUS_PENDING} only if still selected. If they already accepted
+     * ({@link WaitingList#STATUS_ENROLLED}), returns {@link RescindSelectionInviteOutcome#ALREADY_ENROLLED}
+     * and does not write.
+     */
+    public void rescindSelectionInviteIfStillSelected(String eventId,
+                                                      String entryDocId,
+                                                      OnSuccessListener<RescindSelectionInviteOutcome> onSuccess,
+                                                      OnFailureListener onFailure) {
+        if (eventId == null || eventId.isEmpty() || entryDocId == null || entryDocId.isEmpty()) {
+            if (onFailure != null) {
+                onFailure.onFailure(new IllegalArgumentException("eventId and entryDocId required"));
+            }
+            return;
+        }
+        DocumentReference ref = db.collection(COLLECTION_WAITLISTS)
+                .document(eventId)
+                .collection(SUBCOLLECTION_ENTRIES)
+                .document(entryDocId);
+        db.runTransaction(transaction -> {
+            DocumentSnapshot snap = transaction.get(ref);
+            if (snap == null || !snap.exists()) {
+                throw new IllegalStateException(LotteryErrorCodes.WAITLIST_ENTRY_NOT_FOUND);
+            }
+            String st = snap.getString("status");
+            if (WaitingList.STATUS_ENROLLED.equals(st)) {
+                return RescindSelectionInviteOutcome.ALREADY_ENROLLED;
+            }
+            if (!WaitingList.STATUS_SELECTED.equals(st)) {
+                return RescindSelectionInviteOutcome.NOT_INVITED_ANYMORE;
+            }
+            transaction.update(ref, "status", WaitingList.STATUS_PENDING);
+            return RescindSelectionInviteOutcome.APPLIED;
+        }).addOnSuccessListener(result -> {
+            if (onSuccess != null) {
+                onSuccess.onSuccess(result != null ? result : RescindSelectionInviteOutcome.NOT_INVITED_ANYMORE);
+            }
+        }).addOnFailureListener(e -> {
+            if (onFailure != null) {
+                onFailure.onFailure(e);
+            }
+        });
+    }
+
+    /**
+     * One transaction: require waitlist {@code selected}, set {@code enrolled}, and add {@code entrantDeviceId}
+     * to the event's {@code confirmedAttendeeIds}. Prevents rescind/accept races from leaving inconsistent
+     * waitlist vs confirmed list.
+     */
+    public void acceptSelectedInvitationTransactional(String eventId,
+                                                      String entryDocId,
+                                                      String entrantDeviceId,
+                                                      OnSuccessListener<Void> onSuccess,
+                                                      OnFailureListener onFailure) {
+        if (eventId == null || eventId.isEmpty()
+                || entryDocId == null || entryDocId.isEmpty()
+                || entrantDeviceId == null || entrantDeviceId.isEmpty()) {
+            if (onFailure != null) {
+                onFailure.onFailure(new IllegalArgumentException("eventId, entryDocId, and entrantDeviceId required"));
+            }
+            return;
+        }
+        DocumentReference entryRef = db.collection(COLLECTION_WAITLISTS)
+                .document(eventId)
+                .collection(SUBCOLLECTION_ENTRIES)
+                .document(entryDocId);
+        DocumentReference eventRef = db.collection(COLLECTION_EVENTS).document(eventId);
+        db.runTransaction(transaction -> {
+            DocumentSnapshot entrySnap = transaction.get(entryRef);
+            if (entrySnap == null || !entrySnap.exists()) {
+                throw new IllegalStateException(LotteryErrorCodes.WAITLIST_ENTRY_NOT_FOUND);
+            }
+            String st = entrySnap.getString("status");
+            if (WaitingList.STATUS_ENROLLED.equals(st)) {
+                throw new IllegalStateException(LotteryErrorCodes.INVITATION_ALREADY_ENROLLED);
+            }
+            if (!WaitingList.STATUS_SELECTED.equals(st)) {
+                throw new IllegalStateException(LotteryErrorCodes.INVITATION_NOT_ACTIVE);
+            }
+            DocumentSnapshot eventSnap = transaction.get(eventRef);
+            if (eventSnap == null || !eventSnap.exists()) {
+                throw new IllegalStateException("Event not found");
+            }
+            List<String> confirmed = confirmedAttendeeIdsFromSnapshot(eventSnap);
+            if (!confirmed.contains(entrantDeviceId)) {
+                List<String> updated = new ArrayList<>(confirmed);
+                updated.add(entrantDeviceId);
+                transaction.update(eventRef, "confirmedAttendeeIds", updated);
+            }
+            transaction.update(entryRef, "status", WaitingList.STATUS_ENROLLED);
+            return null;
+        }).addOnSuccessListener(unused -> {
+            if (onSuccess != null) {
+                onSuccess.onSuccess(null);
+            }
+        }).addOnFailureListener(onFailure);
+    }
+
+    /**
+     * One transaction: require waitlist {@code selected}, set {@code declined}. If already declined or
+     * found-replacement, returns {@link DeclineSelectionInviteOutcome#ALREADY_DECLINED} without writing.
+     */
+    public void declineSelectedInvitationTransactional(String eventId,
+                                                       String entryDocId,
+                                                       OnSuccessListener<DeclineSelectionInviteOutcome> onSuccess,
+                                                       OnFailureListener onFailure) {
+        if (eventId == null || eventId.isEmpty() || entryDocId == null || entryDocId.isEmpty()) {
+            if (onFailure != null) {
+                onFailure.onFailure(new IllegalArgumentException("eventId and entryDocId required"));
+            }
+            return;
+        }
+        DocumentReference entryRef = db.collection(COLLECTION_WAITLISTS)
+                .document(eventId)
+                .collection(SUBCOLLECTION_ENTRIES)
+                .document(entryDocId);
+        db.runTransaction(transaction -> {
+            DocumentSnapshot snap = transaction.get(entryRef);
+            if (snap == null || !snap.exists()) {
+                throw new IllegalStateException(LotteryErrorCodes.WAITLIST_ENTRY_NOT_FOUND);
+            }
+            String st = snap.getString("status");
+            if (WaitingList.STATUS_DECLINED.equals(st)
+                    || WaitingList.STATUS_DECLINED_FOUND_REPLACEMENT.equals(st)) {
+                return DeclineSelectionInviteOutcome.ALREADY_DECLINED;
+            }
+            if (WaitingList.STATUS_ENROLLED.equals(st)) {
+                return DeclineSelectionInviteOutcome.ALREADY_ENROLLED;
+            }
+            if (!WaitingList.STATUS_SELECTED.equals(st)) {
+                return DeclineSelectionInviteOutcome.NOT_INVITED_ANYMORE;
+            }
+            transaction.update(entryRef, "status", WaitingList.STATUS_DECLINED);
+            return DeclineSelectionInviteOutcome.APPLIED;
+        }).addOnSuccessListener(result -> {
+            if (onSuccess != null) {
+                onSuccess.onSuccess(result != null ? result : DeclineSelectionInviteOutcome.NOT_INVITED_ANYMORE);
+            }
+        }).addOnFailureListener(onFailure);
+    }
+
+    private static List<String> confirmedAttendeeIdsFromSnapshot(DocumentSnapshot eventSnap) {
+        List<String> out = new ArrayList<>();
+        Object raw = eventSnap.get("confirmedAttendeeIds");
+        if (raw instanceof List<?>) {
+            for (Object o : (List<?>) raw) {
+                if (o instanceof String) {
+                    String id = ((String) o).trim();
+                    if (!id.isEmpty() && !out.contains(id)) {
+                        out.add(id);
+                    }
+                }
+            }
+        }
+        return out;
     }
 
     public void deleteRegistration(String eventId, String deviceId, OnSuccessListener<Void> onSuccess, OnFailureListener onFailure) {
