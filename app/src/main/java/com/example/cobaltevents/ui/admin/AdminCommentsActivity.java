@@ -20,6 +20,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.controller.AdminController;
+import com.example.cobaltevents.util.NetworkConnectivity;
 import com.example.cobaltevents.db.CommentDB;
 import com.example.cobaltevents.db.ProfileDB;
 import com.example.cobaltevents.model.Comment;
@@ -96,6 +97,11 @@ public class AdminCommentsActivity extends AppCompatActivity {
     // =========================================================================
 
     private void loadComments() {
+        if (!NetworkConnectivity.hasValidatedInternet(this)) {
+            hideLoading();
+            Toast.makeText(this, R.string.comments_no_internet, Toast.LENGTH_SHORT).show();
+            return;
+        }
         showLoading();
         commentDB.loadCommentsForEvent(eventId, null,
                 comments -> {
@@ -136,6 +142,10 @@ public class AdminCommentsActivity extends AppCompatActivity {
     // =========================================================================
 
     private void showProfileDialog(String userId, String userName) {
+        if (!NetworkConnectivity.hasValidatedInternet(this)) {
+            Toast.makeText(this, R.string.comments_no_internet, Toast.LENGTH_SHORT).show();
+            return;
+        }
         profileDB.getProfile(userId, profile -> {
             View dialogView = LayoutInflater.from(this)
                     .inflate(R.layout.dialog_view_detail, null);
@@ -235,6 +245,10 @@ public class AdminCommentsActivity extends AppCompatActivity {
                 .setView(dialogView)
                 .create();
         btnConfirm.setOnClickListener(v -> {
+            if (!NetworkConnectivity.hasValidatedInternet(this)) {
+                Toast.makeText(this, R.string.comments_no_internet, Toast.LENGTH_SHORT).show();
+                return;
+            }
             dialog.dismiss();
             adminController.removeComment(eventId, comment.getId(),
                     unused -> { Toast.makeText(this, "Comment deleted", Toast.LENGTH_SHORT).show(); loadComments(); },
@@ -261,6 +275,10 @@ public class AdminCommentsActivity extends AppCompatActivity {
                 .setView(dialogView)
                 .create();
         btnConfirm.setOnClickListener(v -> {
+            if (!NetworkConnectivity.hasValidatedInternet(this)) {
+                Toast.makeText(this, R.string.comments_no_internet, Toast.LENGTH_SHORT).show();
+                return;
+            }
             dialog.dismiss();
             adminController.removeReply(eventId, comment.getId(), reply.getId(),
                     unused -> { Toast.makeText(this, "Reply deleted", Toast.LENGTH_SHORT).show(); loadComments(); },

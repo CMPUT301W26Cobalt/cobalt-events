@@ -19,10 +19,18 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+/**
+ * Rows for the manage-event waitlist tabs (pending, invited, confirmed, declined).
+ * The Invited tab can show a rescind control so organizers can move a {@code selected} entrant back to pending.
+ */
 public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrantAdapter.ViewHolder> {
 
-    /** Invited-tab only: organizer rescinds lottery/replacement invite (back to pending). */
     public interface OnRescindInviteListener {
+        /**
+         * Invited tab only: organizer chose to rescind this {@code selected} invite.
+         *
+         * @param registration waitlist row for the entrant (expected status {@link WaitingList#STATUS_SELECTED})
+         */
         void onRescindInvite(WaitingList registration);
     }
 
@@ -47,6 +55,9 @@ public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrant
         notifyDataSetChanged();
     }
 
+    /**
+     * @param listener invoked when the rescind affordance is used on the Invited tab; may be {@code null} to clear
+     */
     public void setOnRescindInviteListener(OnRescindInviteListener listener) {
         this.rescindInviteListener = listener;
     }
@@ -115,6 +126,7 @@ public class WaitlistEntrantAdapter extends RecyclerView.Adapter<WaitlistEntrant
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         TextView tvName, tvEmail, tvPhone, tvLocation, tvJoined;
+        /** Visible only on the Invited tab; see {@link #setItems(List, boolean)}. */
         ImageButton btnRescindInvite;
 
         ViewHolder(@NonNull View itemView) {

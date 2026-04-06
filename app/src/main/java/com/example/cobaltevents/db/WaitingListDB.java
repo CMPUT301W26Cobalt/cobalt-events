@@ -957,6 +957,11 @@ public class WaitingListDB {
      * {@link WaitingList#STATUS_PENDING} only if still selected. If they already accepted
      * ({@link WaitingList#STATUS_ENROLLED}), returns {@link RescindSelectionInviteOutcome#ALREADY_ENROLLED}
      * and does not write.
+     *
+     * @param eventId      Firestore event id
+     * @param entryDocId   waitlist subcollection document id for this entrant
+     * @param onSuccess    delivers {@link RescindSelectionInviteOutcome}; never {@code null} on success path
+     * @param onFailure    transaction or Firestore failure
      */
     public void rescindSelectionInviteIfStillSelected(String eventId,
                                                       String entryDocId,

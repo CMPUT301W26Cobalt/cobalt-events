@@ -28,6 +28,10 @@ import com.example.cobaltevents.ui.adapter.OrganizerEventAdapter;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Organizer dashboard: events this device organizes, client-side search over title/description/location,
+ * pull-to-refresh, and navigation to create / notifications / account.
+ */
 public class OrganizerActivity extends AppCompatActivity {
 
     /** True when launched from AdminActivity via role switch. */
@@ -43,6 +47,7 @@ public class OrganizerActivity extends AppCompatActivity {
 
     /** Full list from the server; {@link #applySearchFilter()} drives what the adapter shows. */
     private final List<Event> allOrganizerEvents = new ArrayList<>();
+    /** Trimmed query from {@code R.id.et_organizer_search}; empty means show all loaded events. */
     private String currentQuery = "";
 
     @Override
@@ -126,10 +131,14 @@ public class OrganizerActivity extends AppCompatActivity {
                         swipeRefreshLayout.setRefreshing(false);
                     }
                     Toast.makeText(this, "Failed to load events: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    // Restore list + empty state from last successful load (allOrganizerEvents unchanged).
                     applySearchFilter();
                 });
     }
 
+    /**
+     * Wires {@code R.id.et_organizer_search} so each edit updates {@link #currentQuery} and reapplies the filter.
+     */
     private void setupSearchField() {
         EditText et = findViewById(R.id.et_organizer_search);
         if (et == null) return;
@@ -149,7 +158,9 @@ public class OrganizerActivity extends AppCompatActivity {
     }
 
     /**
-     * Same text matching as {@link EventListActivity#applyFilters()} for the query (name, description, location).
+     * Filters {@link #allOrganizerEvents} by {@link #currentQuery} (case-insensitive substring on
+     * name, description, location), matching the browse list’s text search. Updates the adapter and
+     * empty-state copy (no events vs no search hits).
      */
     private void applySearchFilter() {
         List<Event> filtered = new ArrayList<>();
