@@ -7,7 +7,9 @@ skinparam classAttributeIconSize 0
 skinparam linetype ortho
 skinparam defaultTextAlignment left
 '
-' Higher-resolution export settings
+' SVG export (use: plantuml.jar -tsvg this file) — vector output stays sharp at any zoom.
+' dpi + scale enlarge coordinate space / stroke detail; not raster pixels like PNG.
+skinparam svgDimensionStyle false
 skinparam dpi 300
 scale 1.6
 
@@ -30,20 +32,26 @@ package "com.example.cobaltevents.model" as model {
     +name: String
     +description: String
     +location: String
+    +locationLatitude: Double
+    +locationLongitude: Double
     +price: String
     +eventDate: Timestamp
     +registrationOpen: Timestamp
     +registrationClose: Timestamp
-    +organizerDeviceId: String
+    +organizers: List<String>
     +waitingListId: String
     +posterImageUrl: String
     +geolocationRequired: boolean
     +waitingListCapacity: int
     +qrCodeData: String
     +confirmedAttendeeIds: List<String>
-    +category: String
+    +category: Object
     +ageGroup: String
     +criteria: String
+    +isPrivate: boolean
+    --
+    +isDeviceAnOrganizer(deviceId)
+    +isSoleOrganizer(deviceId)
   }
 
   class WaitingList {
@@ -60,13 +68,7 @@ package "com.example.cobaltevents.model" as model {
     +notificationMethod: String
     +notificationsAllowed: boolean
     --
-    +STATUS_PENDING
-    +STATUS_SELECTED
-    +STATUS_NOT_SELECTED
-    +STATUS_CANCELLED
-    +STATUS_WITHDRAWN
-    +STATUS_ENROLLED
-    +STATUS_DECLINED
+    +STATUS_* (pending, selected, enrolled, declined, …)
   }
 
   class WaitlistEntryInfo {
@@ -83,17 +85,11 @@ package "com.example.cobaltevents.model" as model {
     +type: String
     +read: String
     +timestamp: Date
+    +recipient_mode: String
     --
-    +TYPE_SELECTED
-    +TYPE_GOT_OFF_WAITLIST
-    +TYPE_NOT_SELECTED
-    +TYPE_PRIVATE_EVENT
-    +STATUS_PENDING
-    +STATUS_ACCEPTED
-    +STATUS_REJECTED
-    +READ_PENDING
-    +READ_ACCEPTED
-    +READ_REJECTED
+    +TYPE_SELECTED, TYPE_GOT_OFF_WAITLIST, TYPE_NOT_SELECTED
+    +TYPE_PRIVATE_EVENT, TYPE_CO_ORGANIZER, TYPE_EVENT_ALERT
+    +RECIPIENT_MODE_USER, RECIPIENT_MODE_ORGANIZER
   }
 
   class Entrant {
@@ -105,6 +101,27 @@ package "com.example.cobaltevents.model" as model {
     +organizerEnabled: Boolean
   }
 
+  class Comment {
+    +id: String
+    +eventId: String
+    +userId: String
+    +userName: String
+    +text: String
+    +createdAtMillis: long
+    +reactions: Map
+    +replies: List<Reply>
+  }
+
+  class Reply {
+    +id: String
+    +commentId: String
+    +userId: String
+    +userName: String
+    +text: String
+    +createdAtMillis: long
+    +reactions: Map
+  }
+
   class Organizer
 }
 
@@ -113,24 +130,26 @@ package "com.example.cobaltevents.db" as db {
   class EventDB {
     +createEvent(event, onSuccess, onFailure)
     +getEvent(eventId, onSuccess, onFailure)
-    +getAllEvents(onSuccess, onFailure)
-    +getEventsByOrganizer(organizerDeviceId, onSuccess, onFailure)
+    +getEventFromServer(eventId, onSuccess, onFailure)
+    +getAllEvents(onSuccess, onFailure, cacheFallback?)
+    +getEventsByOrganizer(deviceId, onSuccess, onFailure)
+    +getEventsForOrganizerParticipation(deviceId, onSuccess, onFailure)
     +updateEvent(event, onSuccess, onFailure)
     +deleteEvent(eventId, onSuccess, onFailure)
+    +removeOrganizerEnsuringAtLeastOne(eventId, deviceId, …)
+    --
+    ..catalog prefers server read; optional cache fallback..
   }
   class WaitingListDB {
-    +getEntrantsForEvent(eventId, onSuccess, onFailure)
-    +getEntrantHistory(deviceId, onSuccess, onFailure)
-    +addRegistration(registration, onSuccess, onFailure)
-    +getActiveRegistrationForEvent(eventId, deviceId, onSuccess, onFailure)
-    +updateStatus(eventId, registrationId, status, onSuccess, onFailure)
-    +updateNotificationsAllowed(eventId, deviceId, allowed, onSuccess, onFailure)
-    +deleteRegistration(eventId, deviceId, onSuccess, onFailure)
-    +getActiveCountForEvent(eventId, onSuccess, onFailure)
-    +removeUserFromAllWaitlists(deviceId, onSuccess, onFailure)
-    +getWaitlistInfoForEvents(deviceId, eventIds, onSuccess, onFailure)
-    +getWaitlistInfoForDevice(deviceId, onSuccess, onFailure)
-    +getWaitlistStatusesForDevice(deviceId, onSuccess, onFailure)
+    +getEntrantsForEvent(eventId, source, onSuccess, onFailure)
+    +addRegistration(…)
+    +getActiveRegistrationForEvent(…)
+    +getRegistrationForEventAnyStatus(…)
+    +updateStatus(…)
+    +deleteAllWaitlistDataForEvent(eventId, …)
+    +getActiveCountForEvent(…)
+    +removeUserFromAllWaitlists(deviceId, …)
+    +transactions for capacity / atomic updates
   }
   class NotificationDB {
     +saveNotification(notification, onSuccess, onFailure)
@@ -151,6 +170,14 @@ package "com.example.cobaltevents.db" as db {
     +uploadPoster(imageUri, eventId, onSuccess, onFailure)
     +deleteImageByUrl(imageUrl, onSuccess, onFailure)
   }
+  class CommentDB {
+    +loadCommentsForEvent(eventId, viewerUserId, …)
+    +addComment, addReply, toggle reactions
+    +deleteCommentWithReplies(…)
+    +deleteAllCommentsAndRepliesForEvent(eventId, …)
+    --
+    ..events/{id}/comments and …/replies subcollections..
+  }
   class EventDBConnector {
     +getInstance(): EventDBConnector
     +getFirestore(): FirebaseFirestore
@@ -166,8 +193,9 @@ package "com.example.cobaltevents.controller" as ctl {
   ' Orchestration and domain logic; coordinates DB operations for UI.
   class EventController {
     +createEvent(event, onSuccess, onFailure)
-    +getAllEvents(onSuccess, onFailure)
+    +getAllEvents(onSuccess, onFailure, cacheFallback?)
     +getEvent(eventId, onSuccess, onFailure)
+    +getEventFromServer(eventId, onSuccess, onFailure)
     +getEventsByOrganizer(organizerDeviceId, onSuccess, onFailure)
     +updateEvent(event, onSuccess, onFailure)
     +deleteEvent(eventId, onSuccess, onFailure)
@@ -179,23 +207,23 @@ package "com.example.cobaltevents.controller" as ctl {
     +saveEntrant(entrant): boolean
   }
   class AdminController {
-    +getAllEvents(onSuccess, onFailure)
-    +removeEvent(eventId, onSuccess, onFailure)
-    +getAllProfiles(onSuccess, onFailure)
-    +removeProfile(deviceId, onSuccess, onFailure)
-    +getAllImagesFromEvents(onSuccess, onFailure)
-    +removeEventImage(eventId, onSuccess, onFailure)
-    +getAllOrganizers(onSuccess, onFailure)
-    +removeOrganizer(organizerDeviceId, onSuccess, onFailure)
-    +getAllNotifications(onSuccess, onFailure)
+    +invalidateAll()
+    +getAllEvents / getAllProfiles (session caches)
+    +removeEvent(eventId, …) + event-alert notifications
+    +removeProfile(deviceId, …)
+    +removeOrganizer(organizerDeviceId, …)
+    +removeEventImage(eventId, posterUrlWhenListed, …)
+    +getAllImagesFromEvents, getAllOrganizers
+    +getAllNotifications
+    +getAllCommentsGroupedByEvent, removeComment, removeReply
     --
-    ..keeps simple in-memory caches (events, profiles)..
+    ..removeOrganizer: event-side cleanup only (no profile delete)..
+    ..removeEventImage: transactional if poster URL still matches..
   }
   class LotteryController {
-    +acceptInvitation(deviceId, eventId, onSuccess, onFailure)
-    +declineInvitation(deviceId, eventId, onSuccess, onFailure)
+    +acceptInvitation / declineInvitation / draw replacement flows
     --
-    ..drawReplacement() updates waitlist to SELECTED; event-specific notification sending removed..
+    ..updates WaitingListDB; coordinates notifications..
   }
   class NotificationController {
     +createNotificationChannel(context)
@@ -204,7 +232,7 @@ package "com.example.cobaltevents.controller" as ctl {
     +startNotificationListener(context, deviceId)
     +stopNotificationListener()
     --
-    ..shows system notifications; tap opens NotificationsActivity..
+    ..tap opens NotificationsActivity..
   }
   class QRCodeController {
     +generateQRCode(eventId): Bitmap
@@ -218,11 +246,10 @@ package "com.example.cobaltevents.controller" as ctl {
 }
 
 package "com.example.cobaltevents.ui" as ui {
-  ' Android Activities (screens). Kept brief; they delegate to controllers.
+  ' Primary screens (Activities). Delegate to controllers / DB.
   class MainActivity
   class WelcomeActivity
   class EventListActivity
-  class EventDetailActivity
   class EventCreateActivity
   class EventManageActivity
   class EventHistoryActivity
@@ -232,11 +259,28 @@ package "com.example.cobaltevents.ui" as ui {
   class EntrantEditActivity
   class OrganizerActivity
   class AccountSettingsActivity
+  class NotificationsActivity
+  class MapPreviewActivity
+  class EditEventDialog
+  ' Also: EditFieldActivity, EditLocationActivity, EditCapacityActivity, etc. for inline edits.
+}
+
+package "com.example.cobaltevents.ui.admin" as uiAdmin {
   class AdminActivity
+  class AdminCommentsActivity
+  class AdminAdapter
+  class AdminConfig
   class AdminEventListActivity
   class AdminProfileListActivity
   class AdminImageListActivity
-  class NotificationsActivity
+  ' AdminEvent/Profile/Image list activities: placeholder shells; main browse is AdminActivity.
+}
+
+package "com.example.cobaltevents.ui.comments" as uicomments {
+  class EventCommentsUiBinder
+  note bottom of EventCommentsUiBinder
+    Event card comments: load via CommentDB; server check for private/stale event on writes.
+  end note
 }
 
 package "com.example.cobaltevents.ui.adapter" as adapter {
@@ -244,7 +288,6 @@ package "com.example.cobaltevents.ui.adapter" as adapter {
   class OrganizerEventAdapter
   class EventHistoryAdapter
   class WaitlistEntrantAdapter
-  class NotificationEventAdapter
   class NotificationListAdapter
 }
 
@@ -252,11 +295,15 @@ package "com.example.cobaltevents.ui.adapter" as adapter {
 ' Relationships (high-level)
 ' ==============================================================================
 db.EventDBConnector --> db.EventDB : provides Firestore
+db.EventDBConnector --> db.CommentDB : provides Firestore
 ctl.EventController --> db.EventDB
 ctl.EntrantController --> db.EntrantDB
 ctl.EntrantController --> db.ProfileDB
 ctl.AdminController --> db.EventDB
 ctl.AdminController --> db.ProfileDB
+ctl.AdminController --> db.WaitingListDB
+ctl.AdminController --> db.NotificationDB
+ctl.AdminController --> db.CommentDB
 ctl.AdminController ..> model.Event : caches
 ctl.AdminController ..> model.Entrant : caches
 ctl.ImageController --> db.ImageDB
@@ -274,62 +321,83 @@ db.NotificationDB --> model.Notification
 db.ProfileDB --> model.Entrant
 db.ImageDB ..> model.Event : persists poster URL
 db.EntrantDB --> model.Entrant
+db.CommentDB --> model.Comment
+db.CommentDB --> model.Reply
+model.Comment *-- model.Reply : nested in memory
 
 ui.MainActivity ..> ctl.NotificationController : start/stop listener
 ui.EventListActivity ..> ctl.EventController
-ui.EventDetailActivity ..> ctl.EventController
+ui.EventListActivity ..> ctl.GeolocationController
 ui.EventCreateActivity ..> ctl.EventController
 ui.EventManageActivity ..> ctl.EventController
 ui.EventManageActivity ..> ctl.ImageController
+ui.EventManageActivity ..> ctl.LotteryController
+ui.EventManageActivity ..> ctl.QRCodeController
 ui.EventHistoryActivity ..> ctl.EventController
 ui.JoinWaitlistActivity ..> db.WaitingListDB
+ui.QRScanActivity ..> db.EventDB
+ui.QRScanActivity ..> db.WaitingListDB
 ui.QRScanActivity ..> ctl.QRCodeController
 ui.EntrantActivity ..> ctl.EntrantController
 ui.EntrantEditActivity ..> ctl.EntrantController
-ui.OrganizerActivity ..> ctl.EventController
+ui.OrganizerActivity ..> db.EventDB
 ui.AccountSettingsActivity ..> db.ProfileDB
-ui.AccountSettingsActivity ..> db.EntrantDB : local profile save
-ui.AccountSettingsActivity ..> db.WaitingListDB : toggle notificationsAllowed
-ui.AdminActivity ..> ctl.AdminController
-ui.AdminEventListActivity ..> ctl.AdminController
-ui.AdminProfileListActivity ..> ctl.AdminController
-ui.AdminImageListActivity ..> ctl.AdminController
+ui.AccountSettingsActivity ..> db.EventDB
+ui.AccountSettingsActivity ..> db.WaitingListDB
+ui.AccountSettingsActivity ..> db.CommentDB
+ui.AccountSettingsActivity ..> ctl.AdminController : invalidate cache
+ui.AccountSettingsActivity ..> uiAdmin.AdminActivity : admin device only
 ui.NotificationsActivity ..> db.NotificationDB
+uicomments.EventCommentsUiBinder ..> db.CommentDB
+uicomments.EventCommentsUiBinder ..> db.EventDB
+uicomments.EventCommentsUiBinder ..> ui.EventListActivity : browse cards
+uicomments.EventCommentsUiBinder ..> ui.QRScanActivity : QR popup card
+
+uiAdmin.AdminActivity ..> ctl.AdminController
+uiAdmin.AdminCommentsActivity ..> ctl.AdminController
+uiAdmin.AdminAdapter ..> model.Event
+uiAdmin.AdminAdapter ..> model.Entrant
 
 adapter.EventAdapter ..> model.Event
+adapter.EventAdapter ..> uicomments.EventCommentsUiBinder
 adapter.OrganizerEventAdapter ..> model.Event
 adapter.EventHistoryAdapter ..> model.Event
 adapter.WaitlistEntrantAdapter ..> model.WaitingList
-adapter.NotificationEventAdapter ..> model.Notification
 adapter.NotificationListAdapter ..> model.Notification
 
 ' ==============================================================================
 ' Notes on design choices
 ' ==============================================================================
 note as N1
-  Models are plain Java objects aligned with Firestore's serialization rules
-  (no-arg constructors, public fields via getters/setters). Controllers keep
-  UI free of persistence details and consolidate validation + orchestration.
+  Models are plain Java objects aligned with Firestore serialization
+  (no-arg constructors, getters/setters). Controllers keep UI free of
+  persistence details where possible; some screens use DB helpers directly.
 end note
 
 note as N2
-  Notification flow is informational-only per latest changes:
-  - Waitlist status is updated in WaitingListDB by domain actions
-  - NotificationDB.updateReadStatus() toggles only the Notification.read field
-  - NotificationController listener opens NotificationsActivity (no event deep link)
+  Notification flow: waitlist changes write WaitingListDB / NotificationDB.
+  TYPE_EVENT_ALERT is used for organizer “notify waitlisted” and admin
+  event deletion alerts. recipient_mode distinguishes user vs organizer rows.
 end note
 
 model.Event .. N1
 ctl.NotificationController .. N2
 
 note as N3
-  Account Settings flows:
-  - Change account info: EntrantDB (local) + ProfileDB (remote)
-  - Mute notifications: WaitingListDB.updateNotificationsAllowed(eventId, deviceId, false)
-  - Delete account: ProfileDB.deleteProfile(deviceId)
+  Account Settings: EntrantDB (local) + ProfileDB (remote); account deletion
+  runs organizer pass on events (cascade or co-org) then waitlist removal
+  and profile delete. Admin dashboard row (same card as account mode) when
+  device ID matches AdminConfig.ADMIN_DEVICE_ID.
 end note
 
 ui.AccountSettingsActivity .. N3
 
-@enduml
+note as N4
+  Comments live under events/{eventId}/comments (+ replies). EventCommentsUiBinder
+  verifies event on server before writes on browse/QR cards; private events block
+  non–waitlisted users with the same rules as join.
+end note
 
+uicomments.EventCommentsUiBinder .. N4
+
+@enduml
