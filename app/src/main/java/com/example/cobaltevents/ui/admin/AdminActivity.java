@@ -36,6 +36,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.controller.AdminController;
+import com.example.cobaltevents.util.NetworkConnectivity;
 import com.example.cobaltevents.model.Comment;
 import com.example.cobaltevents.model.Entrant;
 import com.example.cobaltevents.model.Event;
@@ -530,12 +531,32 @@ public class AdminActivity extends AppCompatActivity {
     // US 03.04.01 — Browse events
     // =========================================================================
 
+    /**
+     * Blocks Firestore-backed admin actions when the device has no validated internet (same as
+     * {@link com.example.cobaltevents.ui.AccountSettingsActivity} / browse flows).
+     *
+     * @return false if offline (toast shown)
+     */
+    private boolean requireAdminInternet() {
+        if (!NetworkConnectivity.hasValidatedInternet(this)) {
+            Toast.makeText(this, R.string.comments_no_internet, Toast.LENGTH_SHORT).show();
+            return false;
+        }
+        return true;
+    }
+
     private void showEvents() {
         currentTab = "Events";
         currentSort = "default";
         resetSearch();
         setSelectedTab(tabEvents);
         tvSectionTitle.setText("Browse Events");
+        if (!requireAdminInternet()) {
+            hideLoading();
+            allItems.clear();
+            filterCurrentList();
+            return;
+        }
         showLoading();
 
         // Load profiles first, then events inside — guarantees "By: name" resolves
@@ -608,6 +629,12 @@ public class AdminActivity extends AppCompatActivity {
         resetSearch();
         setSelectedTab(tabProfiles);
         tvSectionTitle.setText("Browse Profiles");
+        if (!requireAdminInternet()) {
+            hideLoading();
+            allItems.clear();
+            filterCurrentList();
+            return;
+        }
         showLoading();
 
         adminController.getAllProfiles(profiles -> {
@@ -656,6 +683,12 @@ public class AdminActivity extends AppCompatActivity {
         resetSearch();
         setSelectedTab(tabImages);
         tvSectionTitle.setText("Browse Images");
+        if (!requireAdminInternet()) {
+            hideLoading();
+            allItems.clear();
+            filterCurrentList();
+            return;
+        }
         showLoading();
 
         // Load profiles first, then images inside — guarantees "By: name" resolves
@@ -715,8 +748,13 @@ public class AdminActivity extends AppCompatActivity {
         resetSearch();
         setSelectedTab(tabOrganizers);
         tvSectionTitle.setText("Browse Organizers");
+        if (!requireAdminInternet()) {
+            hideLoading();
+            allItems.clear();
+            filterCurrentList();
+            return;
+        }
         showLoading();
-
 
         adminController.getAllOrganizers(organizers -> {
             List<AdminAdapter.AdminItem> newItems = new ArrayList<>();
@@ -765,6 +803,12 @@ public class AdminActivity extends AppCompatActivity {
         if (slowTabCache.containsKey("Comments")) {
             allItems.clear();
             allItems.addAll(slowTabCache.get("Comments"));
+            filterCurrentList();
+            return;
+        }
+        if (!requireAdminInternet()) {
+            hideLoading();
+            allItems.clear();
             filterCurrentList();
             return;
         }
@@ -825,6 +869,12 @@ public class AdminActivity extends AppCompatActivity {
         if (slowTabCache.containsKey("Notifications")) {
             allItems.clear();
             allItems.addAll(slowTabCache.get("Notifications"));
+            filterCurrentList();
+            return;
+        }
+        if (!requireAdminInternet()) {
+            hideLoading();
+            allItems.clear();
             filterCurrentList();
             return;
         }
@@ -950,6 +1000,9 @@ public class AdminActivity extends AppCompatActivity {
     private void handleViewClick(AdminAdapter.AdminItem item) {
         // Comments tab — launch AdminCommentsActivity
         if (currentTab.equals("Comments")) {
+            if (!requireAdminInternet()) {
+                return;
+            }
             try {
                 Class<?> cls = Class.forName("com.example.cobaltevents.ui.admin.AdminCommentsActivity");
                 Intent intent = new Intent(this, cls);
@@ -1171,6 +1224,9 @@ public class AdminActivity extends AppCompatActivity {
     // =========================================================================
 
     private void handleRemoveClick(AdminAdapter.AdminItem item) {
+        if (!requireAdminInternet()) {
+            return;
+        }
         if (currentTab.equals("Images")) {
             View dialogView = LayoutInflater.from(this)
                     .inflate(R.layout.dialog_delete_image, null);
@@ -1181,6 +1237,9 @@ public class AdminActivity extends AppCompatActivity {
             tvTitle.setText(item.title != null ? item.title : "");
             AlertDialog dialog = new AlertDialog.Builder(this).setView(dialogView).create();
             btnImageOnly.setOnClickListener(v -> {
+                if (!requireAdminInternet()) {
+                    return;
+                }
                 dialog.dismiss();
                 adminController.removeEventImage(item.id, item.imageUrl,
                         unused -> {
@@ -1198,6 +1257,9 @@ public class AdminActivity extends AppCompatActivity {
                         });
             });
             btnImageEvent.setOnClickListener(v -> {
+                if (!requireAdminInternet()) {
+                    return;
+                }
                 dialog.dismiss();
                 removeItemFromList(item);
                 adminController.removeEvent(item.id,
@@ -1221,6 +1283,9 @@ public class AdminActivity extends AppCompatActivity {
         messageView.setText("Are you sure you want to delete \"" + item.title + "\"?");
         AlertDialog dialog = new AlertDialog.Builder(this).setView(dialogView).create();
         deleteBtn.setOnClickListener(v -> {
+            if (!requireAdminInternet()) {
+                return;
+            }
             dialog.dismiss();
             v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
             // Profiles / Organizers: do not optimistically remove — user may have deleted their

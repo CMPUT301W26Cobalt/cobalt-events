@@ -66,6 +66,9 @@ public class NotificationDB {
      * notification log no longer shows an active selection invite after the organizer rescinds it.
      * Deletes {@link Notification#TYPE_SELECTED} and {@link Notification#TYPE_GOT_OFF_WAITLIST}
      * with {@link Notification#RECIPIENT_MODE_USER}.
+     *
+     * @param recipientId entrant device id
+     * @param eventId     event the invite referred to
      */
     public void deleteLotteryInviteNotifications(String recipientId,
                                                  String eventId,

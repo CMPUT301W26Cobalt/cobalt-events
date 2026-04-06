@@ -115,7 +115,9 @@ public class EventManageActivity extends AppCompatActivity {
     private TextView tvPrivateBadge;
     private TextView tvCountWaitlisted, tvCountInvited, tvCountConfirmed;
     private TextView tabWaitlisted, tabInvited, tabConfirmed, tabDeclined;
+    /** Shown next to the plane icon: which bucket "notify" targets (matches current tab / declined subtab). */
     private TextView tvNotifyAllCurrent;
+    /** Opens {@link #showNotifyAllDialog()} for entrants visible on the active tab. */
     private View layoutNotifyAllSections;
     private View declinedSubtabsContainer;
     private TextView tabDeclinedNeedReplacement, tabDeclinedFoundReplacement;
@@ -1951,6 +1953,9 @@ public class EventManageActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Keeps the section notify row label in sync with {@link #currentTab} and {@link #currentDeclinedSubtab}.
+     */
     private void updateNotifyAllButtonLabel() {
         if (tvNotifyAllCurrent == null) return;
         if (WaitingList.STATUS_SELECTED.equals(currentTab)) {
@@ -1972,6 +1977,10 @@ public class EventManageActivity extends AppCompatActivity {
         tvNotifyAllCurrent.setText(R.string.event_manage_notify_all_waitlisted);
     }
 
+    /**
+     * Prompts for an {@link com.example.cobaltevents.model.Notification#TYPE_EVENT_ALERT} message and sends it to
+     * every device id in the current tab’s bucket (waitlisted, invited, confirmed, or declined slice).
+     */
     private void showNotifyAllDialog() {
         if (currentEvent == null || currentEvent.getEventId() == null || currentEvent.getEventId().trim().isEmpty()) {
             Toast.makeText(this, "Event not loaded yet", Toast.LENGTH_SHORT).show();
@@ -2011,6 +2020,10 @@ public class EventManageActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Loads full waitlist, collects recipients whose status {@link #matchesNotifyBucketForCurrentTab(String)},
+     * then sends one event alert per id via {@link #sendEventAlertNotificationsSequentially(List, int, String, Runnable)}.
+     */
     private void sendNotifyAllForCurrentTab(String userMessage) {
         if (currentEvent == null || currentEvent.getEventId() == null || currentEvent.getEventId().trim().isEmpty()) {
             Toast.makeText(this, "Event not loaded yet", Toast.LENGTH_SHORT).show();
@@ -2040,6 +2053,10 @@ public class EventManageActivity extends AppCompatActivity {
                 Toast.makeText(this, R.string.comments_action_failed, Toast.LENGTH_SHORT).show()));
     }
 
+    /**
+     * Same as {@link #showNotifyAllDialog()} but fixed scope: everyone on the waitlist (all statuses),
+     * from the tab strip "notify entire waitlist" control.
+     */
     private void showNotifyEntireWaitlistDialog() {
         if (currentEvent == null || currentEvent.getEventId() == null || currentEvent.getEventId().trim().isEmpty()) {
             Toast.makeText(this, "Event not loaded yet", Toast.LENGTH_SHORT).show();
@@ -2079,6 +2096,9 @@ public class EventManageActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Sends an event alert to every distinct device id on the waitlist (any status).
+     */
     private void sendNotifyEntireWaitlist(String userMessage) {
         if (currentEvent == null || currentEvent.getEventId() == null || currentEvent.getEventId().trim().isEmpty()) {
             Toast.makeText(this, "Event not loaded yet", Toast.LENGTH_SHORT).show();
@@ -2108,6 +2128,10 @@ public class EventManageActivity extends AppCompatActivity {
                 Toast.makeText(this, R.string.comments_action_failed, Toast.LENGTH_SHORT).show()));
     }
 
+    /**
+     * Whether a waitlist entry’s {@code status} belongs to the bucket targeted by {@link #sendNotifyAllForCurrentTab}
+     * for the selected main tab (and declined subtab when applicable).
+     */
     private boolean matchesNotifyBucketForCurrentTab(String status) {
         if (WaitingList.STATUS_SELECTED.equals(currentTab)) {
             return WaitingList.STATUS_SELECTED.equals(status);
@@ -2125,6 +2149,10 @@ public class EventManageActivity extends AppCompatActivity {
                 || WaitingList.STATUS_NOT_SELECTED.equals(status);
     }
 
+    /**
+     * Persists {@link com.example.cobaltevents.model.Notification#TYPE_EVENT_ALERT} documents one after another
+     * so large recipient lists do not overwhelm a single Firestore batch limit.
+     */
     private void sendEventAlertNotificationsSequentially(List<String> targetIds,
                                                          int index,
                                                          String userMessage,
@@ -2233,6 +2261,9 @@ public class EventManageActivity extends AppCompatActivity {
                 + " " + TIME_FORMAT.format(reg.getRegisteredAt().toDate());
     }
 
+    /**
+     * Shows confirmation copy, then {@link #performRescindInvite(WaitingList)} on confirm.
+     */
     private void confirmRescindInvite(WaitingList reg) {
         if (reg == null || eventId == null || eventId.trim().isEmpty()) {
             return;
@@ -2275,6 +2306,11 @@ public class EventManageActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Calls {@link WaitingListDB#rescindSelectionInviteIfStillSelected}; on {@link RescindSelectionInviteOutcome#APPLIED}
+     * removes the entrant’s lottery invite notifications via {@link NotificationDB#deleteLotteryInviteNotifications},
+     * then reloads the screen.
+     */
     private void performRescindInvite(WaitingList reg) {
         if (reg == null || eventId == null || eventId.trim().isEmpty()) {
             return;
@@ -2328,6 +2364,10 @@ public class EventManageActivity extends AppCompatActivity {
                 }));
     }
 
+    /**
+     * Applies {@link #currentTab} / {@link #currentDeclinedSubtab} to {@link #allEntrants} and
+     * {@link WaitlistEntrantAdapter#setItems(List, boolean)} with rescind enabled only on the Invited tab.
+     */
     private void showFilteredEntrants() {
         List<WaitingList> filtered = new ArrayList<>();
         for (WaitingList reg : allEntrants) {

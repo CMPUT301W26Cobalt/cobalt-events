@@ -542,7 +542,9 @@ ui.EditCategoriesActivity ..> ui.EditCategoriesContract
 ui.EditCategoriesActivity ..> ui.EditResultKinds
 
 uiAdmin.AdminActivity ..> ctl.AdminController
+uiAdmin.AdminActivity ..> util.NetworkConnectivity
 uiAdmin.AdminCommentsActivity ..> ctl.AdminController
+uiAdmin.AdminCommentsActivity ..> util.NetworkConnectivity
 uiAdmin.AdminCommentsActivity ..> db.CommentDB
 uiAdmin.AdminCommentsActivity ..> db.ProfileDB
 uiAdmin.AdminAdapter ..> model.Event
@@ -590,10 +592,19 @@ note as N3
   Account Settings: EntrantDB (local) + ProfileDB (remote); account deletion
   runs organizer pass on events (cascade or co-org) then waitlist removal
   and profile delete. Admin dashboard row (same card as account mode) when
-  device ID matches AdminConfig.ADMIN_DEVICE_ID.
+  device ID matches AdminConfig.ADMIN_DEVICE_ID. Save/delete require
+  NetworkConnectivity.hasValidatedInternet (same helper as browse/join/admin).
 end note
 
 ui.AccountSettingsActivity .. N3
+
+note as N5
+  Client-side validated internet (util.NetworkConnectivity) before Firestore /
+  Storage actions: account settings, browse/join/QR, notifications, event
+  create/manage/edit dialogs, comments binder, admin dashboard + comment drill-down.
+end note
+
+util.NetworkConnectivity .. N5
 
 note as N4
   Comments live under events/{eventId}/comments (+ replies). EventCommentsUiBinder
