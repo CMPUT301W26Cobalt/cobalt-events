@@ -406,8 +406,10 @@ public final class EventCommentsUiBinder {
 
         // ── Delete button ─────────────────────────────────────────────────────
         if (btnDelete != null) {
-            boolean canDelete = deviceId != null && !deviceId.trim().isEmpty()
+            boolean isOwnComment = deviceId != null && !deviceId.trim().isEmpty()
                     && c.getUserId() != null && deviceId.equals(c.getUserId());
+            // Manage (organizer) screen: can remove any comment, not only own.
+            boolean canDelete = isOwnComment || manageStyle;
             btnDelete.setVisibility(canDelete ? View.VISIBLE : View.GONE);
             btnDelete.setOnClickListener(v -> {
                 if (!canDelete) return;
