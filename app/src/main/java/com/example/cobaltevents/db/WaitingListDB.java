@@ -41,6 +41,8 @@ public class WaitingListDB {
     public static final String REASON_REGISTRATION_CLOSED = "REGISTRATION_CLOSED";
     /** Failure reason when the entrant is an organizer of this event (cannot join own event). */
     public static final String REASON_ORGANIZER_CANNOT_JOIN = "ORGANIZER_CANNOT_JOIN";
+    /** Event document is missing (e.g. deleted); join must not proceed. */
+    public static final String REASON_EVENT_DELETED = "EVENT_DELETED";
 
     private final FirebaseFirestore db;
     private static final String COLLECTION_EVENTS = "events";
@@ -426,7 +428,13 @@ public class WaitingListDB {
                             event.setEventId(snapshot.getId());
                         }
                     }
-                    if (event != null && event.isDeviceAnOrganizer(deviceId)) {
+                    if (snapshot == null || !snapshot.exists() || event == null) {
+                        if (onFailure != null) {
+                            onFailure.onFailure(new IllegalStateException(REASON_EVENT_DELETED));
+                        }
+                        return;
+                    }
+                    if (event.isDeviceAnOrganizer(deviceId)) {
                         if (onFailure != null) {
                             onFailure.onFailure(new IllegalStateException(REASON_ORGANIZER_CANNOT_JOIN));
                         }

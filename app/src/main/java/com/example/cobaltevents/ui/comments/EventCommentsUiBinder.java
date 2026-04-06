@@ -19,9 +19,11 @@ import androidx.core.content.ContextCompat;
 
 import com.example.cobaltevents.R;
 import com.example.cobaltevents.db.CommentDB;
+import com.example.cobaltevents.db.EventDB;
 import com.example.cobaltevents.model.Comment;
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.Reply;
+import com.example.cobaltevents.util.EventGoneUi;
 import com.example.cobaltevents.util.NetworkConnectivity;
 
 import java.util.ArrayList;
@@ -30,6 +32,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Binds the event-card comments section (expanded area). Data from Firestore via {@link CommentDB}.
@@ -62,20 +66,34 @@ public final class EventCommentsUiBinder {
         else          EXPANDED_COMMENTS_EVENTS.remove(eventId);
     }
 
+    /**
+     * @param serverAllowsCommentWrite after a fresh server fetch, returns true if the user may comment
+     *                                 (e.g. public event, on waitlist, or organizer). When the event is
+     *                                 private and this returns false, shows the same string as for join
+     *                                 ({@code R.string.event_switched_to_private})
+     *                                 and runs {@code onPrivateCommentDeniedRefresh} with the server event.
+     */
     public static void bind(View root, Event event, String deviceId, String userName,
-                            Runnable onCommentsChanged) {
-        bindInternal(root, event, deviceId, userName, onCommentsChanged, false);
+                            Runnable onCommentsChanged, Runnable onEventDeleted,
+                            Predicate<Event> serverAllowsCommentWrite,
+                            Consumer<Event> onPrivateCommentDeniedRefresh) {
+        bindInternal(root, event, deviceId, userName, onCommentsChanged, onEventDeleted, false,
+                serverAllowsCommentWrite, onPrivateCommentDeniedRefresh);
     }
 
     public static void bindManage(View root, Event event, String deviceId, String userName,
-                                  Runnable onCommentsChanged) {
-        bindInternal(root, event, deviceId, userName, onCommentsChanged, true);
+                                  Runnable onCommentsChanged, Runnable onEventDeleted) {
+        bindInternal(root, event, deviceId, userName, onCommentsChanged, onEventDeleted, true,
+                null, null);
     }
 
     // ── Core binding ──────────────────────────────────────────────────────────
 
     private static void bindInternal(View root, Event event, String deviceId, String userName,
-                                     Runnable onCommentsChanged, boolean manageStyle) {
+                                     Runnable onCommentsChanged, Runnable onEventDeleted,
+                                     boolean manageStyle,
+                                     Predicate<Event> serverAllowsCommentWrite,
+                                     Consumer<Event> onPrivateCommentDeniedRefresh) {
         if (root == null || event == null || event.getEventId() == null) return;
         final String eid = event.getEventId();
         Context ctx = root.getContext();
@@ -92,8 +110,12 @@ public final class EventCommentsUiBinder {
         String displayName = (userName != null && !userName.trim().isEmpty()) ? userName.trim() : "You";
         updateComposerHint(ctx, eid, etComment);
 
+        EventDB eventDB = new EventDB();
+        final Predicate<Event> accessPred = manageStyle ? null : serverAllowsCommentWrite;
+        final Consumer<Event> accessDeny = manageStyle ? null : onPrivateCommentDeniedRefresh;
         Runnable rebindSelf = () -> bindInternal(root, event, deviceId, userName,
-                onCommentsChanged, manageStyle);
+                onCommentsChanged, onEventDeleted, manageStyle,
+                serverAllowsCommentWrite, onPrivateCommentDeniedRefresh);
         boolean hasExistingRows = eid.equals(list.getTag()) && list.getChildCount() > 0;
         list.setTag(eid);
         if (!hasExistingRows) {
@@ -113,7 +135,8 @@ public final class EventCommentsUiBinder {
                     header.setText(ctx.getString(R.string.comments_count_format, comments.size()));
 
                     renderCommentsList(ctx, list, toggle, comments, eid, deviceId, displayName,
-                            commentDB, rebindSelf, etComment, composerRow, root, manageStyle);
+                            commentDB, rebindSelf, etComment, composerRow, root, manageStyle,
+                            eventDB, onEventDeleted, accessPred, accessDeny);
 
                     btnSend.setOnClickListener(v -> {
                         String text = etComment.getText() != null
@@ -123,55 +146,68 @@ public final class EventCommentsUiBinder {
                             Toast.makeText(ctx, R.string.comments_no_internet, Toast.LENGTH_SHORT).show();
                             return;
                         }
-                        btnSend.setEnabled(false);
-                        String replyCommentId = REPLY_TARGET_BY_EVENT.get(eid);
-                        if (replyCommentId != null && !replyCommentId.isEmpty()) {
-                            commentDB.addReply(eid, replyCommentId,
-                                    deviceId != null ? deviceId : "", displayName, text,
-                                    id -> {
-                                        btnSend.setEnabled(true);
-                                        etComment.setText("");
-                                        // Auto-expand the thread we just replied to
-                                        expandThread(eid, replyCommentId);
-                                        clearReplyTarget(eid);
-                                        rebindSelf.run();
-                                        if (onCommentsChanged != null) onCommentsChanged.run();
-                                    },
-                                    err -> {
-                                        btnSend.setEnabled(true);
-                                        if (isCommentDeletedError(err)) {
-                                            Toast.makeText(ctx, R.string.comments_comment_deleted,
-                                                    Toast.LENGTH_SHORT).show();
+                        verifyServerEventAccessThen(ctx, eid, eventDB, onEventDeleted, accessPred,
+                                accessDeny, () -> {
+                            btnSend.setEnabled(false);
+                            String replyCommentId = REPLY_TARGET_BY_EVENT.get(eid);
+                            if (replyCommentId != null && !replyCommentId.isEmpty()) {
+                                commentDB.addReply(eid, replyCommentId,
+                                        deviceId != null ? deviceId : "", displayName, text,
+                                        id -> {
+                                            btnSend.setEnabled(true);
+                                            etComment.setText("");
+                                            expandThread(eid, replyCommentId);
                                             clearReplyTarget(eid);
                                             rebindSelf.run();
-                                        } else {
-                                            Toast.makeText(ctx, R.string.comments_action_failed,
-                                                    Toast.LENGTH_SHORT).show();
-                                        }
-                                    });
-                        } else {
-                            commentDB.addComment(eid, deviceId != null ? deviceId : "",
-                                    displayName, text,
-                                    id -> {
-                                        btnSend.setEnabled(true);
-                                        etComment.setText("");
-                                        EXPANDED_COMMENTS_EVENTS.add(eid);
-                                        rebindSelf.run();
-                                        if (onCommentsChanged != null) onCommentsChanged.run();
-                                    },
-                                    err -> {
-                                        btnSend.setEnabled(true);
-                                        Toast.makeText(ctx, R.string.comments_action_failed,
-                                                Toast.LENGTH_SHORT).show();
-                                    });
-                        }
+                                            if (onCommentsChanged != null) onCommentsChanged.run();
+                                        },
+                                        err -> {
+                                            btnSend.setEnabled(true);
+                                            if (isCommentDeletedError(err)) {
+                                                Toast.makeText(ctx, R.string.comments_comment_deleted,
+                                                        Toast.LENGTH_SHORT).show();
+                                                clearReplyTarget(eid);
+                                                rebindSelf.run();
+                                            } else if (handleEventWriteFailure(ctx, err, onEventDeleted)) {
+                                                // toast + callback done in helper
+                                            } else {
+                                                Toast.makeText(ctx, R.string.comments_action_failed,
+                                                        Toast.LENGTH_SHORT).show();
+                                            }
+                                        });
+                            } else {
+                                commentDB.addComment(eid, deviceId != null ? deviceId : "",
+                                        displayName, text,
+                                        id -> {
+                                            btnSend.setEnabled(true);
+                                            etComment.setText("");
+                                            EXPANDED_COMMENTS_EVENTS.add(eid);
+                                            rebindSelf.run();
+                                            if (onCommentsChanged != null) onCommentsChanged.run();
+                                        },
+                                        err -> {
+                                            btnSend.setEnabled(true);
+                                            if (!handleEventWriteFailure(ctx, err, onEventDeleted)) {
+                                                Toast.makeText(ctx, R.string.comments_action_failed,
+                                                        Toast.LENGTH_SHORT).show();
+                                            }
+                                        });
+                            }
+                        });
                     });
                 },
                 err -> {
                     if (!eid.equals(list.getTag())) return;
                     btnSend.setEnabled(true);
                     header.setText(ctx.getString(R.string.comments_count_format, 0));
-                    Toast.makeText(ctx, R.string.comments_load_failed, Toast.LENGTH_SHORT).show();
+                    if (EventGoneUi.isFirestoreNotFound(err)) {
+                        EventGoneUi.toast(ctx);
+                        if (onEventDeleted != null) {
+                            onEventDeleted.run();
+                        }
+                    } else {
+                        Toast.makeText(ctx, R.string.comments_load_failed, Toast.LENGTH_SHORT).show();
+                    }
                 });
 
         View section = root.findViewById(R.id.layout_event_comments_section);
@@ -180,11 +216,55 @@ public final class EventCommentsUiBinder {
 
     // ── Render list ───────────────────────────────────────────────────────────
 
+    /**
+     * Fetches the event from the server; runs {@code ifAllowed} only when the doc exists and either
+     * {@code allowIfPrivateScoped} is null (manage / no gate) or it tests true for the fresh event.
+     */
+    private static void verifyServerEventAccessThen(Context ctx, String eventId, EventDB eventDB,
+                                                    Runnable onEventDeleted,
+                                                    Predicate<Event> allowIfPrivateScoped,
+                                                    Consumer<Event> onPrivateDeniedRefresh,
+                                                    Runnable ifAllowed) {
+        if (eventId == null || eventId.isEmpty()) {
+            return;
+        }
+        eventDB.getEventFromServer(eventId, fresh -> EventGoneUi.runOnUi(ctx, () -> {
+            if (fresh == null) {
+                EventGoneUi.toast(ctx);
+                if (onEventDeleted != null) {
+                    onEventDeleted.run();
+                }
+            } else if (allowIfPrivateScoped != null && !allowIfPrivateScoped.test(fresh)) {
+                Toast.makeText(ctx, R.string.event_switched_to_private, Toast.LENGTH_LONG).show();
+                if (onPrivateDeniedRefresh != null) {
+                    onPrivateDeniedRefresh.accept(fresh);
+                }
+            } else if (ifAllowed != null) {
+                ifAllowed.run();
+            }
+        }), e -> EventGoneUi.runOnUi(ctx, () ->
+                Toast.makeText(ctx, R.string.comments_action_failed, Toast.LENGTH_SHORT).show()));
+    }
+
+    private static boolean handleEventWriteFailure(Context ctx, Throwable err, Runnable onEventDeleted) {
+        if (EventGoneUi.isFirestoreNotFound(err) || EventGoneUi.isEventDeletedReason(err)) {
+            EventGoneUi.toast(ctx);
+            if (onEventDeleted != null) {
+                onEventDeleted.run();
+            }
+            return true;
+        }
+        return false;
+    }
+
     private static void renderCommentsList(Context ctx, LinearLayout list, TextView toggle,
                                            List<Comment> comments, String eid, String deviceId,
                                            String displayName, CommentDB commentDB,
                                            Runnable rebindSelf, EditText composer,
-                                           View composerRow, View root, boolean manageStyle) {
+                                           View composerRow, View root, boolean manageStyle,
+                                           EventDB eventDB, Runnable onEventDeleted,
+                                           Predicate<Event> accessPred,
+                                           Consumer<Event> accessDeny) {
         list.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(ctx);
         View emptyCard = root.findViewById(R.id.layout_comments_empty);
@@ -204,7 +284,8 @@ public final class EventCommentsUiBinder {
                     : R.layout.item_event_comment;
             View row = inflater.inflate(rowLayout, list, false);
             bindCommentRow(ctx, inflater, row, eid, c, deviceId, displayName,
-                    commentDB, rebindSelf, composer, manageStyle);
+                    commentDB, rebindSelf, composer, manageStyle, eventDB, onEventDeleted,
+                    accessPred, accessDeny);
             if (manageStyle && i == visibleCount - 1) {
                 View divider = row.findViewById(R.id.view_comment_divider);
                 if (divider != null) divider.setVisibility(View.GONE);
@@ -234,7 +315,10 @@ public final class EventCommentsUiBinder {
                                        String eid, Comment c, String deviceId,
                                        String displayName, CommentDB commentDB,
                                        Runnable rebindSelf, EditText composer,
-                                       boolean manageStyle) {
+                                       boolean manageStyle, EventDB eventDB,
+                                       Runnable onEventDeleted,
+                                       Predicate<Event> accessPred,
+                                       Consumer<Event> accessDeny) {
         TextView avatar     = row.findViewById(R.id.tv_comment_avatar);
         TextView author     = row.findViewById(R.id.tv_comment_author);
         TextView time       = row.findViewById(R.id.tv_comment_time);
@@ -264,20 +348,38 @@ public final class EventCommentsUiBinder {
                             Toast.makeText(ctx, R.string.comments_no_internet, Toast.LENGTH_SHORT).show();
                             return;
                         }
-                        commentDB.toggleCommentReaction(eid, c.getId(), deviceId, emoji,
-                                updatedReactions -> {
-                                    c.setReactions(updatedReactions);
-                                    bindReactions(ctx, reactionsLayout, btnAddReaction,
-                                            updatedReactions, deviceId,
-                                            e2 -> commentDB.toggleCommentReaction(eid, c.getId(),
-                                                    deviceId, e2,
-                                                    r2 -> { c.setReactions(r2); rebindSelf.run(); },
-                                                    err -> Toast.makeText(ctx,
-                                                            R.string.comments_action_failed,
-                                                            Toast.LENGTH_SHORT).show()));
-                                },
-                                err -> Toast.makeText(ctx, R.string.comments_action_failed,
-                                        Toast.LENGTH_SHORT).show());
+                        verifyServerEventAccessThen(ctx, eid, eventDB, onEventDeleted, accessPred,
+                                accessDeny, () ->
+                                commentDB.toggleCommentReaction(eid, c.getId(), deviceId, emoji,
+                                        updatedReactions -> {
+                                            c.setReactions(updatedReactions);
+                                            bindReactions(ctx, reactionsLayout, btnAddReaction,
+                                                    updatedReactions, deviceId,
+                                                    e2 -> verifyServerEventAccessThen(ctx, eid, eventDB,
+                                                            onEventDeleted, accessPred, accessDeny, () ->
+                                                                    commentDB.toggleCommentReaction(
+                                                                            eid, c.getId(),
+                                                                            deviceId, e2,
+                                                                            r2 -> {
+                                                                                c.setReactions(r2);
+                                                                                rebindSelf.run();
+                                                                            },
+                                                                            err -> {
+                                                                                if (!handleEventWriteFailure(
+                                                                                        ctx, err,
+                                                                                        onEventDeleted)) {
+                                                                                    Toast.makeText(ctx,
+                                                                                            R.string.comments_action_failed,
+                                                                                            Toast.LENGTH_SHORT).show();
+                                                                                }
+                                                                            })));
+                                        },
+                                        err -> {
+                                            if (!handleEventWriteFailure(ctx, err, onEventDeleted)) {
+                                                Toast.makeText(ctx, R.string.comments_action_failed,
+                                                        Toast.LENGTH_SHORT).show();
+                                            }
+                                        }));
                     });
         }
 
@@ -285,14 +387,21 @@ public final class EventCommentsUiBinder {
         boolean isTarget = c.getId() != null && c.getId().equals(REPLY_TARGET_BY_EVENT.get(eid));
         btnReply.setText(isTarget ? R.string.cancel_reply : R.string.reply);
         btnReply.setOnClickListener(v -> {
-            if (isTarget) {
-                clearReplyTarget(eid);
-            } else {
-                REPLY_TARGET_BY_EVENT.put(eid, c.getId());
-                REPLY_TARGET_NAME_BY_EVENT.put(eid, name.isEmpty() ? "User" : name);
+            if (!NetworkConnectivity.hasValidatedInternet(ctx)) {
+                Toast.makeText(ctx, R.string.comments_no_internet, Toast.LENGTH_SHORT).show();
+                return;
             }
-            updateComposerHint(ctx, eid, composer);
-            rebindSelf.run();
+            verifyServerEventAccessThen(ctx, eid, eventDB, onEventDeleted, accessPred, accessDeny,
+                    () -> {
+                        if (isTarget) {
+                            clearReplyTarget(eid);
+                        } else {
+                            REPLY_TARGET_BY_EVENT.put(eid, c.getId());
+                            REPLY_TARGET_NAME_BY_EVENT.put(eid, name.isEmpty() ? "User" : name);
+                        }
+                        updateComposerHint(ctx, eid, composer);
+                        rebindSelf.run();
+                    });
         });
 
         // ── Delete button ─────────────────────────────────────────────────────
@@ -307,13 +416,20 @@ public final class EventCommentsUiBinder {
                     return;
                 }
                 btnDelete.setEnabled(false);
-                commentDB.deleteCommentWithReplies(eid, c.getId(),
-                        unused -> { btnDelete.setEnabled(true); rebindSelf.run(); },
-                        err -> {
-                            btnDelete.setEnabled(true);
-                            Toast.makeText(ctx, R.string.comments_action_failed,
-                                    Toast.LENGTH_SHORT).show();
-                        });
+                verifyServerEventAccessThen(ctx, eid, eventDB, onEventDeleted, accessPred, accessDeny,
+                        () ->
+                        commentDB.deleteCommentWithReplies(eid, c.getId(),
+                                unused -> {
+                                    btnDelete.setEnabled(true);
+                                    rebindSelf.run();
+                                },
+                                err -> {
+                                    btnDelete.setEnabled(true);
+                                    if (!handleEventWriteFailure(ctx, err, onEventDeleted)) {
+                                        Toast.makeText(ctx, R.string.comments_action_failed,
+                                                Toast.LENGTH_SHORT).show();
+                                    }
+                                }));
             });
         }
 
@@ -346,7 +462,8 @@ public final class EventCommentsUiBinder {
                                 : R.layout.item_event_reply;
                         View rView = inflater.inflate(replyLayout, repliesLayout, false);
                         bindReplyRow(ctx, inflater, rView, eid, c.getId(), r,
-                                deviceId, commentDB, rebindSelf, manageStyle);
+                                deviceId, commentDB, rebindSelf, manageStyle, eventDB, onEventDeleted,
+                                accessPred, accessDeny);
                         repliesLayout.addView(rView);
                     }
                 }
@@ -359,7 +476,10 @@ public final class EventCommentsUiBinder {
     private static void bindReplyRow(Context ctx, LayoutInflater inflater, View rView,
                                      String eid, String commentId, Reply r,
                                      String deviceId, CommentDB commentDB,
-                                     Runnable rebindSelf, boolean manageStyle) {
+                                     Runnable rebindSelf, boolean manageStyle,
+                                     EventDB eventDB, Runnable onEventDeleted,
+                                     Predicate<Event> accessPred,
+                                     Consumer<Event> accessDeny) {
         TextView ra      = rView.findViewById(R.id.tv_reply_avatar);
         TextView rauth   = rView.findViewById(R.id.tv_reply_author);
         TextView rt      = rView.findViewById(R.id.tv_reply_time);
@@ -382,21 +502,40 @@ public final class EventCommentsUiBinder {
                                     Toast.LENGTH_SHORT).show();
                             return;
                         }
-                        commentDB.toggleReplyReaction(eid, commentId, r.getId(),
-                                deviceId, emoji,
-                                updatedReactions -> {
-                                    r.setReactions(updatedReactions);
-                                    bindReactions(ctx, replyReactionsLayout, btnAddReplyReaction,
-                                            updatedReactions, deviceId,
-                                            e2 -> commentDB.toggleReplyReaction(eid, commentId,
-                                                    r.getId(), deviceId, e2,
-                                                    r2 -> { r.setReactions(r2); rebindSelf.run(); },
-                                                    err -> Toast.makeText(ctx,
-                                                            R.string.comments_action_failed,
-                                                            Toast.LENGTH_SHORT).show()));
-                                },
-                                err -> Toast.makeText(ctx, R.string.comments_action_failed,
-                                        Toast.LENGTH_SHORT).show());
+                        verifyServerEventAccessThen(ctx, eid, eventDB, onEventDeleted, accessPred,
+                                accessDeny, () ->
+                                commentDB.toggleReplyReaction(eid, commentId, r.getId(),
+                                        deviceId, emoji,
+                                        updatedReactions -> {
+                                            r.setReactions(updatedReactions);
+                                            bindReactions(ctx, replyReactionsLayout,
+                                                    btnAddReplyReaction,
+                                                    updatedReactions, deviceId,
+                                                    e2 -> verifyServerEventAccessThen(ctx, eid, eventDB,
+                                                            onEventDeleted, accessPred, accessDeny, () ->
+                                                                    commentDB.toggleReplyReaction(
+                                                                            eid, commentId,
+                                                                            r.getId(), deviceId, e2,
+                                                                            r2 -> {
+                                                                                r.setReactions(r2);
+                                                                                rebindSelf.run();
+                                                                            },
+                                                                            err -> {
+                                                                                if (!handleEventWriteFailure(
+                                                                                        ctx, err,
+                                                                                        onEventDeleted)) {
+                                                                                    Toast.makeText(ctx,
+                                                                                            R.string.comments_action_failed,
+                                                                                            Toast.LENGTH_SHORT).show();
+                                                                                }
+                                                                            })));
+                                        },
+                                        err -> {
+                                            if (!handleEventWriteFailure(ctx, err, onEventDeleted)) {
+                                                Toast.makeText(ctx, R.string.comments_action_failed,
+                                                        Toast.LENGTH_SHORT).show();
+                                            }
+                                        }));
                     });
         }
     }

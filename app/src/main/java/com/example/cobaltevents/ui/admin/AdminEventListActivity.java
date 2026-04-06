@@ -6,6 +6,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.cobaltevents.R;
 
+/**
+ * Placeholder list shell; primary admin event browsing lives on {@link AdminActivity} (US 03.04.01).
+ */
 public class AdminEventListActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {

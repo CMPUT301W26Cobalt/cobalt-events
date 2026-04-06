@@ -470,58 +470,36 @@
                             android:layout_height="24dp"
                             android:visibility="gone" />
                     </LinearLayout>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
 
-
-            <!-- Admin Card — only visible if device ID matches -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/adminCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:visibility="gone"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="2dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:text="Admin"
-                        android:textColor="@color/text_primary"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
+                    <!-- Admin dashboard — same row style as mode options; visible only on admin device (Java) -->
                     <LinearLayout
                         android:id="@+id/btn_go_to_admin"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
                         android:background="@drawable/bg_account_mode_row_neutral"
+                        android:clickable="true"
+                        android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
                         android:paddingStart="16dp"
                         android:paddingTop="14dp"
                         android:paddingEnd="16dp"
-                        android:paddingBottom="14dp">
+                        android:paddingBottom="14dp"
+                        android:visibility="gone">
 
                         <FrameLayout
                             android:layout_width="48dp"
                             android:layout_height="48dp"
-                            android:background="@drawable/bg_admin_icon">
+                            android:background="@drawable/bg_account_mode_icon_well_user">
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
+                            <ImageView
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
                                 android:layout_gravity="center"
-                                android:text="&#128737;"
-                                android:textSize="22sp" />
+                                android:contentDescription="@null"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_account_mode_admin_neutral" />
                         </FrameLayout>
 
                         <LinearLayout
@@ -534,8 +512,8 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Admin Dashboard"
-                                android:textColor="@color/text_primary"
+                                android:text="@string/admin_dashboard_title"
+                                android:textColor="@color/account_mode_title_default"
                                 android:textSize="16sp"
                                 android:textStyle="bold" />
 
@@ -543,11 +521,10 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:text="System administration"
-                                android:textColor="@color/text_secondary"
+                                android:text="@string/admin_dashboard_subtitle"
+                                android:textColor="@color/account_mode_subtitle"
                                 android:textSize="13sp" />
                         </LinearLayout>
-
                     </LinearLayout>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>

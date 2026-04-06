@@ -43,7 +43,7 @@ public class WelcomeActivity extends AppCompatActivity {
         if (AdminConfig.ADMIN_DEVICE_ID.equals(deviceId)) {
             adminCard.setVisibility(View.VISIBLE);
             // Pre-fetch admin data in background so dashboard loads instantly
-            AdminController adminController = new AdminController();
+            AdminController adminController = new AdminController(this);
             adminController.getAllEvents(e -> {}, err -> {});
             adminController.getAllProfiles(p -> {}, err -> {});
             btnAdmin.setOnClickListener(v ->

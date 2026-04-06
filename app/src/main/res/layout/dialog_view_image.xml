@@ -1,150 +1,159 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:background="@drawable/bg_popup_rounded">
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="8dp"
+    app:cardUseCompatPadding="true">
 
-    <!-- Dark header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="#0D1B2A"
-        android:padding="20dp">
+        android:orientation="vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="IMAGES"
-            android:textColor="#9CA3AF"
-            android:textSize="11sp"
-            android:letterSpacing="0.15"
-            android:textAllCaps="true" />
-
-        <TextView
-            android:id="@+id/tvImageDialogTitle"
+        <!-- Dark header -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginTop="4dp" />
+            android:orientation="vertical"
+            android:background="#0D1B2A"
+            android:padding="20dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="IMAGES"
+                android:textColor="#9CA3AF"
+                android:textSize="11sp"
+                android:letterSpacing="0.15"
+                android:textAllCaps="true" />
+
+            <TextView
+                android:id="@+id/tvImageDialogTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginTop="4dp" />
+
+        </LinearLayout>
+
+        <!-- Body -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Event row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="10dp">
+
+                <TextView
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:text="Event"
+                    android:textSize="12sp"
+                    android:textColor="#9CA3AF"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvImageDialogEvent"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="13sp"
+                    android:textColor="#374151" />
+
+            </LinearLayout>
+
+            <!-- Uploaded by row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="10dp">
+
+                <TextView
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:text="Uploader"
+                    android:textSize="12sp"
+                    android:textColor="#9CA3AF"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvImageDialogUploader"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="13sp"
+                    android:textColor="#374151" />
+
+            </LinearLayout>
+
+            <!-- Date row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="14dp">
+
+                <TextView
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:text="Date"
+                    android:textSize="12sp"
+                    android:textColor="#9CA3AF"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvImageDialogDate"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="13sp"
+                    android:textColor="#374151" />
+
+            </LinearLayout>
+
+            <!-- Poster image -->
+            <ImageView
+                android:id="@+id/ivImageDialogPoster"
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:scaleType="centerCrop"
+                android:layout_marginBottom="16dp"
+                android:contentDescription="Event poster" />
+
+            <!-- Divider -->
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E5E7EB"
+                android:layout_marginBottom="14dp" />
+
+            <!-- Close button -->
+            <Button
+                android:id="@+id/btnImageDialogCloseBottom"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:text="CLOSE"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:backgroundTint="#0D1B2A"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                app:cornerRadius="8dp" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
-    <!-- Body -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
-
-        <!-- Event row -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="10dp">
-
-            <TextView
-                android:layout_width="80dp"
-                android:layout_height="wrap_content"
-                android:text="Event"
-                android:textSize="12sp"
-                android:textColor="#9CA3AF"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvImageDialogEvent"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="13sp"
-                android:textColor="#374151" />
-
-        </LinearLayout>
-
-        <!-- Uploaded by row -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="10dp">
-
-            <TextView
-                android:layout_width="80dp"
-                android:layout_height="wrap_content"
-                android:text="Uploader"
-                android:textSize="12sp"
-                android:textColor="#9CA3AF"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvImageDialogUploader"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="13sp"
-                android:textColor="#374151" />
-
-        </LinearLayout>
-
-        <!-- Date row -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="14dp">
-
-            <TextView
-                android:layout_width="80dp"
-                android:layout_height="wrap_content"
-                android:text="Date"
-                android:textSize="12sp"
-                android:textColor="#9CA3AF"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvImageDialogDate"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textSize="13sp"
-                android:textColor="#374151" />
-
-        </LinearLayout>
-
-        <!-- Poster image -->
-        <ImageView
-            android:id="@+id/ivImageDialogPoster"
-            android:layout_width="match_parent"
-            android:layout_height="180dp"
-            android:scaleType="centerCrop"
-            android:layout_marginBottom="16dp"
-            android:contentDescription="Event poster" />
-
-        <!-- Divider -->
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#E5E7EB"
-            android:layout_marginBottom="14dp" />
-
-        <!-- Close button -->
-        <Button
-            android:id="@+id/btnImageDialogCloseBottom"
-            android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:text="CLOSE"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold"
-            android:backgroundTint="#0D1B2A"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            app:cornerRadius="8dp" />
-
-    </LinearLayout>
-
-</LinearLayout>
+</com.google.android.material.card.MaterialCardView>

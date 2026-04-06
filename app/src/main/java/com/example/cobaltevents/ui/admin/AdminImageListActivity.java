@@ -9,6 +9,9 @@ import android.widget.TextView;
 
 import com.example.cobaltevents.R;
 
+/**
+ * Placeholder list shell; primary admin image browsing lives on {@link AdminActivity} (US 03.06.01).
+ */
 public class AdminImageListActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {

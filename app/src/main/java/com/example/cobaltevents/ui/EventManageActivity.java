@@ -1725,7 +1725,8 @@ public class EventManageActivity extends AppCompatActivity {
         String deviceId = entrant.getDeviceId();
         String userName = entrant.getName();
         EventCommentsUiBinder.setCommentsExpandedForEvent(eid, true);
-        EventCommentsUiBinder.bindManage(root, currentEvent, deviceId, userName, () -> { });
+        EventCommentsUiBinder.bindManage(root, currentEvent, deviceId, userName, () -> { },
+                () -> loadEventData(true));
         commentsBoundEventId = eid;
     }
 

@@ -15,7 +15,8 @@ public class Notification {
      * {@link #TYPE_SELECTED} (trophy), {@link #TYPE_GOT_OFF_WAITLIST} (star),
      * {@link #TYPE_NOT_SELECTED} (X), {@link #TYPE_PRIVATE_EVENT} (lock),
      * {@link #TYPE_CO_ORGANIZER} (medal icon; informational, no Accept/Decline in the list),
-     * {@link #TYPE_EVENT_ALERT} (amber exclamation; informational).
+     * {@link #TYPE_EVENT_ALERT} (amber exclamation; informational — organizer “notify waitlisted”
+     * and admin event deletion broadcasts).
      */
     public static final String TYPE_SELECTED = "selected";
     public static final String TYPE_GOT_OFF_WAITLIST = "got-off-waitlist";

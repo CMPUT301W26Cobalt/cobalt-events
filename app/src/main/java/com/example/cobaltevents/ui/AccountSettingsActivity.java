@@ -24,7 +24,6 @@ import com.example.cobaltevents.controller.AdminController;
 import com.example.cobaltevents.ui.admin.AdminActivity;
 import com.example.cobaltevents.ui.admin.AdminConfig;
 import android.provider.Settings;
-import androidx.cardview.widget.CardView;
 import com.example.cobaltevents.controller.EntrantController;
 import com.example.cobaltevents.db.CommentDB;
 import com.example.cobaltevents.db.EntrantDB;
@@ -47,6 +46,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Profile, account mode (user vs organizer), notification toggles, and account deletion.
+ *
+ * <p>The admin dashboard entry (US 03.09.01) appears as a third row inside the account mode card when
+ * {@link android.provider.Settings.Secure#ANDROID_ID} matches {@link com.example.cobaltevents.ui.admin.AdminConfig#ADMIN_DEVICE_ID},
+ * using the same neutral icon-well style as the user and organizer rows ({@code R.id.btn_go_to_admin}).
+ */
 public class AccountSettingsActivity extends AppCompatActivity {
 
     /**
@@ -104,12 +110,11 @@ public class AccountSettingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_account_settings);
 
-        // ── Admin card — show only if device ID matches ───────────────────────
         String deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        CardView adminCard = findViewById(R.id.adminCard);
-        if (AdminConfig.ADMIN_DEVICE_ID.equals(deviceId) && adminCard != null) {
-            adminCard.setVisibility(android.view.View.VISIBLE);
-            findViewById(R.id.btn_go_to_admin).setOnClickListener(v -> {
+        View btnGoToAdmin = findViewById(R.id.btn_go_to_admin);
+        if (AdminConfig.ADMIN_DEVICE_ID.equals(deviceId) && btnGoToAdmin != null) {
+            btnGoToAdmin.setVisibility(View.VISIBLE);
+            btnGoToAdmin.setOnClickListener(v -> {
                 AdminController.invalidateAll();
                 startActivity(new Intent(this, AdminActivity.class));
             });

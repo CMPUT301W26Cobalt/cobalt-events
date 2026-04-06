@@ -17,6 +17,7 @@ import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.HorizontalScrollView;
@@ -47,19 +48,15 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * AdminActivity — the main admin dashboard screen.
+ * US 03.04.01 – Browse and manage platform data (admin dashboard).
  *
- * Implements all Admin user stories:
- *   US 03.01.01 — Remove events
- *   US 03.02.01 — Remove profiles
- *   US 03.03.01 — Remove images
- *   US 03.04.01 — Browse events
- *   US 03.05.01 — Browse profiles
- *   US 03.06.01 — Browse images
- *   US 03.07.01 — Remove organizers
- *   US 03.08.01 — Review notifications
- *   US 03.09.01 — Role switch
- *   US 03.10.01 — Browse & remove comments
+ * <p>Tabbed home for system administrators: events, profiles, images, organizers, notifications, and
+ * comments, with swipe-to-delete where allowed. Uses {@link AdminController} for Firestore.
+ *
+ * <p>Also covers US 03.01.01–03.03.01 and 03.05.01–03.08.01 / 03.10.01 per tab, and US 03.09.01: the header
+ * overflow (three dots) opens {@code panel_role_switch}, which shows the current Admin role as a highlighted row
+ * plus actions to continue as User or Organizer ({@link EntrantActivity} / {@link OrganizerActivity} with
+ * {@code IS_ADMIN_SWITCH}).
  */
 public class AdminActivity extends AppCompatActivity {
 
@@ -79,8 +76,14 @@ public class AdminActivity extends AppCompatActivity {
     // ── Adapter & state ───────────────────────────────────────────────────────
     private AdminAdapter adapter;
     private final List<AdminAdapter.AdminItem> allItems = new ArrayList<>();
-    /** Cache for slow tabs (Notifications, Comments) — cleared on pull-to-refresh only. */
+    /**
+     * Cache for slow tabs (Notifications, Comments). Cleared on pull-to-refresh and on
+     * {@link #onResume} (after the initial resume) so returning from child screens stays fresh.
+     */
     private final java.util.Map<String, List<AdminAdapter.AdminItem>> slowTabCache = new java.util.HashMap<>();
+
+    /** Avoid double-loading on the first {@link #onResume} right after {@link #onCreate}. */
+    private boolean suppressResumeRefreshOnce = true;
 
     /** Item cache per tab — avoids re-fetching Firestore on every tab switch. */
     private final java.util.Map<String, List<AdminAdapter.AdminItem>> tabItemCache = new java.util.HashMap<>();
@@ -115,7 +118,7 @@ public class AdminActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin);
 
-        adminController = new AdminController();
+        adminController = new AdminController(this);
 
         // Bind tabs
         tabEvents        = findViewById(R.id.tab_events);
@@ -155,7 +158,7 @@ public class AdminActivity extends AppCompatActivity {
             });
         }
 
-        // Pull-to-refresh — only invalidates cache when user explicitly pulls
+        // Pull-to-refresh — same cache bust as returning to this screen (see onResume)
         if (swipeRefresh != null) {
             swipeRefresh.setColorSchemeColors(
                     android.graphics.Color.parseColor("#0D6EFD"),
@@ -230,6 +233,21 @@ public class AdminActivity extends AppCompatActivity {
         }, e -> {}, null);
 
         showEvents();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (suppressResumeRefreshOnce) {
+            suppressResumeRefreshOnce = false;
+            return;
+        }
+        // Bust AdminController session caches (events/profiles) and UI tab cache, then reload
+        // the visible tab — same net effect as pull-to-refresh, for any return path (child
+        // activities, role switch, home/recents, etc.).
+        AdminController.invalidateAll();
+        slowTabCache.clear();
+        refreshCurrentTab();
     }
 
     // =========================================================================
@@ -1081,6 +1099,22 @@ public class AdminActivity extends AppCompatActivity {
         dialog.show();
         if (dialog.getWindow() != null)
             dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        applyDetailDialogScrollMaxHeight(dialogView);
+    }
+
+    /** Same scroll max-height behavior as {@code QRScanActivity} QR event popup. */
+    private void applyDetailDialogScrollMaxHeight(View dialogRoot) {
+        final View scroll = dialogRoot.findViewById(R.id.scroll_admin_detail_dialog);
+        if (scroll == null) return;
+        scroll.post(() -> {
+            int screenH = getResources().getDisplayMetrics().heightPixels;
+            int maxH = (int) (screenH * 0.65f);
+            if (scroll.getHeight() > maxH) {
+                ViewGroup.LayoutParams lp = scroll.getLayoutParams();
+                lp.height = maxH;
+                scroll.setLayoutParams(lp);
+            }
+        });
     }
 
     // =========================================================================
@@ -1148,10 +1182,20 @@ public class AdminActivity extends AppCompatActivity {
             AlertDialog dialog = new AlertDialog.Builder(this).setView(dialogView).create();
             btnImageOnly.setOnClickListener(v -> {
                 dialog.dismiss();
-                removeItemFromList(item);
-                adminController.removeEventImage(item.id,
-                        unused -> Toast.makeText(this, "Image removed", Toast.LENGTH_SHORT).show(),
-                        e -> { Toast.makeText(this, "Failed to remove image", Toast.LENGTH_SHORT).show(); showImages(); });
+                adminController.removeEventImage(item.id, item.imageUrl,
+                        unused -> {
+                            removeItemFromList(item);
+                            Toast.makeText(this, "Image removed", Toast.LENGTH_SHORT).show();
+                        },
+                        e -> {
+                            if (AdminController.isPosterUrlMismatchFailure(e)) {
+                                Toast.makeText(this, R.string.admin_remove_image_poster_changed,
+                                        Toast.LENGTH_LONG).show();
+                            } else {
+                                Toast.makeText(this, "Failed to remove image", Toast.LENGTH_SHORT).show();
+                            }
+                            showImages();
+                        });
             });
             btnImageEvent.setOnClickListener(v -> {
                 dialog.dismiss();
@@ -1179,7 +1223,11 @@ public class AdminActivity extends AppCompatActivity {
         deleteBtn.setOnClickListener(v -> {
             dialog.dismiss();
             v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
-            removeItemFromList(item);
+            // Profiles / Organizers: do not optimistically remove — user may have deleted their
+            // account already; refresh after the async delete finishes.
+            if (!"Profiles".equals(currentTab) && !"Organizers".equals(currentTab)) {
+                removeItemFromList(item);
+            }
             performDelete(item);
         });
         cancelBtn.setOnClickListener(v -> dialog.dismiss());
@@ -1202,13 +1250,29 @@ public class AdminActivity extends AppCompatActivity {
                 break;
             case "Profiles":
                 adminController.removeProfile(item.id,
-                        unused -> Toast.makeText(this, "Profile removed", Toast.LENGTH_SHORT).show(),
-                        e -> Toast.makeText(this, "Failed to remove profile", Toast.LENGTH_SHORT).show());
+                        unused -> {
+                            AdminController.invalidateAll();
+                            refreshCurrentTab();
+                            Toast.makeText(this, "Profile removed", Toast.LENGTH_SHORT).show();
+                        },
+                        e -> {
+                            AdminController.invalidateAll();
+                            refreshCurrentTab();
+                            Toast.makeText(this, "Failed to remove profile", Toast.LENGTH_SHORT).show();
+                        });
                 break;
             case "Organizers":
                 adminController.removeOrganizer(item.id,
-                        unused -> Toast.makeText(this, "Organizer removed", Toast.LENGTH_SHORT).show(),
-                        e -> Toast.makeText(this, "Failed to remove organizer", Toast.LENGTH_SHORT).show());
+                        unused -> {
+                            AdminController.invalidateAll();
+                            refreshCurrentTab();
+                            Toast.makeText(this, "Organizer removed", Toast.LENGTH_SHORT).show();
+                        },
+                        e -> {
+                            AdminController.invalidateAll();
+                            refreshCurrentTab();
+                            Toast.makeText(this, "Failed to remove organizer", Toast.LENGTH_SHORT).show();
+                        });
                 break;
         }
     }
@@ -1251,6 +1315,11 @@ public class AdminActivity extends AppCompatActivity {
         return parts[0].substring(0, Math.min(2, parts[0].length())).toUpperCase();
     }
 
+    /**
+     * US 03.09.01: anchored popup from the header three-dot control. Inflates {@code panel_role_switch}:
+     * a non-interactive, tinted current-role Admin row ({@code panelRowAdminCurrent}), then User and Organizer
+     * rows that launch {@link EntrantActivity} / {@link OrganizerActivity} with {@code IS_ADMIN_SWITCH}.
+     */
     private void showRoleSwitchPanel(View anchorView) {
         View panelView = LayoutInflater.from(this).inflate(R.layout.panel_role_switch, null);
 

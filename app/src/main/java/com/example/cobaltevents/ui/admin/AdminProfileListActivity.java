@@ -7,6 +7,9 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.cobaltevents.R;
 
+/**
+ * Placeholder list shell; primary admin profile browsing lives on {@link AdminActivity} (US 03.05.01).
+ */
 public class AdminProfileListActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {

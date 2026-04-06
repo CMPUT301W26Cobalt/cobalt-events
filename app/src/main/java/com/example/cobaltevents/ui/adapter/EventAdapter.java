@@ -15,6 +15,7 @@ import com.example.cobaltevents.R;
 import com.example.cobaltevents.model.Event;
 import com.example.cobaltevents.model.WaitingList;
 import com.example.cobaltevents.ui.comments.EventCommentsUiBinder;
+import com.example.cobaltevents.ui.waitlist.WaitlistCountDisplayUi;
 import com.example.cobaltevents.ui.waitlist.WaitlistStatusUi;
 import com.google.firebase.Timestamp;
 
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHolder> {
 
@@ -37,6 +39,11 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
         void onEventCommentsChanged(String eventId);
     }
 
+    /** Fired when the event was deleted on the server (stale card). */
+    public interface OnEventDeletedListener {
+        void onEventDeleted(String eventId);
+    }
+
     private List<Event> events;
     private final OnEventClickListener listener;
     private final Set<String> expandedIds = new HashSet<>();
@@ -47,6 +54,8 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
     private String deviceId;
     private String commentAuthorName = "You";
     private OnEventCommentsChangedListener onEventCommentsChangedListener;
+    private OnEventDeletedListener onEventDeletedListener;
+    private Consumer<Event> onPrivateCommentDeniedRefresh;
 
     private static final SimpleDateFormat DATE_FORMAT =
             new SimpleDateFormat("MMM d, yyyy", Locale.getDefault());
@@ -95,6 +104,38 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
     public void setOnEventCommentsChangedListener(OnEventCommentsChangedListener listener) {
         this.onEventCommentsChangedListener = listener;
+    }
+
+    public void setOnEventDeletedListener(OnEventDeletedListener listener) {
+        this.onEventDeletedListener = listener;
+    }
+
+    public void setOnPrivateCommentDeniedRefresh(Consumer<Event> listener) {
+        this.onPrivateCommentDeniedRefresh = listener;
+    }
+
+    /** Aligned with join rules: public, on waitlist, or organizer may use comments on a private event. */
+    public boolean serverEventAllowsCommentWrite(Event fresh) {
+        if (fresh == null) {
+            return false;
+        }
+        return !fresh.isPrivate()
+                || isEffectivelyJoinedOnWaitlist(fresh)
+                || (deviceId != null && fresh.isDeviceAnOrganizer(deviceId));
+    }
+
+    /** Drops per-event UI state when the event document no longer exists. */
+    public void clearAuxiliaryStateForEvent(String eventId) {
+        if (eventId == null) {
+            return;
+        }
+        expandedIds.remove(eventId);
+        if (waitlistCountByEventId != null) {
+            waitlistCountByEventId.remove(eventId);
+        }
+        if (effectiveStatusByEventId != null) {
+            effectiveStatusByEventId.remove(eventId);
+        }
     }
 
     /** Position in the current (filtered) list, or -1. */
@@ -190,11 +231,8 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
 
         holder.tvName.setText(event.getName());
 
-        if (count != null) {
-            holder.tvWaitlistCount.setText(count + " on waitlist");
-        } else {
-            holder.tvWaitlistCount.setText("");
-        }
+        holder.tvWaitlistCount.setText(WaitlistCountDisplayUi.formatLine(
+                holder.itemView.getContext(), count, event.getWaitingListCapacity()));
 
         holder.layoutCategoryTags.removeAllViews();
         boolean hasTags = false;
@@ -343,6 +381,14 @@ public class EventAdapter extends RecyclerView.Adapter<EventAdapter.EventViewHol
             EventCommentsUiBinder.bind(holder.itemView, event, deviceId, commentAuthorName, () -> {
                 if (onEventCommentsChangedListener != null && event.getEventId() != null) {
                     onEventCommentsChangedListener.onEventCommentsChanged(event.getEventId());
+                }
+            }, () -> {
+                if (onEventDeletedListener != null && event.getEventId() != null) {
+                    onEventDeletedListener.onEventDeleted(event.getEventId());
+                }
+            }, this::serverEventAllowsCommentWrite, fresh -> {
+                if (onPrivateCommentDeniedRefresh != null) {
+                    onPrivateCommentDeniedRefresh.accept(fresh);
                 }
             });
         }

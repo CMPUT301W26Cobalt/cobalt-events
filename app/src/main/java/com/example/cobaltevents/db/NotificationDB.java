@@ -34,6 +34,8 @@ public class NotificationDB {
             }
             if (Notification.TYPE_NOT_SELECTED.equals(notification.getType())) {
                 notification.setResponse(null);
+            } else if (Notification.TYPE_EVENT_ALERT.equals(notification.getType())) {
+                notification.setResponse(null);
             } else if (Notification.TYPE_CO_ORGANIZER.equals(notification.getType())
                     && Notification.RECIPIENT_MODE_USER.equals(notification.getRecipientMode())) {
                 notification.setResponse(null);

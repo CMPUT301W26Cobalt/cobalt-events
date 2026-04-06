@@ -22,6 +22,63 @@
         android:paddingEnd="16dp"
         android:paddingBottom="6dp" />
 
+    <!-- Current role: Admin (highlighted — this popup is only shown from AdminActivity) -->
+    <LinearLayout
+        android:id="@+id/panelRowAdminCurrent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="52dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="10dp"
+        android:background="@drawable/bg_role_switch_admin_row">
+
+        <FrameLayout
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="12dp"
+            android:background="@drawable/bg_admin_icon">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_account_mode_admin_white" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/admin_dashboard_title"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#1A2F42" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/admin_role_switch_current_subtitle"
+                android:textSize="12sp"
+                android:textColor="#5C6B7A" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#F3F4F6"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp" />
+
     <!-- Switch to User -->
     <LinearLayout
         android:id="@+id/panelBtnSwitchToEntrant"

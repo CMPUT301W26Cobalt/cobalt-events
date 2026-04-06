@@ -6,6 +6,7 @@ import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -30,13 +31,15 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * AdminCommentsActivity — shows all comments and replies for a single event.
- * Admin can delete any comment (and its replies) or individual replies.
- * Tapping a commenter's name/avatar shows their profile detail popup.
+ * US 03.10.01 – Moderate comments for one event.
+ *
+ * <p>Lists comments and replies; admin can delete comments or replies and open a profile detail popup from a name/avatar.
  */
 public class AdminCommentsActivity extends AppCompatActivity {
 
+    /** Firestore event id passed from {@link AdminActivity}. */
     public static final String EXTRA_EVENT_ID   = "EXTRA_EVENT_ID";
+    /** Display title for the toolbar / header. */
     public static final String EXTRA_EVENT_NAME = "EXTRA_EVENT_NAME";
 
     private String eventId;
@@ -60,7 +63,7 @@ public class AdminCommentsActivity extends AppCompatActivity {
         eventId   = getIntent().getStringExtra(EXTRA_EVENT_ID);
         eventName = getIntent().getStringExtra(EXTRA_EVENT_NAME);
 
-        adminController = new AdminController();
+        adminController = new AdminController(this);
         commentDB       = new CommentDB();
         profileDB       = new ProfileDB();
 
@@ -80,7 +83,11 @@ public class AdminCommentsActivity extends AppCompatActivity {
                 android.graphics.Color.parseColor("#0D6EFD"),
                 android.graphics.Color.parseColor("#0D1B2A"));
         swipeRefresh.setOnRefreshListener(this::loadComments);
+    }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
         loadComments();
     }
 
@@ -189,8 +196,24 @@ public class AdminCommentsActivity extends AppCompatActivity {
             dialog.show();
             if (dialog.getWindow() != null)
                 dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+            applyDetailDialogScrollMaxHeight(dialogView);
 
         }, e -> Toast.makeText(this, "Could not load profile", Toast.LENGTH_SHORT).show());
+    }
+
+    /** Same scroll max-height as admin browse detail / QR event popup. */
+    private void applyDetailDialogScrollMaxHeight(View dialogRoot) {
+        final View scroll = dialogRoot.findViewById(R.id.scroll_admin_detail_dialog);
+        if (scroll == null) return;
+        scroll.post(() -> {
+            int screenH = getResources().getDisplayMetrics().heightPixels;
+            int maxH = (int) (screenH * 0.65f);
+            if (scroll.getHeight() > maxH) {
+                ViewGroup.LayoutParams lp = scroll.getLayoutParams();
+                lp.height = maxH;
+                scroll.setLayoutParams(lp);
+            }
+        });
     }
 
     // =========================================================================

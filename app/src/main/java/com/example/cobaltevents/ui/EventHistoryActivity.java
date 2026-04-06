@@ -487,8 +487,9 @@ public class EventHistoryActivity extends AppCompatActivity {
     }
     
     private void onEventClick(EventHistory history) {
-        // Legacy EventDetailActivity removed; keep My Events screen non-navigational.
-        // If you want a new detail behavior, we can wire it up here.
+        if (historyDeleteDialogShowing) return;
+        if (history == null || history.getEvent() == null) return;
+        EventReadOnlyCardPopup.show(this, history.getEvent());
     }
 
     private void confirmRemoveFromWaitlist(EventHistory history) {
